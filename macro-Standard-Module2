@@ -1,0 +1,97 @@
+Sub ReloadKiemkracht()
+    Dim sPath As String, sCode As String, sLine As String
+    Dim iFile As Integer
+    If Not GlobalScope.BasicLibraries.isLibraryLoaded("Kiemkracht") Then
+        GlobalScope.BasicLibraries.loadLibrary("Kiemkracht")
+    End If
+    For Each sModule In Array("Module1", "Module2", "Module3")
+        sPath = Environ("APPDATA") & "\LibreOffice\4\user\basic\Kiemkracht\" & sModule & ".bas"
+        If Not FileExists(sPath) Then
+            MsgBox "Bestand niet gevonden: " & sPath, 16, "Fout"
+            Exit Sub
+        End If
+        sCode = ""
+        iFile = FreeFile()
+        Open sPath For Input As #iFile
+        Do While Not EOF(iFile)
+            Line Input #iFile, sLine
+            sCode = sCode & sLine & Chr(10)
+        Loop
+        Close #iFile
+        GlobalScope.BasicLibraries.getByName("Kiemkracht").replaceByName(sModule, sCode)
+    Next
+End Sub
+
+Sub ReloadStandard()
+    Dim sPath As String, sCode As String, sLine As String
+    Dim iFile As Integer
+    sPath = Environ("APPDATA") & "\LibreOffice\4\user\basic\Standard\Module1.bas"
+    If Not FileExists(sPath) Then
+        MsgBox "Bestand niet gevonden: " & sPath, 16, "Fout"
+        Exit Sub
+    End If
+    sCode = "" : iFile = FreeFile()
+    Open sPath For Input As #iFile
+    Do While Not EOF(iFile)
+        Line Input #iFile, sLine
+        sCode = sCode & sLine & Chr(10)
+    Loop
+    Close #iFile
+    GlobalScope.BasicLibraries.getByName("Standard").replaceByName("Module1", sCode)
+End Sub
+
+Sub StartReloadStandard()
+    ReloadStandard()
+    ReloadKiemkracht()
+End Sub
+
+Sub StartSchrijfWijzigingenTerug()
+    ReloadKiemkracht()
+    SchrijfWijzigingenTerug()
+End Sub
+
+Sub StartMaakWeekbestand()
+    ReloadKiemkracht()
+    MaakWeekbestand()
+End Sub
+
+Sub StartLaadAlleTabellen()
+    ReloadKiemkracht()
+    LaadAlleTabellen()
+End Sub
+
+Sub StartBereidMailmergeVoor()
+    ReloadKiemkracht()
+    BereidMailmergeVoor()
+End Sub
+
+Sub StartMaakOverzichten()
+    ReloadKiemkracht()
+    MaakOverzichten()
+End Sub
+
+Sub StartVoegNieuweKlantToe()
+    ReloadKiemkracht()
+    VoegNieuweKlantToe()
+End Sub
+
+Sub StartMaakEtiketten()
+    ReloadKiemkracht()
+    MaakEtiketten()
+End Sub
+
+Sub StartMaakEtikettenBijbestelling()
+    ReloadKiemkracht()
+    MaakEtikettenBijbestelling()
+End Sub
+
+Sub StartVulWeglatingen()
+    ReloadKiemkracht()
+    If Not LeesUitSheets() Then Exit Sub
+    VulWeglatingen()
+End Sub
+
+Sub StartSyncMetSheets()
+    ReloadKiemkracht()
+    SyncMetSheets()
+End Sub

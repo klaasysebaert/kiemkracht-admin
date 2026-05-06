@@ -1,0 +1,1678 @@
+Option Explicit
+
+Sub LaadAlleTabellen()
+
+    ' =============================================
+    ' Kiemkracht - Data loader
+    ' Uitvoeren terwijl kiemkracht-data.ods open is
+    ' Vereist: SSH-tunnel actief op poort 5433
+    ' =============================================
+    
+    ' SSH-tunnel starten (wordt genegeerd als hij al actief is)
+    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
+    Wait 3000
+
+    Const JDBC_URL   As String = "jdbc:postgresql://localhost:5433/postgres"
+    Const DB_USER    As String = "postgres"
+    Const DB_PASS    As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
+
+    Dim oDoc         As Object
+    Dim oSheets      As Object
+    Dim oConn        As Object
+    Dim oStmt        As Object
+    Dim oRS          As Object
+    Dim oSheet       As Object
+    Dim oMeta        As Object
+    Dim i            As Integer
+    Dim col          As Integer
+    Dim row          As Integer
+
+    ' Tabellen om in te laden
+    Dim tabellen(10)  As String
+    tabellen(0)  = "afhaalpunten"
+    tabellen(1)  = "annulaties"
+    tabellen(2)  = "bestelling_weglatingen"
+    tabellen(3)  = "bestellingen"
+    tabellen(4)  = "bestelregels"
+    tabellen(5)  = "groenten"
+    tabellen(6)  = "klanten"
+    tabellen(7)  = "pakket_inhoud"
+    tabellen(8)  = "pakketten"
+    tabellen(9)  = "vooruitbestellingen"
+    tabellen(10) = "bestelling_overzicht"
+
+    ' kiemkracht-data.ods opzoeken in geopende documenten
+    Dim oEnum2 As Object
+    Dim oComp2 As Object
+    oEnum2 = StarDesktop.Components.createEnumeration()
+    Do While oEnum2.hasMoreElements()
+        oComp2 = oEnum2.nextElement()
+        If HasUnoInterfaces(oComp2, "com.sun.star.lang.XServiceInfo") Then
+            If oComp2.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                If InStr(LCase(oComp2.getURL()), "kiemkracht-data") > 0 Then
+                    oDoc = oComp2
+                    Exit Do
+                End If
+            End If
+        End If
+    Loop
+    If IsNull(oDoc) Or IsEmpty(oDoc) Then
+        MsgBox "kiemkracht-data.ods is niet open. Open het bestand eerst.", 16, "Fout"
+        Exit Sub
+    End If
+    oSheets = oDoc.Sheets
+
+    ' JDBC-verbinding openen
+    Dim aProps(2) As New com.sun.star.beans.PropertyValue
+    aProps(0).Name  = "user"
+    aProps(0).Value = DB_USER
+    aProps(1).Name  = "password"
+    aProps(1).Value = DB_PASS
+    aProps(2).Name  = "JavaDriverClass"
+    aProps(2).Value = "org.postgresql.Driver"
+
+    On Error GoTo VerbindingsFout
+    Dim oManager As Object
+    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
+    oConn = oManager.getConnectionWithInfo(JDBC_URL, aProps())
+    On Error GoTo 0
+
+    ' Loop over elke tabel
+    For i = 0 To 10
+        Dim sNaam As String
+        sNaam = tabellen(i)
+
+        ' Tabblad aanmaken of leegmaken
+        If oSheets.hasByName(sNaam) Then
+            oSheet = oSheets.getByName(sNaam)
+            oSheet.clearContents(7)
+        Else
+            oSheets.insertNewByName(sNaam, oSheets.Count)
+            oSheet = oSheets.getByName(sNaam)
+        End If
+
+        ' Query uitvoeren
+        oStmt = oConn.createStatement()
+        oRS   = oStmt.executeQuery("SELECT * FROM " & sNaam)
+        oMeta = oRS.getMetaData()
+
+        Dim nKolommen As Integer
+        nKolommen = oMeta.getColumnCount()
+
+        ' Kolomhoofden schrijven (rij 0)
+        For col = 1 To nKolommen
+            oSheet.getCellByPosition(col - 1, 0).setString(oMeta.getColumnName(col))
+        Next col
+
+        ' Data schrijven
+        row = 1
+        Do While oRS.next()
+            For col = 1 To nKolommen
+                Dim sVal As String
+                sVal = oRS.getString(col)
+                If oRS.wasNull() Then
+                    oSheet.getCellByPosition(col - 1, row).setString("")
+                Else
+                    Dim nType As Integer
+                    nType = oMeta.getColumnType(col)
+                    If (nType >= 2 And nType <= 8) Then
+                        On Error Resume Next
+                        Dim dVal As Double
+                        dVal = CDbl(Replace(sVal, ".", ","))
+                        If Err = 0 Then
+                            oSheet.getCellByPosition(col - 1, row).setValue(dVal)
+                        Else
+                            oSheet.getCellByPosition(col - 1, row).setString(sVal)
+                        End If
+                        On Error GoTo 0
+                    Else
+                        oSheet.getCellByPosition(col - 1, row).setString(sVal)
+                    End If
+                End If
+            Next col
+            row = row + 1
+        Loop
+
+        oRS.close()
+        oStmt.close()
+
+    Next i
+
+    ' --- klanten_beheer: geselecteerde kolommen schrijven vanaf kolom F (index 5) ---
+    Dim oKB As Object
+    If oSheets.hasByName("klanten_beheer") Then
+        oKB = oSheets.getByName("klanten_beheer")
+    Else
+        oSheets.insertNewByName("klanten_beheer", oSheets.Count)
+        oKB = oSheets.getByName("klanten_beheer")
+    End If
+
+    Dim kbKol(15) As String
+    kbKol(0)  = "voornaam"         : kbKol(1)  = "familienaam"
+    kbKol(2)  = "voornaam2"        : kbKol(3)  = "familienaam2"
+    kbKol(4)  = "afhaalpunt_id"    : kbKol(5)  = "type"
+    kbKol(6)  = "formaat"          : kbKol(7)  = "email1"
+    kbKol(8)  = "email2"           : kbKol(9)  = "email3"
+    kbKol(10) = "email4"           : kbKol(11) = "telefoon"
+    kbKol(12) = "opmerkingen"      : kbKol(13) = "opmerkingen_volgend"
+    kbKol(14) = "opmerking_status" : kbKol(15) = "nooit_groenten"
+    Dim nKBKol As Integer : nKBKol = 16
+
+    ' Kolommen F-J (5-9) en L-V (11-21) wissen; K (10) bevat gebruikersformules
+    oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
+    oKB.getCellRangeByPosition(11, 0, 21, 10000).clearContents(7)
+
+    ' Kolomhoofden schrijven in rij 0
+    Dim kbIdx As Integer
+    For kbIdx = 0 To nKBKol - 1
+        oKB.getCellByPosition(KBKolom(kbIdx), 0).setString(kbKol(kbIdx))
+    Next kbIdx
+
+    ' Data schrijven (zelfde volgorde als klanten-tabblad, geen ORDER BY)
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT voornaam, familienaam, voornaam2, familienaam2, afhaalpunt_id, " & _
+        "type, formaat, email1, email2, email3, email4, telefoon, " & _
+        "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten " & _
+        "FROM klanten")
+    Dim kbRow As Integer
+    kbRow = 1
+    Do While oRS.next()
+        For kbIdx = 1 To nKBKol
+            Dim kbVal As String
+            kbVal = oRS.getString(kbIdx)
+            If oRS.wasNull() Then
+                oKB.getCellByPosition(KBKolom(kbIdx - 1), kbRow).setString("")
+            Else
+                oKB.getCellByPosition(KBKolom(kbIdx - 1), kbRow).setString(kbVal)
+            End If
+        Next kbIdx
+        kbRow = kbRow + 1
+    Loop
+    oRS.close()
+    oStmt.close()
+
+    oConn.close()
+    MsgBox "Alle tabellen geladen!", 64, "Klaar"
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    Exit Sub
+
+VerbindingsFout:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
+           "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
+
+End Sub
+
+Sub MaakWeekbestand()
+
+    ' =============================================
+    ' Kiemkracht - Weekbestand aanmaken
+    ' =============================================
+
+    ' Vastleggen vóór aanmaak nieuw document (ThisComponent wijzigt daarna)
+    Dim oCallerDoc As Object
+    oCallerDoc = ThisComponent
+
+    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
+    Wait 3000
+
+    Const JDBC_URL  As String = "jdbc:postgresql://localhost:5433/postgres"
+    Const DB_USER   As String = "postgres"
+    Const DB_PASS   As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
+    Const SAVE_MAP  As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
+
+    ' Weeknummer en datums: vanaf zaterdag → komende week, anders huidige week
+    Dim dVandaag   As Date
+    Dim iWeekdag   As Integer
+    Dim dMaandag   As Date
+    Dim dDonderdag As Date
+    Dim dVrijdag   As Date
+    Dim iWeek      As Integer
+    Dim iJaar      As Integer
+
+    dVandaag = Now()
+    iWeekdag = Weekday(dVandaag, 1)  ' 1=zo, 2=ma, ..., 6=vr, 7=za
+
+    If iWeekdag = 7 Then
+        dMaandag = dVandaag + 2   ' za → ma volgende week
+    ElseIf iWeekdag = 1 Then
+        dMaandag = dVandaag + 1   ' zo → ma volgende week
+    Else
+        dMaandag = dVandaag - (Weekday(dVandaag, 2) - 1)  ' ma t/m vr: huidige week
+    End If
+
+    dDonderdag = dMaandag + 3
+    dVrijdag   = dMaandag + 4
+    iWeek = DatePart("ww", dDonderdag, 2, 2)
+    iJaar = Year(dDonderdag)
+
+    ' Pare of onpare week
+    Dim sPareWeek As String
+    If (iWeek Mod 2) = 0 Then
+        sPareWeek = "pare week"
+    Else
+        sPareWeek = "onpare week"
+    End If
+
+    ' Maandnaam
+    Dim saMaanden(12) As String
+    saMaanden(1)  = "januari"  : saMaanden(2)  = "februari"
+    saMaanden(3)  = "maart"    : saMaanden(4)  = "april"
+    saMaanden(5)  = "mei"      : saMaanden(6)  = "juni"
+    saMaanden(7)  = "juli"     : saMaanden(8)  = "augustus"
+    saMaanden(9)  = "september": saMaanden(10) = "oktober"
+    saMaanden(11) = "november" : saMaanden(12) = "december"
+    Dim sMaand As String
+    sMaand = saMaanden(Month(dDonderdag))
+
+    ' Datum in formaat YYMMDD
+    Dim sDatumKort As String
+    sDatumKort = Right(CStr(iJaar), 2) & _
+                 Right("0" & Month(dDonderdag), 2) & _
+                 Right("0" & Day(dDonderdag), 2)
+
+    Dim sBestand As String
+    sBestand = SAVE_MAP & "week_" & iWeek & "_" & iJaar & ".ods"
+
+    ' JDBC-verbinding
+    Dim aProps(2) As New com.sun.star.beans.PropertyValue
+    aProps(0).Name  = "user"     : aProps(0).Value = DB_USER
+    aProps(1).Name  = "password" : aProps(1).Value = DB_PASS
+    aProps(2).Name  = "JavaDriverClass"
+    aProps(2).Value = "org.postgresql.Driver"
+
+    On Error GoTo VerbindingsFout
+    Dim oManager As Object
+    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
+    Dim oConn As Object
+    oConn = oManager.getConnectionWithInfo(JDBC_URL, aProps())
+    On Error GoTo 0
+
+    Dim oStmt As Object
+    Dim oRS   As Object
+
+    ' --- Stap 0: afhaalpunten volgorde (donderdag voor vrijdag, dan id) ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT naam, dag_klaarmaken FROM afhaalpunten " & _
+        "ORDER BY dag_klaarmaken ASC, id_intern ASC")
+    Dim afhNaam(20) As String
+    Dim afhDag(20)  As String
+    Dim nAfh As Integer
+    nAfh = 0
+    Do While oRS.next()
+        afhNaam(nAfh) = oRS.getString(1)
+        afhDag(nAfh)  = oRS.getString(2)
+        nAfh = nAfh + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 1: unieke groenten deze week (kolomhoofden) ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT naam, eenheid FROM groenten " & _
+        "WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & _
+        " GROUP BY naam, eenheid" & _
+        " ORDER BY MIN(volgorde), MIN(id)")
+    Dim groentNaam(50) As String
+    Dim groentEenh(50) As String
+    Dim nGroenten As Integer
+    nGroenten = 0
+    Do While oRS.next()
+        groentNaam(nGroenten) = oRS.getString(1)
+        groentEenh(nGroenten) = oRS.getString(2)
+        nGroenten = nGroenten + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 2: unieke weglatingen deze week ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT DISTINCT bw.groente_naam FROM bestelling_weglatingen bw " & _
+        "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & _
+        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
+        " ORDER BY bw.groente_naam")
+    Dim wegNaam(20) As String
+    Dim nWeg As Integer
+    nWeg = 0
+    Do While oRS.next()
+        wegNaam(nWeg) = oRS.getString(1)
+        nWeg = nWeg + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 3: bestellingen + abonnees zonder bestelling deze week ---
+    Dim sPareFilter As String
+    If (iWeek Mod 2) = 0 Then
+        sPareFilter = "k.type IN ('abonnee', 'abonnee-pare-week')"
+    Else
+        sPareFilter = "k.type IN ('abonnee', 'abonnee-onpare-week')"
+    End If
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT b.id, b.voornaam, b.familienaam, b.klant_email, " & _
+        "b.afhaalpunt, b.leverdag, b.pakket, b.pakket_inhoud, " & _
+        "b.abonnement_wijziging, b.vragen_opmerkingen, " & _
+        "COALESCE(k.klant_type,'') AS klant_type, " & _
+        "COALESCE(k.formaat,'') AS formaat, " & _
+        "COALESCE(k.telefoon,'') AS telefoon, " & _
+        "COALESCE(k.aanspreking,'') AS aanspreking, " & _
+        "COALESCE(k.type,'') AS type, " & _
+        "COALESCE(bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
+        "COALESCE(bap.id_intern, 9999) AS id_intern_sort " & _
+        "FROM bestellingen b " & _
+        "LEFT JOIN klanten k ON k.email1 = b.klant_email " & _
+        "LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt " & _
+        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
+        " AND b.klant_email NOT IN (" & _
+        "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
+        " UNION ALL " & _
+        "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
+        "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
+        "CASE k.formaat WHEN 'klein' THEN 'klein pakket' " & _
+        "WHEN 'groot' THEN 'groot pakket' " & _
+        "WHEN 'extra-groot' THEN 'extra groot pakket' " & _
+        "WHEN 'mini' THEN 'mini pakket' ELSE '' END, " & _
+        "'', '', '', " & _
+        "COALESCE(k.klant_type,''), k.formaat, COALESCE(k.telefoon,''), COALESCE(k.aanspreking,''), " & _
+        "COALESCE(k.type,''), " & _
+        "COALESCE(ap.dag_klaarmaken,''), " & _
+        "COALESCE(ap.id_intern, 9999) " & _
+        "FROM klanten k " & _
+        "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+        "WHERE " & sPareFilter & _
+        " AND k.email1 NOT IN (" & _
+        "SELECT klant_email FROM bestellingen WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & ") " & _
+        " AND k.email1 NOT IN (" & _
+        "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
+        " AND NOT EXISTS (" & _
+        "SELECT 1 FROM annulaties ann WHERE ann.klant_email = k.email1 AND ann.jaar = " & iJaar & _
+        " AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & ") " & _
+        " ORDER BY leverdag ASC, id_intern_sort ASC, familienaam ASC, voornaam ASC")
+
+    ' Bestellingen in arrays
+    Dim bId(500)      As Long
+    Dim bVoor(500)    As String
+    Dim bFam(500)     As String
+    Dim bEmail(500)   As String
+    Dim bAfh(500)     As String
+    Dim bDag(500)     As String
+    Dim bPakket(500)  As String
+    Dim bInhoud(500)  As String
+    Dim bWijzig(500)  As String
+    Dim bOpm(500)     As String
+    Dim bType(500)    As String
+    Dim bFormaat(500) As String
+    Dim bTel(500)     As String
+    Dim bTyp(500)     As String
+    Dim bKlaarDag(500) As String
+    Dim bSamenv(500)  As String
+    Dim nBest As Integer
+    nBest = 0
+
+    Do While oRS.next()
+        bId(nBest)      = CLng(oRS.getString(1))
+        bVoor(nBest)    = oRS.getString(2)
+        bFam(nBest)     = oRS.getString(3)
+        bEmail(nBest)   = oRS.getString(4)
+        bAfh(nBest)     = oRS.getString(5)
+        bDag(nBest)     = oRS.getString(6)
+        bPakket(nBest)  = oRS.getString(7)
+        bInhoud(nBest)  = oRS.getString(8)
+        bWijzig(nBest)  = oRS.getString(9)
+        bOpm(nBest)     = oRS.getString(10)
+        bType(nBest)    = oRS.getString(11)
+        bFormaat(nBest) = oRS.getString(12)
+        bTel(nBest)     = oRS.getString(13)
+        bTyp(nBest)      = oRS.getString(15)
+        bKlaarDag(nBest) = oRS.getString(16)
+        nBest = nBest + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 4: vooruitbestellingen voor stop/annulatie/start-kolommen ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT klant_email, week_bestelling, week_start_abonnement " & _
+        "FROM vooruitbestellingen " & _
+        "WHERE jaar = " & iJaar & " AND week_bestelling >= " & iWeek)
+    Dim vbEmail(200) As String
+    Dim vbWeek(200)  As Integer
+    Dim vbStart(200) As Integer
+    Dim nVB As Integer
+    nVB = 0
+    Do While oRS.next()
+        vbEmail(nVB) = oRS.getString(1)
+        vbWeek(nVB)  = CInt(oRS.getString(2))
+        Dim sStart As String
+        sStart = oRS.getString(3)
+        If oRS.wasNull() Or sStart = "" Then
+            vbStart(nVB) = 0
+        Else
+            vbStart(nVB) = CInt(sStart)
+        End If
+        nVB = nVB + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' Annulaties
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT klant_email, week_annulatie, week_stopzetten_abonnement " & _
+        "FROM annulaties " & _
+        "WHERE jaar = " & iJaar & " AND week_annulatie >= " & iWeek)
+    Dim annEmail(200)  As String
+    Dim annWeek(200)   As Integer
+    Dim annStop(200)   As Integer
+    Dim nAnn As Integer
+    nAnn = 0
+    Do While oRS.next()
+        annEmail(nAnn) = oRS.getString(1)
+        annWeek(nAnn)  = CInt(oRS.getString(2))
+        Dim sStop As String
+        sStop = oRS.getString(3)
+        If oRS.wasNull() Or sStop = "" Then
+            annStop(nAnn) = 0
+        Else
+            annStop(nAnn) = CInt(sStop)
+        End If
+        nAnn = nAnn + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 5: hoeveelheden losse groenten per bestelling ---
+    Dim bGroent(500, 50) As Double
+    Dim b As Integer, g As Integer
+    For b = 0 To nBest - 1
+        For g = 0 To nGroenten - 1
+            bGroent(b, g) = 0
+        Next g
+    Next b
+
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT br.bestelling_id, br.groente_naam, br.aantal " & _
+        "FROM bestelregels br " & _
+        "INNER JOIN bestellingen bst ON bst.id = br.bestelling_id " & _
+        "WHERE bst.weeknummer = " & iWeek & " AND bst.jaar = " & iJaar)
+    Do While oRS.next()
+        Dim lBId As Long
+        lBId = CLng(oRS.getString(1))
+        Dim sGr As String
+        sGr = oRS.getString(2)
+        Dim dAant As Double
+        dAant = CDbl(Replace(oRS.getString(3), ".", ","))
+        For b = 0 To nBest - 1
+            If bId(b) = lBId Then
+                For g = 0 To nGroenten - 1
+                    If groentNaam(g) = sGr Then
+                        bGroent(b, g) = dAant
+                        Exit For
+                    End If
+                Next g
+                Exit For
+            End If
+        Next b
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 6: weglatingen per bestelling ---
+    Dim bWeg(500, 20) As Boolean
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT bw.bestelling_id, bw.groente_naam " & _
+        "FROM bestelling_weglatingen bw " & _
+        "INNER JOIN bestellingen bst ON bst.id = bw.bestelling_id " & _
+        "WHERE bst.weeknummer = " & iWeek & " AND bst.jaar = " & iJaar)
+    Dim w As Integer
+    Do While oRS.next()
+        lBId = CLng(oRS.getString(1))
+        sGr  = oRS.getString(2)
+        For b = 0 To nBest - 1
+            If bId(b) = lBId Then
+                For w = 0 To nWeg - 1
+                    If wegNaam(w) = sGr Then
+                        bWeg(b, w) = True
+                        Exit For
+                    End If
+                Next w
+                Exit For
+            End If
+        Next b
+    Loop
+    oRS.close() : oStmt.close()
+    oConn.close()
+
+    ' =============================================
+    ' BESTAND AANMAKEN EN WERKBLAD OPBOUWEN
+    ' =============================================
+
+    Dim oDesktop  As Object
+    Dim oNieuwDoc As Object
+    Dim oSheet    As Object
+
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+    Dim aLaadProps(0) As New com.sun.star.beans.PropertyValue
+    aLaadProps(0).Name  = "Hidden"
+    aLaadProps(0).Value = False
+    oNieuwDoc = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aLaadProps())
+    oSheet = oNieuwDoc.Sheets.getByIndex(0)
+    oSheet.Name = "Week " & iWeek & " - " & iJaar
+
+    ' Kolomindices (0-based)
+    Const cNaam     = 0   ' voornaam + familienaam
+    Const cAfh      = 1   ' afhaalpunt
+    Const cKlaarDag = 2   ' dag klaarmaken (afhaalpunt)
+    Const cTyp      = 3   ' type (klant)
+    Const cFormaat  = 4   ' formaat
+    Const cOpm      = 5   ' vragen_opmerkingen
+    Const cEmail    = 6   ' email
+    Const cTel      = 7   ' telefoon
+    Const cVoor     = 8   ' voornaam
+    Const cType     = 9   ' klant_type
+    Const cDag      = 10  ' leverdag (verborgen)
+    Const cWijzig   = 11  ' abonnement_wijziging
+    Const cStop     = 12  ' week_stopzetten_abonnement
+    Const cAnn      = 13  ' week_annulatie
+    Const cStart    = 14  ' week_start_abonnement
+    Const cWBest    = 15  ' week_bestelling
+    Const cDatum    = 16  ' datum (YYMMDD)
+    Const cKG       = 17  ' Klein pakket
+    Const cGG       = 18  ' Groot pakket
+    Const cEGG      = 19  ' Extra groot pakket
+    Const cMINI     = 20  ' Mini pakket
+    Const cSamenv      = 21             ' samenvatting (kolom V)
+    Const nGroentSlots = 24             ' altijd 24 groente-kolommen reserveren
+    Dim   cGroent0 As Integer
+    cGroent0 = 22                       ' eerste groente-kolom (W)
+    Dim   cAnder  As Integer
+    cAnder  = cGroent0 + nGroentSlots  ' "ander" kolom (AS = 44)
+    Dim   cAangep As Integer
+    cAangep = cAnder  + 1              ' aangepast pakket (AT = 45)
+    Dim   cGeen   As Integer
+    cGeen   = cAangep + 1              ' synthese weglatingen (AU = 46)
+    Dim   cWeg0   As Integer
+    cWeg0   = cGeen   + 1              ' eerste weglating-kolom (AV = 47)
+
+    ' Helper: cel ophalen
+    ' (LibreOffice Basic heeft geen inline functies, werken met oSheet direct)
+
+    ' --- RIJ 0: metadata ---
+    oSheet.getCellByPosition(0, 0).setString(sMaand)
+    oSheet.getCellByPosition(1, 0).setString("Week " & iWeek)
+    oSheet.getCellByPosition(2, 0).setString(sDatumKort)
+    oSheet.getCellByPosition(3, 0).setString(sPareWeek)
+
+    ' --- RIJ 1: kolomhoofden ---
+    Dim r As Integer
+    r = 1
+    oSheet.getCellByPosition(cNaam,    r).setString("voornaam + familienaam")
+    oSheet.getCellByPosition(cAfh,     r).setString("afhaalpunt")
+    oSheet.getCellByPosition(cKlaarDag,r).setString("dag klaarmaken")
+    oSheet.getCellByPosition(cDag,     r).setString("leverdag")
+    oSheet.getCellByPosition(cTyp,     r).setString("type")
+    oSheet.getCellByPosition(cFormaat,r).setString("formaat")
+    oSheet.getCellByPosition(cVoor,   r).setString("voornaam")
+    oSheet.getCellByPosition(cTel,    r).setString("telefoon")
+    oSheet.getCellByPosition(cEmail,  r).setString("email")
+    oSheet.getCellByPosition(cOpm,    r).setString("vragen_opmerkingen")
+    oSheet.getCellByPosition(cWijzig, r).setString("abonnement_wijziging")
+    oSheet.getCellByPosition(cStop,   r).setString("week_stopzetten_abonnement")
+    oSheet.getCellByPosition(cAnn,    r).setString("week_annulatie")
+    oSheet.getCellByPosition(cStart,  r).setString("week_start_abonnement")
+    oSheet.getCellByPosition(cWBest,  r).setString("week_bestelling")
+    oSheet.getCellByPosition(cDatum,  r).setString(sDatumKort)
+    oSheet.getCellByPosition(cKG,     r).setString("KG")
+    oSheet.getCellByPosition(cGG,     r).setString("GG")
+    oSheet.getCellByPosition(cEGG,    r).setString("EGG")
+    oSheet.getCellByPosition(cMINI,   r).setString("MINI")
+    oSheet.getCellByPosition(cSamenv, r).setString("samenvatting")
+    For g = 0 To nGroenten - 1
+        oSheet.getCellByPosition(cGroent0 + g, r).setString(groentNaam(g))
+    Next g
+    oSheet.getCellByPosition(cAnder,  r).setString("ander")
+    oSheet.getCellByPosition(cAangep, r).setString("aangepast pakket")
+    oSheet.getCellByPosition(cGeen,   r).setString("geen (synthese)")
+    For w = 0 To nWeg - 1
+        oSheet.getCellByPosition(cWeg0 + w, r).setString("geen")
+    Next w
+
+    ' --- RIJ 2: eenheden ---
+    r = 2
+    oSheet.getCellByPosition(cKG,     r).setString("KG")
+    oSheet.getCellByPosition(cGG,     r).setString("GG")
+    oSheet.getCellByPosition(cEGG,    r).setString("EGG")
+    oSheet.getCellByPosition(cMINI,   r).setString("MINI")
+    For g = 0 To nGroenten - 1
+        oSheet.getCellByPosition(cGroent0 + g, r).setString(groentEenh(g))
+    Next g
+    For w = 0 To nWeg - 1
+        oSheet.getCellByPosition(cWeg0 + w, r).setString(wegNaam(w))
+    Next w
+
+    ' --- Helper functie: pakket tellen ---
+    ' Tel aantallen per pakkettype voor een reeks bestellingen (van index iVan tot iTot-1)
+    ' Geeft terug in array: (0)=KG (1)=GG (2)=EGG (3)=MINI
+
+    ' --- KLANTDATA: gegroepeerd per leverdag > afhaalpunt ---
+    r = 6
+    Dim sHuidigAfh  As String
+    Dim sHuidigDag  As String
+    Dim iAfhStart   As Integer  ' eerste rij van huidig afhaalpunt (voor subtotaal)
+    sHuidigAfh = ""
+    sHuidigDag = ""
+
+    ' Subtotaal-tellers voor huidig afhaalpunt
+    Dim afKG As Integer, afGG As Integer, afEGG As Integer, afMINI As Integer
+    Dim afGroent(50) As Double
+
+    For b = 0 To nBest - 1
+
+        ' Nieuwe leverdag of nieuw afhaalpunt: eerst subtotaalrij vorige groep schrijven
+        If sHuidigAfh <> "" And (bAfh(b) <> sHuidigAfh Or bDag(b) <> sHuidigDag) Then
+            ' Witregel tussen groepen
+            r = r + 1
+            ' Reset tellers
+            afKG = 0 : afGG = 0 : afEGG = 0 : afMINI = 0
+            For g = 0 To nGroenten - 1 : afGroent(g) = 0 : Next g
+        End If
+
+        ' Nieuwe koprijlijn als afhaalpunt of dag verandert
+        If bAfh(b) <> sHuidigAfh Or bDag(b) <> sHuidigDag Then
+            oSheet.getCellByPosition(cNaam,  r).setString(bAfh(b))
+            oSheet.getCellByPosition(cAfh,   r).setString("afhaalpunt/dag")
+            oSheet.getCellByPosition(cDatum, r).setFormula("=A" & (r + 1))
+            r = r + 1
+            sHuidigAfh = bAfh(b)
+            sHuidigDag = bDag(b)
+            afKG = 0 : afGG = 0 : afEGG = 0 : afMINI = 0
+            For g = 0 To nGroenten - 1 : afGroent(g) = 0 : Next g
+        End If
+
+        ' Klantdata schrijven
+        oSheet.getCellByPosition(cDatum,  r).setFormula("=A" & (r + 1))
+        oSheet.getCellByPosition(cNaam,    r).setString(bVoor(b) & " " & bFam(b))
+        oSheet.getCellByPosition(cAfh,     r).setString(bAfh(b))
+        oSheet.getCellByPosition(cKlaarDag,r).setString(bKlaarDag(b))
+        oSheet.getCellByPosition(cDag,     r).setString(bDag(b))
+        oSheet.getCellByPosition(cTyp,     r).setString(bTyp(b))
+        oSheet.getCellByPosition(cFormaat,r).setString(bFormaat(b))
+        oSheet.getCellByPosition(cType,   r).setString(bType(b))
+        oSheet.getCellByPosition(cVoor,   r).setString(bVoor(b))
+        oSheet.getCellByPosition(cTel,    r).setString(bTel(b))
+        oSheet.getCellByPosition(cEmail,  r).setString(bEmail(b))
+        oSheet.getCellByPosition(cOpm,    r).setString(bOpm(b))
+
+        ' abonnement_wijziging alleen als relevant
+        If Trim(bWijzig(b)) <> "" Then
+            oSheet.getCellByPosition(cWijzig, r).setString(bWijzig(b))
+        End If
+
+        ' Vooruitbestellingen: week_start en week_bestelling
+        Dim vi As Integer
+        For vi = 0 To nVB - 1
+            If vbEmail(vi) = bEmail(b) Then
+                If vbStart(vi) > 0 Then
+                    oSheet.getCellByPosition(cStart, r).setValue(vbStart(vi))
+                End If
+                oSheet.getCellByPosition(cWBest, r).setValue(vbWeek(vi))
+            End If
+        Next vi
+
+        ' Annulaties: week_annulatie en week_stop
+        Dim ai As Integer
+        For ai = 0 To nAnn - 1
+            If annEmail(ai) = bEmail(b) Then
+                If annWeek(ai) > 0 Then
+                    oSheet.getCellByPosition(cAnn,  r).setValue(annWeek(ai))
+                End If
+                If annStop(ai) > 0 Then
+                    oSheet.getCellByPosition(cStop, r).setValue(annStop(ai))
+                End If
+            End If
+        Next ai
+
+        ' Pakket tellen (voor subtotaal afhaalpunt)
+        Select Case LCase(bPakket(b))
+            Case "klein pakket"
+                oSheet.getCellByPosition(cKG, r).setValue(1)
+                afKG = afKG + 1
+            Case "groot pakket"
+                oSheet.getCellByPosition(cGG, r).setValue(1)
+                afGG = afGG + 1
+            Case "extra groot pakket"
+                oSheet.getCellByPosition(cEGG, r).setValue(1)
+                afEGG = afEGG + 1
+            Case "mini pakket"
+                oSheet.getCellByPosition(cMINI, r).setValue(1)
+                afMINI = afMINI + 1
+        End Select
+
+        ' Aangepast pakket: pakket_inhoud alleen als ingevuld
+        If Trim(bInhoud(b)) <> "" Then
+            oSheet.getCellByPosition(cAangep, r).setString(bInhoud(b))
+        End If
+
+        ' Losse groenten
+        For g = 0 To nGroenten - 1
+            If bGroent(b, g) > 0 Then
+                oSheet.getCellByPosition(cGroent0 + g, r).setValue(bGroent(b, g))
+                afGroent(g) = afGroent(g) + bGroent(b, g)
+            End If
+        Next g
+
+        ' Weglatingen
+        For w = 0 To nWeg - 1
+            If bWeg(b, w) Then
+                oSheet.getCellByPosition(cWeg0 + w, r).setString(wegNaam(w))
+            End If
+        Next w
+
+        ' Synthese weglatingen (AU)
+        Dim sGeen As String
+        sGeen = ""
+        For w = 0 To nWeg - 1
+            If bWeg(b, w) Then
+                If sGeen <> "" Then sGeen = sGeen & Chr(10)
+                sGeen = sGeen & "Geen: " & wegNaam(w)
+            End If
+        Next w
+        If sGeen <> "" Then
+            Dim oCelGeen As Object
+            oCelGeen = oSheet.getCellByPosition(cGeen, r)
+            oCelGeen.setString(sGeen)
+            oCelGeen.IsTextWrapped = True
+        End If
+
+        ' Samenvatting
+        Dim sPakketKort As String
+        Select Case LCase(bPakket(b))
+            Case "klein pakket"       : sPakketKort = "klein"
+            Case "groot pakket"       : sPakketKort = "groot"
+            Case "extra groot pakket" : sPakketKort = "extra groot"
+            Case "mini pakket"        : sPakketKort = "mini"
+            Case Else                 : sPakketKort = "geen pakket"
+        End Select
+        Dim sSamenv As String
+        sSamenv = bVoor(b) & " " & bFam(b) & " (" & bAfh(b) & "): " & sPakketKort
+        For g = 0 To nGroenten - 1
+            If bGroent(b, g) > 0 Then
+                sSamenv = sSamenv & Chr(10) & groentNaam(g) & ": " & bGroent(b, g) & " " & groentEenh(g)
+            End If
+        Next g
+        For w = 0 To nWeg - 1
+            If bWeg(b, w) Then
+                sSamenv = sSamenv & Chr(10) & "Geen: " & wegNaam(w)
+            End If
+        Next w
+        Dim oCelSamenv As Object
+        oCelSamenv = oSheet.getCellByPosition(cSamenv, r)
+        oCelSamenv.setString(sSamenv)
+        oCelSamenv.IsTextWrapped = True
+        bSamenv(b) = sSamenv
+
+        r = r + 1
+    Next b
+
+    ' Witregel na laatste groep
+    If sHuidigAfh <> "" Then r = r + 1
+
+    ' --- SAMENVATTINGSRIJEN (formules in rijen 4-6, geschreven na de loop zodat het rijbereik bekend is) ---
+    Dim iLaatste As Integer
+    iLaatste = r  ' = 1-indexed spreadsheet rij van laatste datarij
+
+    Dim sDatDo As String
+    Dim sDatVr As String
+    sDatDo = "Donderdag " & Day(dDonderdag) & " " & saMaanden(Month(dDonderdag))
+    sDatVr = "Vrijdag "   & Day(dVrijdag)   & " " & saMaanden(Month(dVrijdag))
+
+    Dim ic As Integer
+    Dim sK As String
+
+    ' Totaalrij (code rij 3 = spreadsheet rij 4)
+    oSheet.getCellByPosition(cDatum, 3).setString("Totaal")
+    For ic = cKG To cMINI
+        sK = KolomLetter(ic)
+        oSheet.getCellByPosition(ic, 3).setFormula( _
+            "=SUM(" & sK & "7:" & sK & iLaatste & ")")
+    Next ic
+    For ic = cGroent0 To cGroent0 + nGroentSlots - 1
+        sK = KolomLetter(ic)
+        oSheet.getCellByPosition(ic, 3).setFormula( _
+            "=SUM(" & sK & "7:" & sK & iLaatste & ")")
+    Next ic
+
+    ' Donderdagrij (code rij 4 = spreadsheet rij 5) — SUMIF op kolom C (dag_klaarmaken)
+    oSheet.getCellByPosition(cDatum, 4).setString(sDatDo)
+    For ic = cKG To cMINI
+        sK = KolomLetter(ic)
+        oSheet.getCellByPosition(ic, 4).setFormula( _
+            "=SUMIF($C$7:$C$" & iLaatste & ";""donderdag"";" & sK & "7:" & sK & iLaatste & ")")
+    Next ic
+    For ic = cGroent0 To cGroent0 + nGroentSlots - 1
+        sK = KolomLetter(ic)
+        oSheet.getCellByPosition(ic, 4).setFormula( _
+            "=SUMIF($C$7:$C$" & iLaatste & ";""donderdag"";" & sK & "7:" & sK & iLaatste & ")")
+    Next ic
+
+    ' Vrijdagrij (code rij 5 = spreadsheet rij 6)
+    oSheet.getCellByPosition(cDatum, 5).setString(sDatVr)
+    For ic = cKG To cMINI
+        sK = KolomLetter(ic)
+        oSheet.getCellByPosition(ic, 5).setFormula( _
+            "=SUMIF($C$7:$C$" & iLaatste & ";""vrijdag"";" & sK & "7:" & sK & iLaatste & ")")
+    Next ic
+    For ic = cGroent0 To cGroent0 + nGroentSlots - 1
+        sK = KolomLetter(ic)
+        oSheet.getCellByPosition(ic, 5).setFormula( _
+            "=SUMIF($C$7:$C$" & iLaatste & ";""vrijdag"";" & sK & "7:" & sK & iLaatste & ")")
+    Next ic
+
+    ' =============================================
+    ' OPMAAK TOEPASSEN
+    ' =============================================
+
+    ' Helper: pas celstijl toe
+    ' Kleuren als Long: RGB(r,g,b) of &H00RRGGBB
+    Dim nTotRijen As Integer
+    nTotRijen = r + 1  ' r is de laatste geschreven rij
+
+    ' --- Kolombreedtes instellen ---
+    ' Vaste kolommen (0-21)
+    Dim aBreedtes(21) As Long
+    aBreedtes(0)  = 4219  ' naam
+    aBreedtes(1)  = 2800  ' afhaalpunt
+    aBreedtes(2)  = 1800  ' dag klaarmaken
+    aBreedtes(3)  = 3250  ' type
+    aBreedtes(4)  = 1900  ' formaat
+    aBreedtes(5)  = 7500  ' opmerkingen
+    aBreedtes(6)  = 5500  ' email
+    aBreedtes(7)  = 2500  ' telefoon
+    aBreedtes(8)  = 1850  ' voornaam
+    aBreedtes(9)  = 2205  ' klant_type
+    aBreedtes(10) = 1800  ' leverdag (verborgen)
+    aBreedtes(11) = 993   ' abonnement_wijziging
+    aBreedtes(12) = 993   ' week_stop
+    aBreedtes(13) = 993   ' week_ann
+    aBreedtes(14) = 993   ' week_start
+    aBreedtes(15) = 993   ' week_best
+    aBreedtes(16) = 4219  ' datum/totaal kolom
+    aBreedtes(17) = 700   ' KG
+    aBreedtes(18) = 700   ' GG
+    aBreedtes(19) = 700   ' EGG
+    aBreedtes(20) = 700   ' MINI
+    aBreedtes(21) = 10000 ' samenvatting (kolom V)
+
+    Dim ci As Integer
+    For ci = 0 To 21
+        oSheet.Columns.getByIndex(ci).Width = aBreedtes(ci)
+    Next ci
+    ' Losse groenten: altijd 24 slots à 1259 elk
+    For ci = 0 To nGroentSlots - 1
+        oSheet.Columns.getByIndex(cGroent0 + ci).Width = 1259
+    Next ci
+    oSheet.Columns.getByIndex(cAnder).Width  = 1259   ' ander
+    oSheet.Columns.getByIndex(cAangep).Width = 3344   ' aangepast pakket
+    oSheet.Columns.getByIndex(cGeen).Width   = 5000   ' synthese weglatingen
+    ' Weglatingen: 2260 elk
+    For ci = 0 To nWeg - 1
+        oSheet.Columns.getByIndex(cWeg0 + ci).Width = 2260
+    Next ci
+
+    ' Kolommen I, J en K verbergen
+    oSheet.Columns.getByIndex(cVoor).IsVisible    = False
+    oSheet.Columns.getByIndex(cType).IsVisible    = False
+    oSheet.Columns.getByIndex(cDag).IsVisible     = False
+
+    ' --- Rijhoogtes instellen ---
+    oSheet.Rows.getByIndex(0).Height = 960   ' rij 0: metadata
+    oSheet.Rows.getByIndex(1).OptimalHeight = False
+    oSheet.Rows.getByIndex(1).Height = 1200
+    Dim ri As Integer
+    oSheet.Rows.getByIndex(2).Height = 1640
+    For ri = 3 To 5
+        oSheet.Rows.getByIndex(ri).Height = 450
+    Next ri
+    For ri = 6 To nTotRijen
+        oSheet.Rows.getByIndex(ri).OptimalHeight = True
+    Next ri
+
+    ' --- Kleuren en lettertype per zone ---
+    ' Kleuren als Long (LibreOffice gebruikt BGR intern, maar RGB() werkt correct)
+    Dim clCyan     As Long : clCyan     = RGB(153, 255, 255)  ' #99FFFF - metadata rij
+    Dim clGrijs    As Long : clGrijs    = RGB(204, 204, 204)  ' #CCCCCC - kolomhoofden
+    Dim clGeel     As Long : clGeel     = RGB(255, 255, 153)  ' #FFFF99 - afhaalpunt/groenten
+    Dim clDDDDDD   As Long : clDDDDDD   = RGB(221, 221, 221)  ' #DDDDDD - totaalrijen
+    Dim clWit      As Long : clWit      = RGB(255, 255, 255)  ' #FFFFFF - klantdata
+    Dim clOranje   As Long : clOranje   = RGB(255, 128,   0)  ' #FF8000 - weglatingen
+    Dim clGoud     As Long : clGoud     = RGB(204, 153,   0)  ' #CC9900 - datumcel rij1
+    Dim clGroenKG  As Long : clGroenKG  = RGB(204, 255, 153)  ' #CCFF99 - KG
+    Dim clBlauwGG  As Long : clBlauwGG  = RGB(153, 204, 255)  ' #99CCFF - GG
+    Dim clGrijsEGG As Long : clGrijsEGG = RGB(178, 178, 178)  ' #B2B2B2 - EGG
+    Dim clRoosM    As Long : clRoosM    = RGB(255, 153, 204)  ' #FF99CC - MINI
+    Dim clGrijsTekst As Long : clGrijsTekst = RGB(128, 128, 128)
+
+    ' Hulpfunctie: stijl toepassen op een cel
+    ' (inline, LibreOffice Basic heeft geen echte functies met objecten)
+
+    Dim oC As Object
+    Dim cIdx As Integer
+    Dim rIdx As Integer
+
+    ' --- RIJ 0: metadata (#99FFFF, wit tekst, vet, 16pt, midden/midden) ---
+    For cIdx = 0 To cWeg0 + nWeg - 1
+        oC = oSheet.getCellByPosition(cIdx, 0)
+        oC.CellBackColor   = clCyan
+        oC.CharWeight      = com.sun.star.awt.FontWeight.BOLD
+        oC.CharHeight      = 16
+        oC.HoriJustify     = com.sun.star.table.CellHoriJustify.CENTER
+        oC.VertJustify     = com.sun.star.table.CellVertJustify2.CENTER
+        oC.IsTextWrapped   = True
+    Next cIdx
+    ' Kolommen 0-3: iets kleiner lettertype
+    For cIdx = 0 To 3
+        oSheet.getCellByPosition(cIdx, 0).CharHeight = 14
+    Next cIdx
+
+    ' --- RIJ 1: kolomhoofden (#CCCCCC, vet, 10pt, links/boven, tekstomloop) ---
+    For cIdx = 0 To cWeg0 + nWeg - 1
+        oC = oSheet.getCellByPosition(cIdx, 1)
+        oC.CellBackColor = clGrijs
+        oC.CharWeight    = com.sun.star.awt.FontWeight.BOLD
+        oC.CharHeight    = 10
+        oC.HoriJustify   = com.sun.star.table.CellHoriJustify.LEFT
+        oC.VertJustify   = com.sun.star.table.CellVertJustify2.TOP
+        oC.IsTextWrapped = True
+    Next cIdx
+    ' Datumkolom rij1: goud, 16pt, midden
+    oC = oSheet.getCellByPosition(cDatum, 1)
+    oC.CellBackColor = clGoud
+    oC.CharHeight    = 16
+    oC.HoriJustify   = com.sun.star.table.CellHoriJustify.CENTER
+    oC.VertJustify   = com.sun.star.table.CellVertJustify2.CENTER
+    ' KG/GG/EGG/MINI rij1: eigen kleuren, links/boven
+    oSheet.getCellByPosition(cKG,   1).CellBackColor = clGroenKG
+    oSheet.getCellByPosition(cGG,   1).CellBackColor = clBlauwGG
+    oSheet.getCellByPosition(cEGG,  1).CellBackColor = clGrijsEGG
+    oSheet.getCellByPosition(cMINI, 1).CellBackColor = clRoosM
+    For cIdx = cKG To cMINI
+        oSheet.getCellByPosition(cIdx, 1).HoriJustify = com.sun.star.table.CellHoriJustify.LEFT
+    Next cIdx
+    ' Groenten + ander rij1: #99FFFF, links/boven
+    For cIdx = cGroent0 To cAnder
+        oC = oSheet.getCellByPosition(cIdx, 1)
+        oC.CellBackColor = clCyan
+        oC.HoriJustify   = com.sun.star.table.CellHoriJustify.LEFT
+    Next cIdx
+    ' Synthese weglatingen rij1: oranje
+    oSheet.getCellByPosition(cGeen, 1).CellBackColor = clOranje
+    ' Weglatingen rij1: oranje
+    For cIdx = cWeg0 To cWeg0 + nWeg - 1
+        oSheet.getCellByPosition(cIdx, 1).CellBackColor = clOranje
+    Next cIdx
+    ' Samenvatting rij1: grijs kolomhoofd
+    Dim oCsamHoofd As Object
+    oCsamHoofd = oSheet.getCellByPosition(cSamenv, 1)
+    oCsamHoofd.CellBackColor = clGrijs
+    oCsamHoofd.CharWeight    = com.sun.star.awt.FontWeight.BOLD
+    oCsamHoofd.CharHeight    = 10
+    oCsamHoofd.HoriJustify   = com.sun.star.table.CellHoriJustify.LEFT
+    oCsamHoofd.VertJustify   = com.sun.star.table.CellVertJustify2.TOP
+    oCsamHoofd.IsTextWrapped = True
+
+    ' --- RIJ 2: eenheden (#DDDDDD voor datum/pakket, #99FFFF voor groenten) ---
+    For cIdx = 0 To cWeg0 + nWeg - 1
+        oC = oSheet.getCellByPosition(cIdx, 2)
+        oC.CharWeight    = com.sun.star.awt.FontWeight.BOLD
+        oC.CharHeight    = 10
+        oC.IsTextWrapped = True
+        oC.VertJustify   = com.sun.star.table.CellVertJustify2.TOP
+    Next cIdx
+    oSheet.getCellByPosition(cDatum, 2).CellBackColor = clDDDDDD
+    oSheet.getCellByPosition(cKG,    2).CellBackColor = clDDDDDD
+    oSheet.getCellByPosition(cGG,    2).CellBackColor = clDDDDDD
+    oSheet.getCellByPosition(cEGG,   2).CellBackColor = clDDDDDD
+    oSheet.getCellByPosition(cMINI,  2).CellBackColor = clDDDDDD
+    For cIdx = cGroent0 To cAnder
+        oSheet.getCellByPosition(cIdx, 2).CellBackColor = clCyan
+    Next cIdx
+    oSheet.getCellByPosition(cGeen, 2).CellBackColor = clOranje
+
+    ' --- RIJEN 3-5: totaal/donderdag/vrijdag (#DDDDDD, vet) ---
+    For rIdx = 3 To 5
+        For cIdx = 0 To cWeg0 + nWeg - 1
+            oC = oSheet.getCellByPosition(cIdx, rIdx)
+            oC.CharWeight    = com.sun.star.awt.FontWeight.BOLD
+            oC.CharHeight    = 10
+            oC.IsTextWrapped = True
+        Next cIdx
+        oSheet.getCellByPosition(cDatum, rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cKG,    rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cGG,    rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cEGG,   rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cMINI,  rIdx).CellBackColor = clDDDDDD
+        For cIdx = cGroent0 To cAnder
+            oSheet.getCellByPosition(cIdx, rIdx).CellBackColor = clGeel
+        Next cIdx
+        oSheet.getCellByPosition(cGeen, rIdx).CellBackColor = clGeel
+        For cIdx = cWeg0 To cWeg0 + nWeg - 1
+            oSheet.getCellByPosition(cIdx, rIdx).CellBackColor = clGeel
+        Next cIdx
+    Next rIdx
+
+    ' --- KLANTDATA RIJEN (vanaf rij 6): opmaak per rij ---
+    Dim rStart As Integer
+    rStart = 6
+    Dim rLoop As Integer
+    rLoop = rStart
+
+    ' Herteken afhaalpunt-koprijlijnen en klantdata
+    ' We weten de volgorde: koprijlijn (geel) dan klanten (wit) dan subtotaal (geel)
+    ' Herstel door opnieuw te lopen over bDag/bAfh arrays
+
+    Dim sVorigAfh2 As String
+    Dim sVorigDag2 As String
+    sVorigAfh2 = ""
+    sVorigDag2 = ""
+
+    For b = 0 To nBest - 1
+        If bAfh(b) <> sVorigAfh2 Or bDag(b) <> sVorigDag2 Then
+            ' Dit was een subtotaalrij (als er al een groep was)
+            If sVorigAfh2 <> "" Then
+                rLoop = rLoop + 1  ' witregel
+            End If
+            ' Koprijlijn = geel, vet
+            PasRijOpmaakToe(oSheet, rLoop, clGeel, True, _
+                            cGroent0, cAangep, cGeen, cWeg0, nWeg, clGeel, clGeel)
+            rLoop = rLoop + 1
+            sVorigAfh2 = bAfh(b)
+            sVorigDag2 = bDag(b)
+        End If
+        ' Klantdata rij = wit, normaal
+        PasRijOpmaakToe(oSheet, rLoop, clWit, False, _
+                        cGroent0, cAangep, cGeen, cWeg0, nWeg, clCyan, clOranje)
+        rLoop = rLoop + 1
+    Next b
+    ' Witregel na laatste groep: geen opmaak nodig
+
+    ' --- Celranden instellen ---
+    Dim oBL As New com.sun.star.table.BorderLine2
+    oBL.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
+    oBL.LineWidth = 26
+    oBL.Color     = RGB(0, 0, 0)
+    Dim oTB As New com.sun.star.table.TableBorder2
+    oTB.TopLine            = oBL : oTB.IsTopLineValid        = True
+    oTB.BottomLine         = oBL : oTB.IsBottomLineValid     = True
+    oTB.LeftLine           = oBL : oTB.IsLeftLineValid       = True
+    oTB.RightLine          = oBL : oTB.IsRightLineValid      = True
+    oTB.HorizontalLine     = oBL : oTB.IsHorizontalLineValid = True
+    oTB.VerticalLine       = oBL : oTB.IsVerticalLineValid   = True
+    Dim oRandBereik As Object
+    oRandBereik = oSheet.getCellRangeByPosition(0, 0, cWeg0 + nWeg - 1, nTotRijen - 1)
+    oRandBereik.TableBorder2 = oTB
+
+    ' --- Rijen/kolommen vastzetten bij B7 ---
+    oNieuwDoc.getCurrentController().freezeAtPosition(1, 6)
+
+    ' --- Tweede tabblad aanmaken ---
+    oNieuwDoc.Sheets.insertNewByName("Blad2", 1)
+    oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
+
+    ' --- Opslaan ---
+    Dim sUrl As String
+    sUrl = ConvertToURL(sBestand)
+
+    ' Sluit bestaand bestand als het al open staat — maar NIET het aanroepende document
+    If FileExists(sBestand) Then
+        Dim oComp As Object
+        Dim oEnum As Object
+        oEnum = StarDesktop.Components.createEnumeration()
+        Do While oEnum.hasMoreElements()
+            oComp = oEnum.nextElement()
+            If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
+                If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                    If ConvertToURL(sBestand) = oComp.getURL() Then
+                        If Not (oComp Is oCallerDoc) Then
+                            oComp.close(True)
+                        End If
+                    End If
+                End If
+            End If
+        Loop
+    End If
+
+    Dim aOpslaanProps(0) As New com.sun.star.beans.PropertyValue
+    aOpslaanProps(0).Name  = "FilterName"
+    aOpslaanProps(0).Value = "calc8"
+    oNieuwDoc.storeToURL(sUrl, aOpslaanProps())
+    oNieuwDoc.close(True)
+
+    Dim bVanuitWeekbestand As Boolean
+    bVanuitWeekbestand = (ConvertToURL(sBestand) = oCallerDoc.getURL())
+
+    If bVanuitWeekbestand Then
+        ' Kan het aanroepende document niet sluiten vanuit de lopende macro.
+        ' Gebruiker sluit dit venster zelf; het bestand op schijf is al vervangen.
+        MsgBox "Weekbestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
+               "Sluit dit venster zelf en open het bestand opnieuw.", 64, "Klaar"
+    Else
+        Dim aOpenProps(0) As New com.sun.star.beans.PropertyValue
+        aOpenProps(0).Name  = "MacroExecutionMode"
+        aOpenProps(0).Value = 4
+        oDesktop.loadComponentFromURL(sUrl, "_blank", 0, aOpenProps())
+        MsgBox "Weekbestand aangemaakt:" & Chr(10) & sBestand, 64, "Klaar"
+    End If
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    Exit Sub
+
+VerbindingsFout:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
+           "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
+
+End Sub
+
+Sub PasRijOpmaakToe(oSheet As Object, rIdx As Integer, _
+                    clBG As Long, bVet As Boolean, _
+                    cGroent0 As Integer, cAangep As Integer, _
+                    cGeen As Integer, cWeg0 As Integer, nWeg As Integer, _
+                    clGroentBG As Long, clWegBG As Long)
+
+    Dim cIdx As Integer
+    Dim oC As Object
+    Dim nTotKol As Integer
+    nTotKol = cWeg0 + nWeg
+
+    For cIdx = 0 To nTotKol - 1
+        oC = oSheet.getCellByPosition(cIdx, rIdx)
+        oC.CharHeight    = 10
+        oC.IsTextWrapped = True
+        oC.VertJustify   = com.sun.star.table.CellVertJustify2.TOP
+        oC.HoriJustify   = com.sun.star.table.CellHoriJustify.LEFT
+        If bVet Then
+            oC.CharWeight = com.sun.star.awt.FontWeight.BOLD
+        Else
+            oC.CharWeight = com.sun.star.awt.FontWeight.NORMAL
+        End If
+        ' Achtergrond: weg/synthese=clWegBG, groente+ander=clGroentBG, overig=clBG
+        If cIdx >= cWeg0 Or cIdx = cGeen Then
+            oC.CellBackColor = clWegBG
+        ElseIf cIdx >= cGroent0 And cIdx < cAangep Then
+            oC.CellBackColor = clGroentBG
+        Else
+            oC.CellBackColor = clBG
+        End If
+    Next cIdx
+End Sub
+
+' =============================================
+' 0-indexed kolomnummer → spreadsheet kolomletter (A, B, ..., Z, AA, ...)
+' =============================================
+Function KolomLetter(iCol As Integer) As String
+    Dim iH As Integer, iL As Integer
+    iL = iCol Mod 26
+    iH = iCol \ 26
+    If iH = 0 Then
+        KolomLetter = Chr(65 + iL)
+    Else
+        KolomLetter = Chr(64 + iH) & Chr(65 + iL)
+    End If
+End Function
+
+' =============================================
+' Kolomindex in klanten_beheer voor veldindex vi (0-15).
+' Kolom K (index 10) is gereserveerd voor gebruikersformules.
+'   vi 0-4  → col 5-9  (F t/m J)
+'   vi 5-15 → col 11-21 (L t/m V)
+' =============================================
+Function KBKolom(vi As Integer) As Integer
+    If vi < 5 Then
+        KBKolom = 5 + vi
+    Else
+        KBKolom = 6 + vi
+    End If
+End Function
+
+' =============================================
+' Helper: SQL-veilige string (single-quotes escapen; leeg → NULL)
+' =============================================
+Function SqlStr(s As String) As String
+    If s = "" Then
+        SqlStr = "NULL"
+    Else
+        SqlStr = "'" & Replace(s, "'", "''") & "'"
+    End If
+End Function
+
+Sub SchrijfWijzigingenTerug()
+
+    ' =============================================
+    ' Kiemkracht - Klantwijzigingen terugschrijven
+    ' Vergelijkt klanten_beheer (kol C=id, F-U=data) met klanten-tabblad.
+    ' Stuurt alleen UPDATE voor rijen die werkelijk gewijzigd zijn.
+    ' =============================================
+
+    Const JDBC_URL As String = "jdbc:postgresql://localhost:5433/postgres"
+    Const DB_USER  As String = "postgres"
+    Const DB_PASS  As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
+
+    ' kiemkracht-data.ods opzoeken
+    Dim oDoc As Object
+    Dim oEnum As Object
+    Dim oComp As Object
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oComp = oEnum.nextElement()
+        If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
+            If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                If InStr(LCase(oComp.getURL()), "kiemkracht-data") > 0 Then
+                    oDoc = oComp
+                    Exit Do
+                End If
+            End If
+        End If
+    Loop
+    If IsNull(oDoc) Or IsEmpty(oDoc) Then
+        MsgBox "kiemkracht-data.ods is niet open. Open het bestand eerst.", 16, "Fout"
+        Exit Sub
+    End If
+
+    If Not oDoc.Sheets.hasByName("klanten_beheer") Then
+        MsgBox "Tabblad 'klanten_beheer' niet gevonden.", 16, "Fout"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName("klanten") Then
+        MsgBox "Tabblad 'klanten' niet gevonden. Voer eerst LaadAlleTabellen uit.", 16, "Fout"
+        Exit Sub
+    End If
+
+    Dim oKB      As Object : oKB      = oDoc.Sheets.getByName("klanten_beheer")
+    Dim oKlanten As Object : oKlanten = oDoc.Sheets.getByName("klanten")
+
+    ' === Popup 1 ===
+    Dim nAntw As Integer
+    nAntw = MsgBox( _
+        "Opgelet: deze actie overschrijft de klantgegevens in de database." & Chr(10) & Chr(10) & _
+        "Heb je recent alle tabellen geladen zodat er geen onbedoelde wijzigingen gebeuren?", _
+        1, "SchrijfWijzigingenTerug")
+    If nAntw <> 1 Then Exit Sub
+
+    ' === Stap 1: klanten-tabblad header → kolom-indices (geen SSH nodig) ===
+    Dim veldNamen(15) As String
+    veldNamen(0)  = "voornaam"         : veldNamen(1)  = "familienaam"
+    veldNamen(2)  = "voornaam2"        : veldNamen(3)  = "familienaam2"
+    veldNamen(4)  = "afhaalpunt_id"    : veldNamen(5)  = "type"
+    veldNamen(6)  = "formaat"          : veldNamen(7)  = "email1"
+    veldNamen(8)  = "email2"           : veldNamen(9)  = "email3"
+    veldNamen(10) = "email4"           : veldNamen(11) = "telefoon"
+    veldNamen(12) = "opmerkingen"      : veldNamen(13) = "opmerkingen_volgend"
+    veldNamen(14) = "opmerking_status" : veldNamen(15) = "nooit_groenten"
+
+    Dim klantenIdCol As Integer : klantenIdCol = -1
+    Dim kVeldCol(15) As Integer
+    Dim vi As Integer
+    For vi = 0 To 15 : kVeldCol(vi) = -1 : Next vi
+
+    Dim hIdx As Integer : hIdx = 0
+    Do While oKlanten.getCellByPosition(hIdx, 0).getString() <> ""
+        Dim hNaam As String : hNaam = oKlanten.getCellByPosition(hIdx, 0).getString()
+        If hNaam = "id" Then klantenIdCol = hIdx
+        For vi = 0 To 15
+            If hNaam = veldNamen(vi) Then kVeldCol(vi) = hIdx
+        Next vi
+        hIdx = hIdx + 1
+    Loop
+
+    If klantenIdCol = -1 Then
+        MsgBox "Kolom 'id' niet gevonden in tabblad klanten." & Chr(10) & _
+               "Voer eerst LaadAlleTabellen uit.", 16, "Fout"
+        Exit Sub
+    End If
+
+    ' === Stap 2: klanten-tabblad in arrays laden ===
+    Dim kID(2000)       As Long
+    Dim kVals(2000, 15) As String
+    Dim nKlanten As Integer : nKlanten = 0
+    Dim kr As Integer : kr = 1
+    Do While oKlanten.getCellByPosition(klantenIdCol, kr).getString() <> ""
+        kID(nKlanten) = CLng(oKlanten.getCellByPosition(klantenIdCol, kr).getValue())
+        For vi = 0 To 15
+            If kVeldCol(vi) >= 0 Then
+                If vi = 4 Then
+                    If oKlanten.getCellByPosition(kVeldCol(vi), kr).getString() = "" Then
+                        kVals(nKlanten, vi) = ""
+                    Else
+                        Dim dAfhaal As Double
+                        dAfhaal = oKlanten.getCellByPosition(kVeldCol(vi), kr).getValue()
+                        kVals(nKlanten, vi) = CStr(CLng(dAfhaal))
+                    End If
+                Else
+                    kVals(nKlanten, vi) = Trim(oKlanten.getCellByPosition(kVeldCol(vi), kr).getString())
+                End If
+            End If
+        Next vi
+        nKlanten = nKlanten + 1
+        kr = kr + 1
+    Loop
+
+    ' === Stap 3: pre-pass — vergelijken zonder DB, resultaat opslaan ===
+    Dim bGewijzigd(2000) As Boolean
+    Dim aKIdx(2000)      As Integer
+    Dim nGewijzigd As Integer : nGewijzigd = 0
+    Dim nTotaal    As Integer : nTotaal    = 0
+    Dim r As Integer : r = 1
+
+    Do While oKB.getCellByPosition(2, r).getValue() <> 0
+        Dim nID As Long : nID = CLng(oKB.getCellByPosition(2, r).getValue())
+
+        Dim kIdx As Integer : kIdx = -1
+        Dim ki As Integer
+        For ki = 0 To nKlanten - 1
+            If kID(ki) = nID Then kIdx = ki : Exit For
+        Next ki
+
+        Dim bWijz As Boolean : bWijz = (kIdx = -1)
+        If Not bWijz Then
+            For vi = 0 To 15
+                If kVals(kIdx, vi) <> Trim(oKB.getCellByPosition(KBKolom(vi), r).getString()) Then
+                    bWijz = True : Exit For
+                End If
+            Next vi
+        End If
+
+        bGewijzigd(r) = bWijz
+        aKIdx(r)      = kIdx
+        If bWijz Then nGewijzigd = nGewijzigd + 1
+        nTotaal = nTotaal + 1
+        r = r + 1
+    Loop
+
+    ' === Popup 2: exacte wijzigingstelling ===
+    nAntw = MsgBox( _
+        "Deze actie zal de gegevens wijzigen van " & nGewijzigd & " klant(en)" & Chr(10) & _
+        "(van " & nTotaal & " vergeleken met het klanten-tabblad)." & Chr(10) & Chr(10) & _
+        "Akkoord?", _
+        1, "SchrijfWijzigingenTerug")
+    If nAntw <> 1 Then Exit Sub
+
+    If nGewijzigd = 0 Then
+        MsgBox "Geen wijzigingen gevonden. Niets verstuurd.", 64, "SchrijfWijzigingenTerug"
+        Exit Sub
+    End If
+
+    ' === Pas na bevestiging: SSH + DB-verbinding ===
+    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
+    Wait 3000
+
+    Dim aProps(2) As New com.sun.star.beans.PropertyValue
+    aProps(0).Name  = "user"            : aProps(0).Value = DB_USER
+    aProps(1).Name  = "password"        : aProps(1).Value = DB_PASS
+    aProps(2).Name  = "JavaDriverClass" : aProps(2).Value = "org.postgresql.Driver"
+
+    On Error GoTo VerbindingsFout2
+    Dim oManager As Object
+    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
+    Dim oConn As Object
+    oConn = oManager.getConnectionWithInfo(JDBC_URL, aProps())
+    On Error GoTo 0
+
+    ' === Stap 4: UPDATE enkel gewijzigde rijen ===
+    Dim oStmt As Object : oStmt = oConn.createStatement()
+    Dim nUpdates As Integer : nUpdates = 0
+    r = 1
+    Do While r <= nTotaal
+        If bGewijzigd(r) Then
+            nID = CLng(oKB.getCellByPosition(2, r).getValue())
+
+            Dim sVoornaam     As String : sVoornaam     = oKB.getCellByPosition(KBKolom(0),  r).getString()
+            Dim sFamilienaam  As String : sFamilienaam  = oKB.getCellByPosition(KBKolom(1),  r).getString()
+            Dim sVoornaam2    As String : sVoornaam2    = oKB.getCellByPosition(KBKolom(2),  r).getString()
+            Dim sFamilienaam2 As String : sFamilienaam2 = oKB.getCellByPosition(KBKolom(3),  r).getString()
+            Dim sAfhaalId     As String : sAfhaalId     = Trim(oKB.getCellByPosition(KBKolom(4),  r).getString())
+            Dim sType         As String : sType         = oKB.getCellByPosition(KBKolom(5),  r).getString()
+            Dim sFormaat      As String : sFormaat      = oKB.getCellByPosition(KBKolom(6),  r).getString()
+            Dim sEmail1       As String : sEmail1       = oKB.getCellByPosition(KBKolom(7),  r).getString()
+            Dim sEmail2       As String : sEmail2       = oKB.getCellByPosition(KBKolom(8),  r).getString()
+            Dim sEmail3       As String : sEmail3       = oKB.getCellByPosition(KBKolom(9),  r).getString()
+            Dim sEmail4       As String : sEmail4       = oKB.getCellByPosition(KBKolom(10), r).getString()
+            Dim sTelefoon     As String : sTelefoon     = oKB.getCellByPosition(KBKolom(11), r).getString()
+            Dim sOpmerk       As String : sOpmerk       = oKB.getCellByPosition(KBKolom(12), r).getString()
+            Dim sOpmerkVolg   As String : sOpmerkVolg   = oKB.getCellByPosition(KBKolom(13), r).getString()
+            Dim sOpmerkStat   As String : sOpmerkStat   = oKB.getCellByPosition(KBKolom(14), r).getString()
+            Dim sNooit        As String : sNooit        = Trim(oKB.getCellByPosition(KBKolom(15), r).getString())
+
+            Dim sAfhaalSql As String
+            If sAfhaalId = "" Or Not IsNumeric(sAfhaalId) Then
+                sAfhaalSql = "NULL"
+            Else
+                sAfhaalSql = CStr(CLng(sAfhaalId))
+            End If
+
+            Dim sNooitSql As String
+            Select Case LCase(sNooit)
+                Case "t", "true", "1", "ja"   : sNooitSql = "TRUE"
+                Case "f", "false", "0", "nee" : sNooitSql = "FALSE"
+                Case Else                      : sNooitSql = "NULL"
+            End Select
+
+            Dim sSQL As String
+            sSQL = "UPDATE klanten SET " & _
+                   "voornaam = "             & SqlStr(sVoornaam)     & ", " & _
+                   "familienaam = "          & SqlStr(sFamilienaam)  & ", " & _
+                   "voornaam2 = "            & SqlStr(sVoornaam2)    & ", " & _
+                   "familienaam2 = "         & SqlStr(sFamilienaam2) & ", " & _
+                   "afhaalpunt_id = "        & sAfhaalSql            & ", " & _
+                   "type = "                 & SqlStr(sType)         & ", " & _
+                   "formaat = "              & SqlStr(sFormaat)      & ", " & _
+                   "email1 = "               & SqlStr(sEmail1)       & ", " & _
+                   "email2 = "               & SqlStr(sEmail2)       & ", " & _
+                   "email3 = "               & SqlStr(sEmail3)       & ", " & _
+                   "email4 = "               & SqlStr(sEmail4)       & ", " & _
+                   "telefoon = "             & SqlStr(sTelefoon)     & ", " & _
+                   "opmerkingen = "          & SqlStr(sOpmerk)       & ", " & _
+                   "opmerkingen_volgend = "  & SqlStr(sOpmerkVolg)   & ", " & _
+                   "opmerking_status = "     & SqlStr(sOpmerkStat)   & ", " & _
+                   "nooit_groenten = "       & sNooitSql & _
+                   " WHERE id = "            & CStr(nID)
+
+            oStmt.executeUpdate(sSQL)
+            nUpdates = nUpdates + 1
+        End If
+        r = r + 1
+    Loop
+
+    oStmt.close()
+    oConn.close()
+
+    ' === Stap 5: klanten-sheet bijwerken als nieuwe vergelijkingsbasis ===
+    ' Zo herkent de volgende vergelijking een teruggedraaide waarde opnieuw als wijziging.
+    Dim rSync As Integer : rSync = 1
+    Do While rSync <= nTotaal
+        If bGewijzigd(rSync) And aKIdx(rSync) >= 0 Then
+            Dim kRow As Integer : kRow = aKIdx(rSync) + 1
+            Dim viS As Integer
+            For viS = 0 To 15
+                If kVeldCol(viS) >= 0 Then
+                    If viS = 4 Then
+                        Dim sAfhSync As String
+                        sAfhSync = Trim(oKB.getCellByPosition(KBKolom(4), rSync).getString())
+                        If sAfhSync = "" Or Not IsNumeric(sAfhSync) Then
+                            oKlanten.getCellByPosition(kVeldCol(viS), kRow).setString("")
+                        Else
+                            oKlanten.getCellByPosition(kVeldCol(viS), kRow).setValue(CLng(sAfhSync))
+                        End If
+                    Else
+                        oKlanten.getCellByPosition(kVeldCol(viS), kRow).setString( _
+                            oKB.getCellByPosition(KBKolom(viS), rSync).getString())
+                    End If
+                End If
+            Next viS
+        End If
+        rSync = rSync + 1
+    Loop
+
+    MsgBox nUpdates & " klant(en) bijgewerkt in postgres.", 64, "Klaar"
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    Exit Sub
+
+VerbindingsFout2:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
+           "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+End Sub
+
+' =============================================
+' Helper: LibreOffice datumcel → SQL-string 'YYYY-MM-DD' of NULL
+' =============================================
+Function SqlDateCell(oCell As Object) As String
+    If oCell.getType() = 0 Then
+        SqlDateCell = "NULL"
+    ElseIf oCell.getType() = 1 Then
+        Dim dBase As Date : dBase = CDate("1899-12-30")
+        Dim dResult As Date : dResult = dBase + CLng(oCell.getValue())
+        SqlDateCell = "'" & Format(dResult, "YYYY-MM-DD") & "'"
+    Else
+        Dim s As String : s = Trim(oCell.getString())
+        If s = "" Then
+            SqlDateCell = "NULL"
+        Else
+            SqlDateCell = "'" & Replace(s, "'", "''") & "'"
+        End If
+    End If
+End Function
+
+' =============================================
+' Kiemkracht - Nieuwe klant toevoegen
+' Leest gegevens uit tabblad "klant_nieuw" G7:G32
+' en voegt een rij in in de postgres-tabel klanten.
+' =============================================
+Sub VoegNieuweKlantToe()
+
+    Dim oDoc As Object : oDoc = ThisComponent
+    If Not oDoc.Sheets.hasByName("klant_nieuw") Then
+        MsgBox "Tabblad 'klant_nieuw' niet gevonden.", 16, "Fout"
+        Exit Sub
+    End If
+    Dim oSheet As Object : oSheet = oDoc.Sheets.getByName("klant_nieuw")
+
+    Const COL_G = 6  ' kolom G = index 6
+
+    ' Rij 7 (index 6) = id → overgeslagen (auto-increment)
+    Dim sVoornaam      As String : sVoornaam      = Trim(oSheet.getCellByPosition(COL_G,  7).getString())
+    Dim sFamilienaam   As String : sFamilienaam   = Trim(oSheet.getCellByPosition(COL_G,  8).getString())
+    Dim sAanspreking   As String : sAanspreking   = Trim(oSheet.getCellByPosition(COL_G,  9).getString())
+    Dim sKlantType     As String : sKlantType     = Trim(oSheet.getCellByPosition(COL_G, 10).getString())
+    Dim sBedrijfsnaam  As String : sBedrijfsnaam  = Trim(oSheet.getCellByPosition(COL_G, 11).getString())
+    Dim sBtwNummer     As String : sBtwNummer     = Trim(oSheet.getCellByPosition(COL_G, 12).getString())
+    Dim sFactAdres     As String : sFactAdres     = Trim(oSheet.getCellByPosition(COL_G, 13).getString())
+    Dim sEmail1        As String : sEmail1        = Trim(oSheet.getCellByPosition(COL_G, 14).getString())
+    Dim sEmail2        As String : sEmail2        = Trim(oSheet.getCellByPosition(COL_G, 15).getString())
+    Dim sEmail3        As String : sEmail3        = Trim(oSheet.getCellByPosition(COL_G, 16).getString())
+    Dim sEmail4        As String : sEmail4        = Trim(oSheet.getCellByPosition(COL_G, 17).getString())
+    Dim sTelefoon      As String : sTelefoon      = Trim(oSheet.getCellByPosition(COL_G, 18).getString())
+    Dim sType          As String : sType          = Trim(oSheet.getCellByPosition(COL_G, 19).getString())
+    Dim sFormaat       As String : sFormaat       = Trim(oSheet.getCellByPosition(COL_G, 20).getString())
+    Dim sAfhaalpuntId  As String : sAfhaalpuntId  = Trim(oSheet.getCellByPosition(COL_G, 21).getString())
+    Dim sNooitGroenten As String : sNooitGroenten = Trim(oSheet.getCellByPosition(COL_G, 22).getString())
+    ' Rij 24-25 = datumvelden (type VALUE als celdatum, TEXT als tekst)
+    Dim sKlantSindsSql  As String : sKlantSindsSql  = SqlDateCell(oSheet.getCellByPosition(COL_G, 23))
+    Dim sLaatsteBestSql As String : sLaatsteBestSql = SqlDateCell(oSheet.getCellByPosition(COL_G, 24))
+    Dim sOpmerkingen   As String : sOpmerkingen   = Trim(oSheet.getCellByPosition(COL_G, 25).getString())
+    Dim sOpmerkVolg    As String : sOpmerkVolg    = Trim(oSheet.getCellByPosition(COL_G, 26).getString())
+    Dim sOpmerkStat    As String : sOpmerkStat    = Trim(oSheet.getCellByPosition(COL_G, 27).getString())
+    ' Rij 29-30 (index 28-29) = aangemaakt_op / gewijzigd_op → overgeslagen (DEFAULT now())
+    Dim sVoornaam2     As String : sVoornaam2     = Trim(oSheet.getCellByPosition(COL_G, 30).getString())
+    Dim sFamilienaam2  As String : sFamilienaam2  = Trim(oSheet.getCellByPosition(COL_G, 31).getString())
+
+    ' Verplichte velden
+    If sVoornaam = "" Then
+        MsgBox "Voornaam is verplicht (G8).", 16, "Validatiefout"
+        Exit Sub
+    End If
+    If sType = "" Then
+        MsgBox "Type is verplicht (G20): bv. 'abonnee', 'weekperweek', 'stop-definitief'.", 16, "Validatiefout"
+        Exit Sub
+    End If
+    If sAanspreking = "" Then sAanspreking = "jouw"
+    If sKlantType   = "" Then sKlantType   = "particulier"
+
+    ' afhaalpunt_id: integer of NULL
+    Dim sAfhaalpuntSql As String
+    If sAfhaalpuntId = "" Then
+        sAfhaalpuntSql = "NULL"
+    Else
+        On Error GoTo AfhaalpuntFout
+        sAfhaalpuntSql = CStr(CLng(sAfhaalpuntId))
+        On Error GoTo 0
+    End If
+
+    ' Bevestiging
+    Dim sInfo As String
+    sInfo = "Naam:   " & sVoornaam & " " & sFamilienaam & Chr(10) & _
+            "Email:  " & sEmail1 & Chr(10) & _
+            "Type:   " & sType & " / " & sKlantType
+    If MsgBox("Nieuwe klant toevoegen?" & Chr(10) & Chr(10) & sInfo, 33, "Bevestig") <> 1 Then
+        Exit Sub
+    End If
+
+    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
+    Wait 3000
+
+    Const JDBC_URL As String = "jdbc:postgresql://localhost:5433/postgres"
+    Const DB_USER  As String = "postgres"
+    Const DB_PASS  As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
+
+    On Error GoTo VerbindingsFout3
+
+    Dim oManager As Object
+    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
+    Dim aProps(2) As New com.sun.star.beans.PropertyValue
+    aProps(0).Name = "user"            : aProps(0).Value = DB_USER
+    aProps(1).Name = "password"        : aProps(1).Value = DB_PASS
+    aProps(2).Name = "JavaDriverClass" : aProps(2).Value = "org.postgresql.Driver"
+
+    Dim oConn As Object
+    oConn = oManager.getConnectionWithInfo(JDBC_URL, aProps())
+    Dim oStmt As Object : oStmt = oConn.createStatement()
+
+    Dim sSQL As String
+    sSQL = "INSERT INTO klanten " & _
+           "(voornaam, familienaam, aanspreking, klant_type, bedrijfsnaam, btw_nummer, " & _
+           "facturatie_adres, email1, email2, email3, email4, telefoon, type, formaat, " & _
+           "afhaalpunt_id, nooit_groenten, klant_sinds, laatste_bestelling, " & _
+           "opmerkingen, opmerkingen_volgend, opmerking_status, voornaam2, familienaam2) " & _
+           "VALUES (" & _
+           SqlStr(sVoornaam)      & ", " & SqlStr(sFamilienaam)  & ", " & SqlStr(sAanspreking) & ", " & _
+           SqlStr(sKlantType)     & ", " & SqlStr(sBedrijfsnaam) & ", " & SqlStr(sBtwNummer)   & ", " & _
+           SqlStr(sFactAdres)     & ", " & SqlStr(sEmail1)       & ", " & SqlStr(sEmail2)       & ", " & _
+           SqlStr(sEmail3)        & ", " & SqlStr(sEmail4)       & ", " & SqlStr(sTelefoon)     & ", " & _
+           SqlStr(sType)          & ", " & SqlStr(sFormaat)      & ", " & _
+           sAfhaalpuntSql         & ", " & SqlStr(sNooitGroenten) & ", " & _
+           sKlantSindsSql         & ", " & sLaatsteBestSql        & ", " & _
+           SqlStr(sOpmerkingen)   & ", " & SqlStr(sOpmerkVolg)   & ", " & SqlStr(sOpmerkStat)  & ", " & _
+           SqlStr(sVoornaam2)     & ", " & SqlStr(sFamilienaam2) & _
+           ")"
+
+    oStmt.executeUpdate(sSQL)
+    oStmt.close()
+    oConn.close()
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+
+    MsgBox "Klant '" & sVoornaam & " " & sFamilienaam & "' succesvol toegevoegd.", 64, "Klaar"
+
+    ' Invoervelden leegmaken
+    Dim iRij As Integer
+    For iRij = 7 To 31
+        oSheet.getCellByPosition(COL_G, iRij).setString("")
+    Next iRij
+
+    Exit Sub
+
+AfhaalpuntFout:
+    MsgBox "Afhaalpunt_id (G22) moet een geheel getal zijn of leeg.", 16, "Validatiefout"
+    Exit Sub
+
+VerbindingsFout3:
+    MsgBox "Databasefout: " & Err & " - " & Error, 16, "Fout"
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+
+End Sub

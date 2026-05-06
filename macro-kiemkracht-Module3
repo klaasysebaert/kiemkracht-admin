@@ -1,0 +1,1152 @@
+Option Explicit
+
+' =============================================
+' Kiemkracht - Overzichten
+' Maakt drie Writer-printdocumenten (.odt) aan
+' naast het weekbestand, vanuit het weekbestand.
+' =============================================
+
+Sub MaakOverzichten()
+
+    ' Kolomindices weekblad (moeten overeenkomen met MaakWeekbestand)
+    Const cNaam        = 0
+    Const cAfh         = 1
+    Const cKlaarDag    = 2
+    Const cKG          = 17
+    Const cGG          = 18
+    Const cEGG         = 19
+    Const cMINI        = 20
+    Const cGroent0     = 22
+    Const nGroentSlots = 24
+    Const cWeg0        = 49
+
+    Dim oDoc     As Object
+    Dim oWkSheet As Object
+    oDoc     = ThisComponent
+    oWkSheet = oDoc.Sheets.getByIndex(0)
+
+    ' Groente-namen en eenheden uit rij 1/2
+    Dim groentNaam(23) As String
+    Dim groentEenh(23) As String
+    Dim g As Integer
+    For g = 0 To nGroentSlots - 1
+        groentNaam(g) = oWkSheet.getCellByPosition(cGroent0 + g, 1).getString()
+        groentEenh(g) = oWkSheet.getCellByPosition(cGroent0 + g, 2).getString()
+    Next g
+
+    ' Weglatingen uit rij 2
+    Dim nWeg    As Integer
+    Dim wegNaam(99) As String
+    nWeg = 0
+    Do While oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString() <> ""
+        wegNaam(nWeg) = oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString()
+        nWeg = nWeg + 1
+        If nWeg >= 100 Then Exit Do
+    Loop
+
+    ' Laatste rij weekblad
+    Dim oCalcCursor As Object
+    oCalcCursor = oWkSheet.createCursor()
+    oCalcCursor.gotoEndOfUsedArea(True)
+    Dim nLastRow As Long
+    nLastRow = oCalcCursor.getRangeAddress().EndRow
+
+    ' --- Declaraties voor data-verzameling ---
+    Dim aBlok(500)   As String
+    Dim nBlok        As Integer
+    Dim aTotaal(23)  As Double
+    Dim aTotDon(23)  As Double
+    Dim aTotVrij(23) As Double
+    Dim aDagen(9)    As String
+    Dim nDagen       As Integer
+    nBlok  = 0
+    nDagen = 0
+
+    Dim i          As Long
+    Dim w          As Integer
+    Dim d          As Integer
+    Dim sNaam      As String
+    Dim sAfh2      As String
+    Dim sKlaarDag  As String
+    Dim sPakket    As String
+    Dim sBlok      As String
+    Dim sAant      As String
+    Dim sWeg       As String
+    Dim nAant      As Double
+    Dim bHasG      As Boolean
+    Dim bNieuwedag As Boolean
+
+    ' --- Klantblokken + groententotalen + unieke dagen ---
+    For i = 6 To nLastRow
+        sNaam = oWkSheet.getCellByPosition(cNaam, i).getString()
+        sAfh2 = oWkSheet.getCellByPosition(cAfh,  i).getString()
+        If sNaam = "" Or sAfh2 = "afhaalpunt/dag" Then GoTo VolgendeRij
+
+        bHasG = False
+        For g = 0 To nGroentSlots - 1
+            If oWkSheet.getCellByPosition(cGroent0 + g, i).getValue() > 0 Then
+                bHasG = True : Exit For
+            End If
+        Next g
+        If Not bHasG Then GoTo VolgendeRij
+
+        sKlaarDag = oWkSheet.getCellByPosition(cKlaarDag, i).getString()
+
+        ' Unieke dag bijhouden
+        If sKlaarDag <> "" Then
+            bNieuwedag = True
+            For d = 0 To nDagen - 1
+                If aDagen(d) = sKlaarDag Then bNieuwedag = False : Exit For
+            Next d
+            If bNieuwedag And nDagen < 10 Then
+                aDagen(nDagen) = sKlaarDag
+                nDagen = nDagen + 1
+            End If
+        End If
+
+        If      oWkSheet.getCellByPosition(cKG,   i).getValue() > 0 Then : sPakket = "klein"
+        ElseIf  oWkSheet.getCellByPosition(cGG,   i).getValue() > 0 Then : sPakket = "groot"
+        ElseIf  oWkSheet.getCellByPosition(cEGG,  i).getValue() > 0 Then : sPakket = "extra groot"
+        ElseIf  oWkSheet.getCellByPosition(cMINI, i).getValue() > 0 Then : sPakket = "mini"
+        Else                                                               : sPakket = "geen pakket"
+        End If
+
+        sBlok = sNaam & " (" & sAfh2 & "): " & sPakket
+        For g = 0 To nGroentSlots - 1
+            nAant = oWkSheet.getCellByPosition(cGroent0 + g, i).getValue()
+            If nAant > 0 Then
+                If nAant = Int(nAant) Then sAant = CStr(CLng(nAant)) Else sAant = CStr(nAant)
+                sBlok = sBlok & Chr(10) & groentNaam(g) & ": " & sAant & " " & groentEenh(g)
+                aTotaal(g) = aTotaal(g) + nAant
+                If sKlaarDag = "donderdag" Then aTotDon(g)  = aTotDon(g)  + nAant
+                If sKlaarDag = "vrijdag"   Then aTotVrij(g) = aTotVrij(g) + nAant
+            End If
+        Next g
+        For w = 0 To nWeg - 1
+            sWeg = oWkSheet.getCellByPosition(cWeg0 + w, i).getString()
+            If sWeg <> "" Then sBlok = sBlok & Chr(10) & "Geen: " & sWeg
+        Next w
+
+        If nBlok <= 500 Then
+            aBlok(nBlok) = sBlok
+            nBlok = nBlok + 1
+        End If
+
+        VolgendeRij:
+    Next i
+
+    If nBlok = 0 Then
+        MsgBox "Geen klanten met losse groenten gevonden.", 48, "Overzichten"
+        Exit Sub
+    End If
+
+    ' --- Gedeelde Writer-hulpobjecten ---
+    Dim oDesktop As Object
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+
+    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
+    aArgs(0).Name  = "Hidden"
+    aArgs(0).Value = False
+
+    Dim aSave(0) As New com.sun.star.beans.PropertyValue
+    aSave(0).Name  = "FilterName"
+    aSave(0).Value = "writer8"
+
+    Dim sWkPath As String
+    sWkPath = ConvertFromURL(oDoc.getURL())
+
+    ' -------------------------------------------------------
+    ' Document 1: orderpicking (klantblokken, 2 kolommen)
+    ' -------------------------------------------------------
+    Dim oWriter As Object
+    oWriter = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+
+    Dim oPS As Object
+    oPS = oWriter.StyleFamilies.getByName("PageStyles").getByIndex(0)
+    oPS.IsLandscape  = False
+    oPS.Width        = 21000 : oPS.Height       = 29700
+    oPS.TopMargin    = 1500  : oPS.BottomMargin = 1500
+    oPS.LeftMargin   = 1200  : oPS.RightMargin  = 1200
+
+    Dim oTC As Object
+    oTC = oPS.TextColumns
+    oTC.ColumnCount = 2 : oTC.AutomaticDistance = 800
+    oPS.TextColumns = oTC
+
+    Dim oBL As New com.sun.star.table.BorderLine2
+    oBL.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
+    oBL.LineWidth = 26
+
+    Dim oText    As Object : Dim oWCursor As Object
+    oText    = oWriter.getText()
+    oWCursor = oText.createTextCursor()
+
+    Dim b        As Integer
+    Dim aLines() As String
+    Dim l        As Integer
+
+    For b = 0 To nBlok - 1
+        oWCursor.setPropertyValue("CharHeight",           9)
+        oWCursor.setPropertyValue("TopBorder",            oBL)
+        oWCursor.setPropertyValue("BottomBorder",         oBL)
+        oWCursor.setPropertyValue("LeftBorder",           oBL)
+        oWCursor.setPropertyValue("RightBorder",          oBL)
+        oWCursor.setPropertyValue("TopBorderDistance",    100)
+        oWCursor.setPropertyValue("BottomBorderDistance", 100)
+        oWCursor.setPropertyValue("LeftBorderDistance",   150)
+        oWCursor.setPropertyValue("RightBorderDistance",  150)
+        oWCursor.setPropertyValue("ParaBottomMargin",     300)
+
+        aLines = Split(aBlok(b), Chr(10))
+        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+        oText.insertString(oWCursor, aLines(0), False)
+        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+
+        For l = 1 To UBound(aLines)
+            oText.insertControlCharacter(oWCursor, _
+                com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+            oText.insertString(oWCursor, aLines(l), False)
+        Next l
+
+        If b < nBlok - 1 Then
+            oText.insertControlCharacter(oWCursor, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+        End If
+    Next b
+
+    Dim sOdtPath As String
+    sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking.odt"
+    oWriter.storeToURL(ConvertToURL(sOdtPath), aSave())
+
+    ' -------------------------------------------------------
+    ' Document 2: groenten totalen (tabel)
+    ' -------------------------------------------------------
+    Dim nGroentActief As Integer
+    nGroentActief = 0
+    For g = 0 To nGroentSlots - 1
+        If aTotaal(g) > 0 Then nGroentActief = nGroentActief + 1
+    Next g
+
+    Dim oWriter2 As Object
+    oWriter2 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+
+    Dim oPS2 As Object
+    oPS2 = oWriter2.StyleFamilies.getByName("PageStyles").getByIndex(0)
+    oPS2.IsLandscape  = False
+    oPS2.Width        = 21000 : oPS2.Height       = 29700
+    oPS2.TopMargin    = 1500  : oPS2.BottomMargin = 1500
+    oPS2.LeftMargin   = 1200  : oPS2.RightMargin  = 1200
+
+    Dim oText2 As Object : Dim oCurs2 As Object
+    oText2 = oWriter2.getText()
+    oCurs2 = oText2.createTextCursor()
+
+    Dim oTabel As Object
+    oTabel = oWriter2.createInstance("com.sun.star.text.TextTable")
+    oTabel.initialize(nGroentActief + 1, 4)
+    oText2.insertTextContent(oCurs2, oTabel, False)
+
+    Dim oColSep(2) As New com.sun.star.text.TableColumnSeparator
+    oColSep(0).Position = 4500 : oColSep(0).IsVisible = True
+    oColSep(1).Position = 6500 : oColSep(1).IsVisible = True
+    oColSep(2).Position = 8500 : oColSep(2).IsVisible = True
+    oTabel.TableColumnSeparators = oColSep
+
+    Dim aHdr(3) As String
+    aHdr(0) = "Groente" : aHdr(1) = "Totaal" : aHdr(2) = "Donderdag" : aHdr(3) = "Vrijdag"
+
+    Dim c As Integer
+    Dim oCelTxt As Object : Dim oCelCurs As Object
+    For c = 0 To 3
+        oCelTxt  = oTabel.getCellByPosition(c, 0).getText()
+        oCelCurs = oCelTxt.createTextCursor()
+        oCelCurs.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+        oCelTxt.insertString(oCelCurs, aHdr(c), False)
+    Next c
+
+    Dim nRij As Integer
+    nRij = 1
+    Dim sTot As String : Dim sDon As String : Dim sVrij As String
+    For g = 0 To nGroentSlots - 1
+        If aTotaal(g) > 0 Then
+            If aTotaal(g)  = Int(aTotaal(g))  Then sTot  = CStr(CLng(aTotaal(g)))  Else sTot  = CStr(aTotaal(g))
+            If aTotDon(g)  = Int(aTotDon(g))  Then sDon  = CStr(CLng(aTotDon(g)))  Else sDon  = CStr(aTotDon(g))
+            If aTotVrij(g) = Int(aTotVrij(g)) Then sVrij = CStr(CLng(aTotVrij(g))) Else sVrij = CStr(aTotVrij(g))
+            oTabel.getCellByPosition(0, nRij).setString(groentNaam(g) & " (" & groentEenh(g) & ")")
+            oTabel.getCellByPosition(1, nRij).setString(sTot)
+            oTabel.getCellByPosition(2, nRij).setString(sDon)
+            oTabel.getCellByPosition(3, nRij).setString(sVrij)
+            nRij = nRij + 1
+        End If
+    Next g
+
+    Dim sOdtPath2 As String
+    sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_groenten.odt"
+    oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
+
+    ' -------------------------------------------------------
+    ' Document 3: afweeglijst per dag
+    ' -------------------------------------------------------
+    ' Dagen sorteren op dag van de week
+    Dim dOrder(9) As Integer
+    Dim di As Integer : Dim di2 As Integer
+    Dim tmpDag As String : Dim tmpOrd As Integer
+    For di = 0 To nDagen - 1
+        Select Case LCase(aDagen(di))
+            Case "maandag":   dOrder(di) = 1
+            Case "dinsdag":   dOrder(di) = 2
+            Case "woensdag":  dOrder(di) = 3
+            Case "donderdag": dOrder(di) = 4
+            Case "vrijdag":   dOrder(di) = 5
+            Case "zaterdag":  dOrder(di) = 6
+            Case "zondag":    dOrder(di) = 7
+            Case Else:        dOrder(di) = 8
+        End Select
+    Next di
+    For di = 0 To nDagen - 2
+        For di2 = 0 To nDagen - di - 2
+            If dOrder(di2) > dOrder(di2 + 1) Then
+                tmpDag = aDagen(di2) : aDagen(di2) = aDagen(di2 + 1) : aDagen(di2 + 1) = tmpDag
+                tmpOrd = dOrder(di2) : dOrder(di2) = dOrder(di2 + 1) : dOrder(di2 + 1) = tmpOrd
+            End If
+        Next di2
+    Next di
+
+    Dim sOdtPath3 As String
+    sOdtPath3 = Left(sWkPath, Len(sWkPath) - 4) & "_afweeglijst.odt"
+
+    If nDagen > 0 Then
+        Dim oWriter3 As Object
+        oWriter3 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+
+        Dim oPS3 As Object
+        oPS3 = oWriter3.StyleFamilies.getByName("PageStyles").getByIndex(0)
+        oPS3.IsLandscape  = False
+        oPS3.Width        = 21000 : oPS3.Height       = 29700
+        oPS3.TopMargin    = 1500  : oPS3.BottomMargin = 1500
+        oPS3.LeftMargin   = 1500  : oPS3.RightMargin  = 1500
+
+        Dim oText3 As Object : Dim oCurs3 As Object
+        oText3 = oWriter3.getText()
+        oCurs3 = oText3.createTextCursor()
+
+        Dim aQty(500) As Double
+        Dim nQty      As Integer
+        Dim qi        As Integer : Dim qi2   As Integer
+        Dim tmpQty    As Double
+        Dim kIdx      As Integer
+        Dim curVal    As Double
+        Dim cnt       As Integer
+        Dim sQty      As String
+        Dim qVal      As Double
+        Dim bEersteDag As Boolean
+        bEersteDag = True
+
+        For d = 0 To nDagen - 1
+
+            ' Dag-kop (met lege regel ertussen)
+            If Not bEersteDag Then
+                oText3.insertControlCharacter(oCurs3, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oText3.insertControlCharacter(oCurs3, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            End If
+            oCurs3.setPropertyValue("CharHeight", 14)
+            oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+            oText3.insertString(oCurs3, UCase(aDagen(d)), False)
+            oCurs3.setPropertyValue("CharHeight", 10)
+            oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+            bEersteDag = False
+
+            For g = 0 To nGroentSlots - 1
+                If groentNaam(g) = "" Then GoTo VolgendGroent
+
+                ' Hoeveelheden verzamelen voor (dag, groente)
+                nQty = 0
+                For i = 6 To nLastRow
+                    sNaam = oWkSheet.getCellByPosition(cNaam, i).getString()
+                    If sNaam = "" Then GoTo VolgendKlant3
+                    sAfh2 = oWkSheet.getCellByPosition(cAfh, i).getString()
+                    If sAfh2 = "afhaalpunt/dag" Then GoTo VolgendKlant3
+                    If oWkSheet.getCellByPosition(cKlaarDag, i).getString() <> aDagen(d) Then GoTo VolgendKlant3
+                    qVal = oWkSheet.getCellByPosition(cGroent0 + g, i).getValue()
+                    If qVal > 0 And nQty < 500 Then
+                        aQty(nQty) = qVal
+                        nQty = nQty + 1
+                    End If
+                    VolgendKlant3:
+                Next i
+
+                If nQty = 0 Then GoTo VolgendGroent
+
+                ' Sorteren aflopend (bubble sort)
+                For qi = 0 To nQty - 2
+                    For qi2 = 0 To nQty - qi - 2
+                        If aQty(qi2) < aQty(qi2 + 1) Then
+                            tmpQty = aQty(qi2) : aQty(qi2) = aQty(qi2 + 1) : aQty(qi2 + 1) = tmpQty
+                        End If
+                    Next qi2
+                Next qi
+
+                ' Groente-kop
+                oText3.insertControlCharacter(oCurs3, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+                oText3.insertString(oCurs3, groentNaam(g) & " (" & aDagen(d) & "):", False)
+                oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+
+                ' Gebundelde hoeveelheden (aflopend)
+                kIdx = 0
+                Do While kIdx < nQty
+                    curVal = aQty(kIdx)
+                    cnt = 0
+                    Do While kIdx < nQty And aQty(kIdx) = curVal
+                        cnt = cnt + 1
+                        kIdx = kIdx + 1
+                    Loop
+                    If curVal = Int(curVal) Then sQty = CStr(CLng(curVal)) Else sQty = CStr(curVal)
+                    oText3.insertControlCharacter(oCurs3, _
+                        com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                    oText3.insertString(oCurs3, sQty & " " & groentEenh(g) & " : " & cnt & "x", False)
+                Loop
+
+                VolgendGroent:
+            Next g
+
+        Next d
+
+        oWriter3.storeToURL(ConvertToURL(sOdtPath3), aSave())
+    End If
+
+    MsgBox nBlok & " klanten (orderpicking)" & Chr(10) & _
+           nGroentActief & " groenten (totalen)" & Chr(10) & _
+           nDagen & " dag(en) (afweeglijst)" & Chr(10) & Chr(10) & _
+           sOdtPath & Chr(10) & sOdtPath2 & Chr(10) & sOdtPath3, _
+           64, "Overzichten klaar"
+
+End Sub
+
+' =============================================
+' Kiemkracht - Etiketten groentenpakketten
+' Maakt een Calc-document met één etiket per cel:
+'   regel 1: naam
+'   regel 2: afhaalpunt
+'   regel 3: naam pakket voluit
+' Volgorde: per afhaalpunt, dan Klein → Groot → Extra groot → Mini
+' =============================================
+Sub MaakEtiketten()
+
+    Const cNaam    = 0
+    Const cAfh     = 1
+    Const cKG      = 17
+    Const cGG      = 18
+    Const cEGG     = 19
+    Const cMINI    = 20
+    Const cVolgNr  = 55  ' kolom BD
+
+    Dim oDoc     As Object
+    Dim oWkSheet As Object
+    oDoc     = ThisComponent
+    oWkSheet = oDoc.Sheets.getByIndex(0)
+
+    Dim oCalcCursor As Object
+    oCalcCursor = oWkSheet.createCursor()
+    oCalcCursor.gotoEndOfUsedArea(True)
+    Dim nLastRow As Long
+    nLastRow = oCalcCursor.getRangeAddress().EndRow
+
+    ' Data verzamelen
+    Dim eNaam(500)   As String
+    Dim eAfh(500)    As String
+    Dim ePakket(500) As String
+    Dim ePakOrd(500) As Integer
+    Dim eVolgNr(500) As Long
+    Dim nEt          As Integer
+    nEt = 0
+
+    Dim i       As Long
+    Dim sNaam   As String
+    Dim sAfh    As String
+    Dim sPakket As String
+    Dim iPakOrd As Integer
+
+    For i = 6 To nLastRow
+        sNaam = oWkSheet.getCellByPosition(cNaam, i).getString()
+        sAfh  = oWkSheet.getCellByPosition(cAfh,  i).getString()
+        If sNaam = "" Or sAfh = "afhaalpunt/dag" Then GoTo VolgendeRijEt
+
+        If      oWkSheet.getCellByPosition(cKG,   i).getValue() > 0 Then
+            sPakket = "Klein groentenpakket"  : iPakOrd = 1
+        ElseIf  oWkSheet.getCellByPosition(cGG,   i).getValue() > 0 Then
+            sPakket = "Groot groentenpakket"  : iPakOrd = 2
+        ElseIf  oWkSheet.getCellByPosition(cEGG,  i).getValue() > 0 Then
+            sPakket = "Extra groot groentenpakket" : iPakOrd = 3
+        ElseIf  oWkSheet.getCellByPosition(cMINI, i).getValue() > 0 Then
+            sPakket = "Mini groentenpakket"   : iPakOrd = 4
+        Else
+            GoTo VolgendeRijEt
+        End If
+
+        If nEt <= 500 Then
+            eNaam(nEt)   = sNaam
+            eAfh(nEt)    = sAfh
+            ePakket(nEt) = sPakket
+            ePakOrd(nEt) = iPakOrd
+            eVolgNr(nEt) = CLng(oWkSheet.getCellByPosition(cVolgNr, i).getValue())
+            nEt = nEt + 1
+        End If
+
+        VolgendeRijEt:
+    Next i
+
+    If nEt = 0 Then
+        MsgBox "Geen groentenpakketten gevonden.", 48, "Etiketten"
+        Exit Sub
+    End If
+
+    ' Unieke afhaalpunten in volgorde van eerste verschijning (= weekbestandvolgorde)
+    Dim aAfhOrd(50) As String
+    Dim nAfhOrd     As Integer
+    Dim k           As Integer
+    Dim bNieuw      As Boolean
+    nAfhOrd = 0
+    For i = 0 To nEt - 1
+        bNieuw = True
+        For k = 0 To nAfhOrd - 1
+            If aAfhOrd(k) = eAfh(i) Then bNieuw = False : Exit For
+        Next k
+        If bNieuw And nAfhOrd <= 50 Then
+            aAfhOrd(nAfhOrd) = eAfh(i)
+            nAfhOrd = nAfhOrd + 1
+        End If
+    Next i
+
+    ' Gesorteerde uitvoerindex opbouwen: per afhaalpunt (weekbestandvolgorde),
+    ' binnen afhaalpunt op pakketorde (1=Klein, 2=Groot, 3=EGG, 4=Mini),
+    ' binnen pakket op volgnummer (kolom BD, oplopend)
+    Dim aIdx(500)  As Integer
+    Dim nIdx       As Integer
+    Dim p          As Integer
+    Dim aTmp(500)  As Integer
+    Dim nTmp       As Integer
+    Dim t1         As Integer
+    Dim t2         As Integer
+    Dim tSwap      As Integer
+    nIdx = 0
+    For k = 0 To nAfhOrd - 1
+        For p = 1 To 4
+            ' Verzamel kandidaten voor dit afhaalpunt + pakket
+            nTmp = 0
+            For i = 0 To nEt - 1
+                If eAfh(i) = aAfhOrd(k) And ePakOrd(i) = p Then
+                    aTmp(nTmp) = i
+                    nTmp = nTmp + 1
+                End If
+            Next i
+            ' Bubble sort op volgnummer (oplopend)
+            For t1 = 0 To nTmp - 2
+                For t2 = 0 To nTmp - t1 - 2
+                    If eVolgNr(aTmp(t2)) > eVolgNr(aTmp(t2 + 1)) Then
+                        tSwap        = aTmp(t2)
+                        aTmp(t2)     = aTmp(t2 + 1)
+                        aTmp(t2 + 1) = tSwap
+                    End If
+                Next t2
+            Next t1
+            ' Toevoegen aan uitvoerindex
+            For t1 = 0 To nTmp - 1
+                aIdx(nIdx) = aTmp(t1)
+                nIdx = nIdx + 1
+            Next t1
+        Next p
+    Next k
+
+    ' Nieuw Calc-document aanmaken
+    Dim oDesktop As Object
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
+    aArgs(0).Name  = "Hidden"
+    aArgs(0).Value = False
+
+    Dim oCalc    As Object
+    Dim oEtSheet As Object
+    oCalc    = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aArgs())
+    oEtSheet = oCalc.Sheets.getByIndex(0)
+    oEtSheet.Name = "etiketten"
+
+    ' Paginaopmaak: marges 0, geen kop- of voettekst
+    Dim oPS As Object
+    oPS = oCalc.StyleFamilies.getByName("PageStyles").getByName("Default")
+    oPS.TopMargin    = 0 : oPS.BottomMargin = 0
+    oPS.LeftMargin   = 0 : oPS.RightMargin  = 0
+    oPS.HeaderIsOn   = False
+    oPS.FooterIsOn   = False
+
+    ' Eerste lege rij van 0,80 cm voor correcte printuitlijning
+    Dim oRows As Object
+    oRows = oEtSheet.getRows()
+    oRows.getByIndex(0).Height       = 800
+    oRows.getByIndex(0).OptimalHeight = False
+
+    ' Kolombreedte: 6,90 cm
+    Dim oCols As Object
+    oCols = oEtSheet.getColumns()
+    oCols.getByIndex(0).Width        = 6900
+    oCols.getByIndex(0).OptimalWidth = False
+
+    ' Etiketten schrijven: één per cel, regels gescheiden door Chr(10)
+    ' Starten op rij 1 (na de lege uitlijnrij)
+    Dim oCell As Object
+    Dim iEt   As Integer
+    For iEt = 0 To nIdx - 1
+        i = aIdx(iEt)
+        oCell = oEtSheet.getCellByPosition(0, iEt + 1)
+        oCell.setString(eNaam(i) & Chr(10) & ePakket(i) & Chr(10) & eAfh(i))
+        oCell.setPropertyValue("IsTextWrapped", True)
+        oCell.setPropertyValue("HoriJustify", com.sun.star.table.CellHoriJustify.LEFT)
+        oCell.setPropertyValue("VertJustify", com.sun.star.table.CellVertJustify2.CENTER)
+        oCell.setPropertyValue("ParaLeftMargin", 605)
+        oCell.setPropertyValue("CharFontName", "Calibri")
+        oCell.setPropertyValue("CharHeight", 17.5)
+
+        oRows.getByIndex(iEt + 1).Height        = 3500
+        oRows.getByIndex(iEt + 1).OptimalHeight = False
+    Next iEt
+
+    ' Extra kolommen B, C, D, ... met formules naar kolom A
+    ' 8 etiketten per kolom (rijen 2-9)
+    Const nLabPerKol = 8
+    Dim nExtraKols   As Integer
+    Dim iKol         As Integer
+    Dim iRij         As Integer
+    Dim iSrcRij      As Integer
+    Dim sFormule     As String
+    nExtraKols = Int((nIdx - 1) / nLabPerKol)  ' 0 als <= 8 etiketten
+
+    For iKol = 1 To nExtraKols
+        oCols.getByIndex(iKol).Width        = 6900
+        oCols.getByIndex(iKol).OptimalWidth = False
+        For iRij = 2 To nLabPerKol + 1
+            iSrcRij  = iRij + iKol * nLabPerKol
+            Dim oCelF As Object
+            oCelF = oEtSheet.getCellByPosition(iKol, iRij - 1)
+            oCelF.FormulaLocal = "=ALS(A" & iSrcRij & "="""";"""";A" & iSrcRij & ")"
+            oCelF.setPropertyValue("IsTextWrapped", True)
+            oCelF.setPropertyValue("HoriJustify", com.sun.star.table.CellHoriJustify.LEFT)
+            oCelF.setPropertyValue("VertJustify", com.sun.star.table.CellVertJustify2.CENTER)
+            oCelF.setPropertyValue("ParaLeftMargin", 605)
+            oCelF.setPropertyValue("CharFontName", "Calibri")
+            oCelF.setPropertyValue("CharHeight", 17.5)
+
+        Next iRij
+    Next iKol
+
+    ' Opslaan naast weekbestand
+    Dim aSave(0) As New com.sun.star.beans.PropertyValue
+    aSave(0).Name  = "FilterName"
+    aSave(0).Value = "calc8"
+    Dim sWkPath   As String
+    Dim sCalcPath As String
+    sWkPath   = ConvertFromURL(oDoc.getURL())
+    sCalcPath = Left(sWkPath, Len(sWkPath) - 4) & "_etiketten.ods"
+    oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
+
+    MsgBox nEt & " etiketten aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar"
+
+End Sub
+
+' =============================================
+' Kiemkracht - Etiketten bijbestellingen losse groenten
+' Etiket: naam / "Bijbestelling" / afhaalpunt
+' Volgorde: afhaalpunt (weekbestand), pakket, volgnummer BD
+' =============================================
+Sub MaakEtikettenBijbestelling()
+
+    Const cNaam       = 0
+    Const cAfh        = 1
+    Const cKG         = 17
+    Const cGG         = 18
+    Const cEGG        = 19
+    Const cMINI       = 20
+    Const cGroent0    = 22  ' kolom W
+    Const cGroentLast = 46  ' kolom AU
+    Const cVolgNr     = 55  ' kolom BD
+    Const cBestelMin  = 56  ' kolom BE: enkel etiket als waarde > 5
+
+    Dim oDoc     As Object
+    Dim oWkSheet As Object
+    oDoc     = ThisComponent
+    oWkSheet = oDoc.Sheets.getByIndex(0)
+
+    Dim oCalcCursor As Object
+    oCalcCursor = oWkSheet.createCursor()
+    oCalcCursor.gotoEndOfUsedArea(True)
+    Dim nLastRow As Long
+    nLastRow = oCalcCursor.getRangeAddress().EndRow
+
+    ' Data verzamelen
+    Dim eNaam(500)   As String
+    Dim eAfh(500)    As String
+    Dim ePakOrd(500) As Integer
+    Dim eVolgNr(500) As Long
+    Dim nEt          As Integer
+    nEt = 0
+
+    Dim i       As Long
+    Dim g       As Integer
+    Dim sNaam   As String
+    Dim sAfh    As String
+    Dim iPakOrd As Integer
+    Dim bHasG   As Boolean
+
+    For i = 6 To nLastRow
+        sNaam = oWkSheet.getCellByPosition(cNaam, i).getString()
+        sAfh  = oWkSheet.getCellByPosition(cAfh,  i).getString()
+        If sNaam = "" Or sAfh = "afhaalpunt/dag" Then GoTo VolgendeRijBij
+
+        ' Controleer of er losse groenten zijn (kolom W t.e.m. AU)
+        bHasG = False
+        For g = cGroent0 To cGroentLast
+            If oWkSheet.getCellByPosition(g, i).getValue() > 0 Then
+                bHasG = True : Exit For
+            End If
+        Next g
+        If Not bHasG Then GoTo VolgendeRijBij
+
+        ' Enkel etiket als kolom BE > 5
+        If oWkSheet.getCellByPosition(cBestelMin, i).getValue() <= 5 Then GoTo VolgendeRijBij
+
+        ' Pakketorde voor sortering
+        If      oWkSheet.getCellByPosition(cKG,   i).getValue() > 0 Then : iPakOrd = 1
+        ElseIf  oWkSheet.getCellByPosition(cGG,   i).getValue() > 0 Then : iPakOrd = 2
+        ElseIf  oWkSheet.getCellByPosition(cEGG,  i).getValue() > 0 Then : iPakOrd = 3
+        ElseIf  oWkSheet.getCellByPosition(cMINI, i).getValue() > 0 Then : iPakOrd = 4
+        Else                                                               : iPakOrd = 5
+        End If
+
+        If nEt <= 500 Then
+            eNaam(nEt)   = sNaam
+            eAfh(nEt)    = sAfh
+            ePakOrd(nEt) = iPakOrd
+            eVolgNr(nEt) = CLng(oWkSheet.getCellByPosition(cVolgNr, i).getValue())
+            nEt = nEt + 1
+        End If
+
+        VolgendeRijBij:
+    Next i
+
+    If nEt = 0 Then
+        MsgBox "Geen bijbestellingen losse groenten gevonden.", 48, "Etiketten bijbestelling"
+        Exit Sub
+    End If
+
+    ' Afhaalpunten in volgorde van eerste verschijning
+    Dim aAfhOrd(50) As String
+    Dim nAfhOrd     As Integer
+    Dim k           As Integer
+    Dim bNieuw      As Boolean
+    nAfhOrd = 0
+    For i = 0 To nEt - 1
+        bNieuw = True
+        For k = 0 To nAfhOrd - 1
+            If aAfhOrd(k) = eAfh(i) Then bNieuw = False : Exit For
+        Next k
+        If bNieuw And nAfhOrd <= 50 Then
+            aAfhOrd(nAfhOrd) = eAfh(i)
+            nAfhOrd = nAfhOrd + 1
+        End If
+    Next i
+
+    ' Gesorteerde uitvoerindex: afhaalpunt → pakket → volgnummer
+    Dim aIdx(500) As Integer
+    Dim nIdx      As Integer
+    Dim p         As Integer
+    Dim aTmp(500) As Integer
+    Dim nTmp      As Integer
+    Dim t1        As Integer
+    Dim t2        As Integer
+    Dim tSwap     As Integer
+    nIdx = 0
+    For k = 0 To nAfhOrd - 1
+        For p = 1 To 5
+            nTmp = 0
+            For i = 0 To nEt - 1
+                If eAfh(i) = aAfhOrd(k) And ePakOrd(i) = p Then
+                    aTmp(nTmp) = i
+                    nTmp = nTmp + 1
+                End If
+            Next i
+            For t1 = 0 To nTmp - 2
+                For t2 = 0 To nTmp - t1 - 2
+                    If eVolgNr(aTmp(t2)) > eVolgNr(aTmp(t2 + 1)) Then
+                        tSwap = aTmp(t2) : aTmp(t2) = aTmp(t2+1) : aTmp(t2+1) = tSwap
+                    End If
+                Next t2
+            Next t1
+            For t1 = 0 To nTmp - 1
+                aIdx(nIdx) = aTmp(t1)
+                nIdx = nIdx + 1
+            Next t1
+        Next p
+    Next k
+
+    ' Nieuw Calc-document aanmaken
+    Dim oDesktop As Object
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
+    aArgs(0).Name  = "Hidden"
+    aArgs(0).Value = False
+
+    Dim oCalc    As Object
+    Dim oEtSheet As Object
+    oCalc    = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aArgs())
+    oEtSheet = oCalc.Sheets.getByIndex(0)
+    oEtSheet.Name = "bijbestelling"
+
+    ' Paginaopmaak: marges 0, geen kop- of voettekst
+    Dim oPSB As Object
+    oPSB = oCalc.StyleFamilies.getByName("PageStyles").getByName("Default")
+    oPSB.TopMargin    = 0 : oPSB.BottomMargin = 0
+    oPSB.LeftMargin   = 0 : oPSB.RightMargin  = 0
+    oPSB.HeaderIsOn   = False
+    oPSB.FooterIsOn   = False
+
+    ' Eerste lege rij van 0,80 cm
+    Dim oRows As Object
+    Dim oCols As Object
+    oRows = oEtSheet.getRows()
+    oCols = oEtSheet.getColumns()
+    oRows.getByIndex(0).Height        = 800
+    oRows.getByIndex(0).OptimalHeight = False
+
+    ' Kolombreedte kolom A
+    oCols.getByIndex(0).Width        = 6900
+    oCols.getByIndex(0).OptimalWidth = False
+
+    ' Etiketten schrijven
+    Dim oCell As Object
+    Dim iEt   As Integer
+    For iEt = 0 To nIdx - 1
+        i = aIdx(iEt)
+        oCell = oEtSheet.getCellByPosition(0, iEt + 1)
+        oCell.setString(eNaam(i) & Chr(10) & "Bijbestelling" & Chr(10) & eAfh(i))
+        oCell.setPropertyValue("IsTextWrapped", True)
+        oCell.setPropertyValue("HoriJustify", com.sun.star.table.CellHoriJustify.LEFT)
+        oCell.setPropertyValue("VertJustify", com.sun.star.table.CellVertJustify2.CENTER)
+        oCell.setPropertyValue("ParaLeftMargin", 605)
+        oCell.setPropertyValue("CharFontName", "Calibri")
+        oCell.setPropertyValue("CharHeight", 17.5)
+        oRows.getByIndex(iEt + 1).Height        = 3500
+        oRows.getByIndex(iEt + 1).OptimalHeight = False
+    Next iEt
+
+    ' Extra kolommen B, C, ... met formules
+    Const nLabPerKol = 8
+    Dim nExtraKols   As Integer
+    Dim iKol         As Integer
+    Dim iRij         As Integer
+    Dim iSrcRij      As Integer
+    Dim sFormule     As String
+    Dim oCelF        As Object
+    nExtraKols = Int((nIdx - 1) / nLabPerKol)
+    For iKol = 1 To nExtraKols
+        oCols.getByIndex(iKol).Width        = 6900
+        oCols.getByIndex(iKol).OptimalWidth = False
+        For iRij = 2 To nLabPerKol + 1
+            iSrcRij  = iRij + iKol * nLabPerKol
+            oCelF = oEtSheet.getCellByPosition(iKol, iRij - 1)
+            oCelF.FormulaLocal = "=ALS(A" & iSrcRij & "="""";"""";A" & iSrcRij & ")"
+            oCelF.setPropertyValue("IsTextWrapped", True)
+            oCelF.setPropertyValue("HoriJustify", com.sun.star.table.CellHoriJustify.LEFT)
+            oCelF.setPropertyValue("VertJustify", com.sun.star.table.CellVertJustify2.CENTER)
+            oCelF.setPropertyValue("ParaLeftMargin", 605)
+            oCelF.setPropertyValue("CharFontName", "Calibri")
+            oCelF.setPropertyValue("CharHeight", 17.5)
+        Next iRij
+    Next iKol
+
+    ' Opslaan naast weekbestand
+    Dim aSave(0) As New com.sun.star.beans.PropertyValue
+    aSave(0).Name  = "FilterName"
+    aSave(0).Value = "calc8"
+    Dim sWkPath   As String
+    Dim sCalcPath As String
+    sWkPath   = ConvertFromURL(oDoc.getURL())
+    sCalcPath = Left(sWkPath, Len(sWkPath) - 4) & "_etiketten_bijbestelling.ods"
+    oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
+
+    MsgBox nEt & " etiketten bijbestelling aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar"
+
+End Sub
+
+' =============================================
+' Kiemkracht - Weglatingen per pakket en dag invullen
+' Leest weekbestand (tabblad 1) en schrijft tellingen naar tabblad 2:
+'   Kolom A: pakket ("KG","GG","EGG","MINI")
+'   Kolom C: groente naam
+'   Kolom E: aantal weglatingen op donderdag
+'   Kolom F: aantal weglatingen op vrijdag
+' =============================================
+Sub VulWeglatingen()
+
+    Const cKlaarDag = 2   ' kolom C: dag klaarmaken
+    Const cKG       = 17  ' kolom R
+    Const cGG       = 18  ' kolom S
+    Const cEGG      = 19  ' kolom T
+    Const cMINI     = 20  ' kolom U
+    Const cWeg0     = 49  ' kolom AX: start weglatingen
+
+    Dim oDoc     As Object : oDoc = ThisComponent
+    Dim oWkSheet As Object : oWkSheet  = oDoc.Sheets.getByIndex(0)
+    Dim oWegSheet As Object : oWegSheet = oDoc.Sheets.getByIndex(1)
+
+    ' Laatste rij weekblad
+    Dim oCalcCursor As Object
+    oCalcCursor = oWkSheet.createCursor()
+    oCalcCursor.gotoEndOfUsedArea(True)
+    Dim nLastRow As Long
+    nLastRow = oCalcCursor.getRangeAddress().EndRow
+
+    ' Weglatingsnamen uit weekblad rij 3 (index 2) vanaf kolom AX
+    Dim wegNaam(99) As String
+    Dim nWeg        As Integer
+    nWeg = 0
+    Do While oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString() <> ""
+        wegNaam(nWeg) = oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString()
+        nWeg = nWeg + 1
+        If nWeg >= 100 Then Exit Do
+    Loop
+
+    ' Loop over rijen tweede tabblad (vanaf rij 3 = index 2), kolom C niet leeg
+    Dim r        As Integer : r = 2
+    Dim sGroente As String
+    Dim sPakket  As String
+    Dim iPakKol  As Integer
+    Dim iWegKol  As Integer
+    Dim w        As Integer
+    Dim i        As Long
+    Dim nDon     As Long
+    Dim nVrij    As Long
+    Dim sKlaarDag As String
+
+    Do While oWegSheet.getCellByPosition(0, r).getString() <> ""
+        sGroente = oWegSheet.getCellByPosition(2, r).getString()  ' kolom C
+        sPakket  = oWegSheet.getCellByPosition(0, r).getString()  ' kolom A
+
+        ' Rij overslaan als groente niet ingevuld
+        If sGroente = "" Then GoTo VolgendeRijWeg2
+
+        Select Case sPakket
+            Case "KG"   : iPakKol = cKG
+            Case "GG"   : iPakKol = cGG
+            Case "EGG"  : iPakKol = cEGG
+            Case "MINI" : iPakKol = cMINI
+            Case Else   : iPakKol = -1
+        End Select
+
+        iWegKol = -1
+        For w = 0 To nWeg - 1
+            If wegNaam(w) = sGroente Then
+                iWegKol = cWeg0 + w
+                Exit For
+            End If
+        Next w
+
+        nDon = 0 : nVrij = 0
+
+        If iPakKol >= 0 And iWegKol >= 0 Then
+            For i = 6 To nLastRow
+                If oWkSheet.getCellByPosition(iPakKol,  i).getValue()  = 0  Then GoTo VolgendeRijWeg
+                If oWkSheet.getCellByPosition(iWegKol,  i).getString() = "" Then GoTo VolgendeRijWeg
+                sKlaarDag = oWkSheet.getCellByPosition(cKlaarDag, i).getString()
+                If sKlaarDag = "donderdag" Then nDon  = nDon  + 1
+                If sKlaarDag = "vrijdag"   Then nVrij = nVrij + 1
+                VolgendeRijWeg:
+            Next i
+        End If
+
+        oWegSheet.getCellByPosition(4, r).setValue(nDon)         ' kolom E
+        oWegSheet.getCellByPosition(5, r).setValue(nVrij)        ' kolom F
+        oWegSheet.getCellByPosition(3, r).setValue(nDon + nVrij) ' kolom D: totaal
+
+        VolgendeRijWeg2:
+        r = r + 1
+    Loop
+
+    MsgBox "Weglatingen verwerkt.", 64, "Klaar"
+
+End Sub
+
+Const WEBAPP_URL = "https://script.google.com/macros/s/AKfycby4YLRd9N_loZHkHWh03R2Q9c5UofI5jg4Vol4XtOXomd5_fsJ8Ge_RZvjP4TSYpNcbIQ/exec"
+
+' =============================================
+' LeesUitSheets
+' Leest O7:Q52 uit Google Sheets → Blad2 A3:C48
+' Geeft True terug bij succes
+' =============================================
+
+Function LeesUitSheets() As Boolean
+
+    Dim oBlad2   As Object
+    Dim oHttp    As Object
+    Dim sAll     As String
+    Dim aLines() As String
+    Dim aVelden() As String
+    Dim i As Integer, r As Integer, c As Integer
+
+    LeesUitSheets = False
+    oBlad2 = ThisComponent.Sheets.getByIndex(1)
+
+    On Error GoTo HttpFout
+    oHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
+    oHttp.Open "GET", WEBAPP_URL, False
+    oHttp.SetTimeouts 0, 30000, 30000, 30000
+    oHttp.Send
+
+    If oHttp.Status <> 200 Then
+        MsgBox "Fout bij lezen uit Google Sheets: HTTP " & oHttp.Status, 16, "Fout"
+        Exit Function
+    End If
+
+    sAll = oHttp.ResponseText
+    On Error GoTo 0
+
+    If Left(sAll, 1) = "<" Then
+        MsgBox "Google Sheets gaf een fout terug. Controleer de tabnaam in het Apps Script." & Chr(10) & Chr(10) & Left(sAll, 300), 16, "Fout"
+        Exit Function
+    End If
+
+    aLines = Split(sAll, Chr(10))
+    r = 2
+    For i = 0 To UBound(aLines)
+        Dim sRegel As String
+        sRegel = Trim(aLines(i))
+        If sRegel = "" Then GoTo VolgendeLeesRij
+        aVelden = Split(sRegel, Chr(9))
+        For c = 0 To UBound(aVelden)
+            If c > 2 Then Exit For
+            oBlad2.getCellByPosition(c, r).setString(aVelden(c))
+        Next c
+        r = r + 1
+        If r > 47 Then Exit For
+        VolgendeLeesRij:
+    Next i
+
+    LeesUitSheets = True
+    Exit Function
+
+HttpFout:
+    MsgBox "Verbindingsfout met Google Sheets:" & Chr(10) & Error$, 16, "Fout"
+
+End Function
+
+' =============================================
+' SyncMetSheets
+' Leest O7:Q52 uit Google Sheets → Blad2 A3:C48
+' Roept VulWeglatingen aan
+' Schrijft Blad2 D3:F48 → Google Sheets U7:W52
+' =============================================
+
+Sub SyncMetSheets()
+
+    Dim oDoc     As Object
+    Dim oBlad2   As Object
+    Dim oHttp    As Object
+    Dim sBody    As String
+    Dim r As Integer, c As Integer
+
+    oDoc   = ThisComponent
+    oBlad2 = oDoc.Sheets.getByIndex(1)
+
+    ' ---------- STAP 1: lees O7:Q52 uit Google Sheets ----------
+    If Not LeesUitSheets() Then Exit Sub
+
+    ' ---------- STAP 2: vul weglatingen ----------
+    VulWeglatingen()
+
+    ' ---------- STAP 3: schrijf Blad2 D3:F48 → Google Sheets U7:W52 ----------
+    sBody = ""
+    For r = 2 To 47
+        Dim sRij As String
+        sRij = ""
+        For c = 3 To 5
+            Dim sWaarde As String
+            sWaarde = CStr(CLng(oBlad2.getCellByPosition(c, r).getValue()))
+            If c = 3 Then
+                sRij = sWaarde
+            Else
+                sRij = sRij & Chr(9) & sWaarde
+            End If
+        Next c
+        If r = 2 Then
+            sBody = sRij
+        Else
+            sBody = sBody & Chr(10) & sRij
+        End If
+    Next r
+
+    On Error GoTo HttpFout
+    oHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
+    oHttp.Open "POST", WEBAPP_URL & "?target=U7", False
+    oHttp.SetRequestHeader "Content-Type", "text/plain; charset=utf-8"
+    oHttp.SetTimeouts 0, 30000, 30000, 30000
+    oHttp.Send sBody
+
+    If oHttp.Status <> 200 Then
+        MsgBox "Fout bij terugschrijven naar Google Sheets: HTTP " & oHttp.Status, 16, "Fout"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    ' ---------- STAP 4: schrijf R5:U6 → Google Sheets E4:H5 ----------
+    Dim oWkSheet As Object
+    oWkSheet = oDoc.Sheets.getByIndex(0)
+    Dim sBody2 As String
+    Dim r2 As Integer, c2 As Integer
+    sBody2 = ""
+    For r2 = 4 To 5  ' rij-index 4..5 = rijen 5..6
+        Dim sRij2 As String
+        sRij2 = ""
+        For c2 = 17 To 20  ' kolommen R..U (index 17..20)
+            Dim oCell2 As Object
+            Dim sWaarde2 As String
+            oCell2 = oWkSheet.getCellByPosition(c2, r2)
+            If oCell2.getType() = 1 Then
+                sWaarde2 = CStr(oCell2.getValue())
+            Else
+                sWaarde2 = oCell2.getString()
+            End If
+            If c2 = 17 Then
+                sRij2 = sWaarde2
+            Else
+                sRij2 = sRij2 & Chr(9) & sWaarde2
+            End If
+        Next c2
+        If r2 = 4 Then
+            sBody2 = sRij2
+        Else
+            sBody2 = sBody2 & Chr(10) & sRij2
+        End If
+    Next r2
+
+    On Error GoTo HttpFout
+    oHttp.Open "POST", WEBAPP_URL & "?target=E4", False
+    oHttp.SetRequestHeader "Content-Type", "text/plain; charset=utf-8"
+    oHttp.SetTimeouts 0, 30000, 30000, 30000
+    oHttp.Send sBody2
+
+    If oHttp.Status <> 200 Then
+        MsgBox "Fout bij schrijven R5:U6 naar Google Sheets: HTTP " & oHttp.Status, 16, "Fout"
+        Exit Sub
+    End If
+    On Error GoTo 0
+
+    MsgBox "Sync met Google Sheets voltooid.", 64, "Klaar"
+    Exit Sub
+
+HttpFout:
+    MsgBox "Verbindingsfout met Google Sheets:" & Chr(10) & Error$, 16, "Fout"
+
+End Sub
+
+
