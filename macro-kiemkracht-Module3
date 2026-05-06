@@ -420,7 +420,7 @@ Sub MaakOverzichten()
 
     ' -------------------------------------------------------
     ' Document 4: overzicht weglatingen
-    ' per dag > per formaat (KG/GG/EGG/MINI) > per groente
+    ' per dag > per formaat (Klein/Groot/Extra groot/Mini) > per groente
     ' -------------------------------------------------------
     Dim sOdtPath4    As String
     Dim oWriter4     As Object
@@ -432,8 +432,7 @@ Sub MaakOverzichten()
     Dim f            As Integer
     Dim sKlanten     As String
     Dim nKlanten     As Integer
-    Dim bEersteDag4  As Boolean
-    Dim bEersteFmt   As Boolean
+    Dim bEersteFmt4  As Boolean
     Dim bEersteGr    As Boolean
     Dim bHasAnyWeg   As Boolean
     Dim aKlantLines() As String
@@ -441,10 +440,10 @@ Sub MaakOverzichten()
 
     sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen.odt"
 
-    aFmtCols(0) = cKG   : aFmtNamen(0) = oWkSheet.getCellByPosition(cKG,   2).getString()
-    aFmtCols(1) = cGG   : aFmtNamen(1) = oWkSheet.getCellByPosition(cGG,   2).getString()
-    aFmtCols(2) = cEGG  : aFmtNamen(2) = oWkSheet.getCellByPosition(cEGG,  2).getString()
-    aFmtCols(3) = cMINI : aFmtNamen(3) = oWkSheet.getCellByPosition(cMINI, 2).getString()
+    aFmtCols(0) = cKG   : aFmtNamen(0) = "Klein"
+    aFmtCols(1) = cGG   : aFmtNamen(1) = "Groot"
+    aFmtCols(2) = cEGG  : aFmtNamen(2) = "Extra groot"
+    aFmtCols(3) = cMINI : aFmtNamen(3) = "Mini"
 
     bHasAnyWeg = False
     If nWeg > 0 And nDagen > 0 Then
@@ -471,12 +470,11 @@ Sub MaakOverzichten()
         oPS4.TopMargin    = 1500  : oPS4.BottomMargin = 1500
         oPS4.LeftMargin   = 1500  : oPS4.RightMargin  = 1500
 
-        oText4  = oWriter4.getText()
-        oCurs4  = oText4.createTextCursor()
-        bEersteDag4 = True
+        oText4 = oWriter4.getText()
+        oCurs4 = oText4.createTextCursor()
 
         For d = 0 To nDagen - 1
-            bEersteFmt = True
+            bEersteFmt4 = True
 
             For f = 0 To 3
                 bEersteGr = True
@@ -503,50 +501,51 @@ Sub MaakOverzichten()
 
                     If nKlanten = 0 Then GoTo VolgendeWeg
 
-                    ' Dag-kop (alleen bij eerste inhoud van die dag)
-                    If bEersteFmt And bEersteGr Then
-                        If Not bEersteDag4 Then
-                            oText4.insertControlCharacter(oCurs4, _
-                                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                            oText4.insertControlCharacter(oCurs4, _
-                                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                        End If
+                    ' Dag-kop: eenmalig bij eerste inhoud van die dag
+                    ' Vorige groente liet cursor al op lege paragraaf (scheidt dagen)
+                    If bEersteFmt4 And bEersteGr Then
                         oCurs4.setPropertyValue("CharHeight", 14)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-                        oText4.insertString(oCurs4, UCase(aDagen(d)), False)
-                        oCurs4.setPropertyValue("CharHeight", 10)
-                        oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
-                        bEersteDag4 = False
-                    End If
-
-                    ' Formaat-kop (alleen bij eerste inhoud van dat formaat)
-                    If bEersteGr Then
+                        oText4.insertString(oCurs4, _
+                            "Weglatingen " & UCase(Left(aDagen(d), 1)) & Mid(aDagen(d), 2), False)
                         oText4.insertControlCharacter(oCurs4, _
                             com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                        oText4.insertControlCharacter(oCurs4, _
+                            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                        oCurs4.setPropertyValue("CharHeight", 10)
+                        oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+                    End If
+
+                    ' Formaat-kop: eenmalig bij eerste inhoud van dat formaat
+                    If bEersteGr Then
                         oCurs4.setPropertyValue("CharHeight", 12)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                         oText4.insertString(oCurs4, aFmtNamen(f), False)
+                        oText4.insertControlCharacter(oCurs4, _
+                            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                        oText4.insertControlCharacter(oCurs4, _
+                            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                         oCurs4.setPropertyValue("CharHeight", 10)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
-                        bEersteFmt = False
-                        bEersteGr  = False
+                        bEersteFmt4 = False
+                        bEersteGr   = False
                     End If
 
-                    ' Groente bold + klanten één per regel
-                    oText4.insertControlCharacter(oCurs4, _
-                        com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                    ' Groente-naam bold, klanten elk op nieuwe regel met inspringing
                     oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-                    oText4.insertString(oCurs4, wegNaam(w) & ": ", False)
+                    oText4.insertString(oCurs4, wegNaam(w) & ":", False)
                     oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
                     aKlantLines = Split(sKlanten, Chr(10))
                     For kl = 0 To UBound(aKlantLines)
-                        If kl > 0 Then
-                            oText4.insertControlCharacter(oCurs4, _
-                                com.sun.star.text.ControlCharacter.LINE_BREAK, False)
-                            oText4.insertString(oCurs4, "    ", False)
-                        End If
-                        oText4.insertString(oCurs4, aKlantLines(kl), False)
+                        oText4.insertControlCharacter(oCurs4, _
+                            com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                        oText4.insertString(oCurs4, "    " & aKlantLines(kl), False)
                     Next kl
+                    ' Lege paragraaf na groente-blok (scheidt groenten én formaten/dagen)
+                    oText4.insertControlCharacter(oCurs4, _
+                        com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                    oText4.insertControlCharacter(oCurs4, _
+                        com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
 
                     VolgendeWeg:
                 Next w
