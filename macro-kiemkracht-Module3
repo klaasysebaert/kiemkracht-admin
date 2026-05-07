@@ -520,14 +520,14 @@ Sub MaakOverzichten()
 
                     ' Formaat-kop: eenmalig bij eerste inhoud van dat formaat
                     If bEersteGr Then
-                        oCurs4.setPropertyValue("CharHeight", 12)
+                        oCurs4.setPropertyValue("CharHeight", 16)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                         oText4.insertString(oCurs4, aFmtNamen(f), False)
                         oText4.insertControlCharacter(oCurs4, _
                             com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                         oText4.insertControlCharacter(oCurs4, _
                             com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                        oCurs4.setPropertyValue("CharHeight", 10)
+                        oCurs4.setPropertyValue("CharHeight", 16)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
                         bEersteFmt4 = False
                         bEersteGr   = False
