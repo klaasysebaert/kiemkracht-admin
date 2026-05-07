@@ -472,6 +472,8 @@ Sub MaakOverzichten()
 
         oText4 = oWriter4.getText()
         oCurs4 = oText4.createTextCursor()
+        oCurs4.setPropertyValue("CharFontName", "Calibri")
+        oCurs4.setPropertyValue("CharHeight", 16)
 
         For d = 0 To nDagen - 1
             bEersteFmt4 = True
