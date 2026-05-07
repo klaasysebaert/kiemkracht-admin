@@ -506,7 +506,7 @@ Sub MaakOverzichten()
                     ' Dag-kop: eenmalig bij eerste inhoud van die dag
                     ' Vorige groente liet cursor al op lege paragraaf (scheidt dagen)
                     If bEersteFmt4 And bEersteGr Then
-                        oCurs4.setPropertyValue("CharHeight", 14)
+                        oCurs4.setPropertyValue("CharHeight", 18)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                         oText4.insertString(oCurs4, _
                             "Weglatingen " & UCase(Left(aDagen(d), 1)) & Mid(aDagen(d), 2), False)
@@ -514,7 +514,7 @@ Sub MaakOverzichten()
                             com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                         oText4.insertControlCharacter(oCurs4, _
                             com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                        oCurs4.setPropertyValue("CharHeight", 10)
+                        oCurs4.setPropertyValue("CharHeight", 16)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
                     End If
 
