@@ -194,19 +194,21 @@ Sub MaakOverzichten()
 
     For b = 0 To nBlok - 1
         ' Volle streep tussen afhaalpunten
-        If b > 0 And aAfh2(b) <> aAfh2(b - 1) Then
-            oWCursor.setPropertyValue("CharHeight",           4)
-            oWCursor.setPropertyValue("TopBorder",            oNoBL)
-            oWCursor.setPropertyValue("BottomBorder",         oSepBL)
-            oWCursor.setPropertyValue("LeftBorder",           oNoBL)
-            oWCursor.setPropertyValue("RightBorder",          oNoBL)
-            oWCursor.setPropertyValue("TopBorderDistance",    0)
-            oWCursor.setPropertyValue("BottomBorderDistance", 200)
-            oWCursor.setPropertyValue("LeftBorderDistance",   0)
-            oWCursor.setPropertyValue("RightBorderDistance",  0)
-            oWCursor.setPropertyValue("ParaBottomMargin",     200)
-            oText.insertControlCharacter(oWCursor, _
-                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+        If b > 0 Then
+            If aAfh2(b) <> aAfh2(b - 1) Then
+                oWCursor.setPropertyValue("CharHeight",           4)
+                oWCursor.setPropertyValue("TopBorder",            oNoBL)
+                oWCursor.setPropertyValue("BottomBorder",         oSepBL)
+                oWCursor.setPropertyValue("LeftBorder",           oNoBL)
+                oWCursor.setPropertyValue("RightBorder",          oNoBL)
+                oWCursor.setPropertyValue("TopBorderDistance",    0)
+                oWCursor.setPropertyValue("BottomBorderDistance", 200)
+                oWCursor.setPropertyValue("LeftBorderDistance",   0)
+                oWCursor.setPropertyValue("RightBorderDistance",  0)
+                oWCursor.setPropertyValue("ParaBottomMargin",     200)
+                oText.insertControlCharacter(oWCursor, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            End If
         End If
 
         oWCursor.setPropertyValue("CharFontName",          "Calibri")
