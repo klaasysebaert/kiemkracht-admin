@@ -218,7 +218,7 @@ Sub MaakOverzichten()
     Const nColH    = 26100
     Const nLineH14 = 600
     Const nLineH16 = 700
-    Const nZone    = 3000
+    Const nZone    = 5000
     Dim nRunH      As Long
     Dim nHdgH      As Long
     Dim nBlkH      As Long
