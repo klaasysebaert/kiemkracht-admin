@@ -196,16 +196,19 @@ Sub MaakOverzichten()
         ' Volle streep tussen afhaalpunten
         If b > 0 Then
             If aAfh2(b) <> aAfh2(b - 1) Then
-                oWCursor.setPropertyValue("CharHeight",           4)
+                oWCursor.setPropertyValue("CharHeight",           2)
                 oWCursor.setPropertyValue("TopBorder",            oNoBL)
                 oWCursor.setPropertyValue("BottomBorder",         oSepBL)
                 oWCursor.setPropertyValue("LeftBorder",           oNoBL)
                 oWCursor.setPropertyValue("RightBorder",          oNoBL)
                 oWCursor.setPropertyValue("TopBorderDistance",    0)
-                oWCursor.setPropertyValue("BottomBorderDistance", 200)
+                oWCursor.setPropertyValue("BottomBorderDistance", 0)
                 oWCursor.setPropertyValue("LeftBorderDistance",   0)
                 oWCursor.setPropertyValue("RightBorderDistance",  0)
-                oWCursor.setPropertyValue("ParaBottomMargin",     200)
+                oWCursor.setPropertyValue("ParaLeftMargin",       500)
+                oWCursor.setPropertyValue("ParaRightMargin",      500)
+                oWCursor.setPropertyValue("ParaTopMargin",        300)
+                oWCursor.setPropertyValue("ParaBottomMargin",     300)
                 oText.insertControlCharacter(oWCursor, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
             End If
@@ -213,6 +216,9 @@ Sub MaakOverzichten()
 
         oWCursor.setPropertyValue("CharFontName",          "Calibri")
         oWCursor.setPropertyValue("CharHeight",           14)
+        oWCursor.setPropertyValue("ParaLeftMargin",        0)
+        oWCursor.setPropertyValue("ParaRightMargin",       0)
+        oWCursor.setPropertyValue("ParaTopMargin",         0)
         oWCursor.setPropertyValue("TopBorder",            oBL)
         oWCursor.setPropertyValue("BottomBorder",         oBL)
         oWCursor.setPropertyValue("LeftBorder",           oBL)
