@@ -231,9 +231,9 @@ Sub MaakOverzichten()
             oWCursor.setPropertyValue("BottomBorder",          oNoBL)
             oWCursor.setPropertyValue("LeftBorder",            oNoBL)
             oWCursor.setPropertyValue("RightBorder",           oNoBL)
+            oWCursor.setPropertyValue("ParaStyleName",         "Afhaalpunt")
             oWCursor.setPropertyValue("ParaTopMargin",         IIf(b = 0, 0, 400))
             oWCursor.setPropertyValue("ParaBottomMargin",      200)
-            oWCursor.setPropertyValue("ParaKeepWithNext",      True)
             ' Kolombreedte ~8900 (1/100mm), koppelteken Calibri 16pt bold ~200 (1/100mm),
             ' gemiddeld letter ~310 (1/100mm) — aanpasbaar via nStreepBr en nLetterBr
             Const nKolBr    = 8900
