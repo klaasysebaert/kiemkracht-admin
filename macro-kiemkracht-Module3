@@ -314,6 +314,7 @@ Sub MaakOverzichten()
     Dim sOdtPath2 As String
     sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_groenten.odt"
     oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
+    oWriter2.close(True)
 
     ' -------------------------------------------------------
     ' Document 3: afweeglijst per dag
