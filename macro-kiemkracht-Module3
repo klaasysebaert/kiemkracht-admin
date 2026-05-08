@@ -242,7 +242,6 @@ Sub MaakOverzichten()
                 com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
         End If
 
-        oWCursor.setPropertyValue("BreakType",             com.sun.star.style.BreakType.NONE)
         oWCursor.setPropertyValue("CharFontName",          "Calibri")
         oWCursor.setPropertyValue("CharHeight",           14)
         oWCursor.setPropertyValue("ParaTopMargin",        0)
