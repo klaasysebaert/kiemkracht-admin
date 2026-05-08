@@ -53,7 +53,6 @@ Sub MaakOverzichten()
 
     ' --- Declaraties voor data-verzameling ---
     Dim aBlok(500)   As String
-    Dim aAfh2(500)   As String
     Dim nBlok        As Integer
     Dim aTotaal(23)  As Double
     Dim aTotDon(23)  As Double
