@@ -209,12 +209,6 @@ Sub MaakOverzichten()
 
     Dim oNoBL As New com.sun.star.table.BorderLine2
 
-    ' Alineastijl voor kopje zodat ParaKeepWithNext werkt (niet beschikbaar op tekst-cursor)
-    Dim oKopjeStijl As Object
-    oKopjeStijl = oWriter.createInstance("com.sun.star.style.ParagraphStyle")
-    oWriter.StyleFamilies.getByName("ParagraphStyles").insertByName("Afhaalpunt", oKopjeStijl)
-    oKopjeStijl.setPropertyValue("ParaKeepWithNext", True)
-
     For b = 0 To nBlok - 1
         ' Afhaalpuntkopje bij eerste blok of bij wisseling van afhaalpunt
         Dim bNieuwAfh As Boolean
@@ -223,6 +217,10 @@ Sub MaakOverzichten()
             If aAfh2(b) <> aAfh2(b - 1) Then bNieuwAfh = True
         End If
         If bNieuwAfh Then
+            ' Kolom-break vóór elk nieuw afhaalpunt (b>0): kopje staat altijd bovenaan kolom
+            If b > 0 Then
+                oWCursor.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+            End If
             oWCursor.setPropertyValue("CharFontName",          "Calibri")
             oWCursor.setPropertyValue("CharHeight",            16)
             oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.BOLD)
@@ -231,8 +229,7 @@ Sub MaakOverzichten()
             oWCursor.setPropertyValue("BottomBorder",          oNoBL)
             oWCursor.setPropertyValue("LeftBorder",            oNoBL)
             oWCursor.setPropertyValue("RightBorder",           oNoBL)
-            oWCursor.setPropertyValue("ParaStyleName",         "Afhaalpunt")
-            oWCursor.setPropertyValue("ParaTopMargin",         IIf(b = 0, 0, 400))
+            oWCursor.setPropertyValue("ParaTopMargin",         0)
             oWCursor.setPropertyValue("ParaBottomMargin",      200)
             ' Kolombreedte ~8900 (1/100mm), koppelteken Calibri 16pt bold ~200 (1/100mm),
             ' gemiddeld letter ~310 (1/100mm) — aanpasbaar via nStreepBr en nLetterBr
