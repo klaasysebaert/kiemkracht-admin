@@ -227,7 +227,15 @@ Sub MaakOverzichten()
             oWCursor.setPropertyValue("RightBorder",           oNoBL)
             oWCursor.setPropertyValue("ParaTopMargin",         IIf(b = 0, 0, 400))
             oWCursor.setPropertyValue("ParaBottomMargin",      200)
-            oText.insertString(oWCursor, "--- " & aAfh2(b) & " ---", False)
+            ' Kolombreedte ~8900 (1/100mm), koppelteken Calibri 16pt bold ~200 (1/100mm),
+            ' gemiddeld letter ~310 (1/100mm) — aanpasbaar via nStreepBr en nLetterBr
+            Const nKolBr    = 8900
+            Const nStreepBr = 200
+            Const nLetterBr = 310
+            Dim nStreepjes  As Integer
+            nStreepjes = CInt((nKolBr - (Len(aAfh2(b)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
+            If nStreepjes < 3 Then nStreepjes = 3
+            oText.insertString(oWCursor, String(nStreepjes, "-") & " " & aAfh2(b) & " " & String(nStreepjes, "-"), False)
             oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.NORMAL)
             oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
             oText.insertControlCharacter(oWCursor, _
