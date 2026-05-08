@@ -825,6 +825,7 @@ Sub MaakEtiketten()
     sWkPath   = ConvertFromURL(oDoc.getURL())
     sCalcPath = Left(sWkPath, Len(sWkPath) - 4) & "_etiketten.ods"
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
+    oCalc.close(True)
 
     MsgBox nEt & " etiketten aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar"
 
