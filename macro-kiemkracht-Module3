@@ -298,6 +298,8 @@ Sub MaakOverzichten()
             oText.insertString(oWCursor, aLines(l), False)
         Next l
 
+        nRunH = nRunH + nBlkH
+
         If b < nBlok - 1 Then
             oText.insertControlCharacter(oWCursor, _
                 com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
