@@ -249,10 +249,10 @@ Sub MaakOverzichten()
                 com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
         End If
 
+        oWCursor.setPropertyValue("ParaStyleName",        "Standard")
         oWCursor.setPropertyValue("CharFontName",          "Calibri")
         oWCursor.setPropertyValue("CharHeight",           14)
         oWCursor.setPropertyValue("ParaTopMargin",        0)
-        oWCursor.setPropertyValue("ParaKeepWithNext",     False)
         oWCursor.setPropertyValue("TopBorder",            oBL)
         oWCursor.setPropertyValue("BottomBorder",         oBL)
         oWCursor.setPropertyValue("LeftBorder",           oBL)
