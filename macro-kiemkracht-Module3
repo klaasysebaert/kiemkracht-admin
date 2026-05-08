@@ -187,9 +187,37 @@ Sub MaakOverzichten()
     Dim aLines() As String
     Dim l        As Integer
 
+    Dim oNoBL As New com.sun.star.table.BorderLine2
+
     For b = 0 To nBlok - 1
+        ' Afhaalpuntkopje bij eerste blok of bij wisseling van afhaalpunt
+        Dim bNieuwAfh As Boolean
+        bNieuwAfh = (b = 0)
+        If b > 0 Then
+            If aAfh2(b) <> aAfh2(b - 1) Then bNieuwAfh = True
+        End If
+        If bNieuwAfh Then
+            oWCursor.setPropertyValue("CharFontName",          "Calibri")
+            oWCursor.setPropertyValue("CharHeight",            12)
+            oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.BOLD)
+            oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.CENTER)
+            oWCursor.setPropertyValue("TopBorder",             oNoBL)
+            oWCursor.setPropertyValue("BottomBorder",          oNoBL)
+            oWCursor.setPropertyValue("LeftBorder",            oNoBL)
+            oWCursor.setPropertyValue("RightBorder",           oNoBL)
+            oWCursor.setPropertyValue("ParaTopMargin",         If(b = 0, 0, 400))
+            oWCursor.setPropertyValue("ParaBottomMargin",      200)
+            oText.insertString(oWCursor, aAfh2(b), False)
+            oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.NORMAL)
+            oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
+            oText.insertControlCharacter(oWCursor, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+        End If
+
         oWCursor.setPropertyValue("CharFontName",          "Calibri")
         oWCursor.setPropertyValue("CharHeight",           14)
+        oWCursor.setPropertyValue("ParaTopMargin",        0)
+        oWCursor.setPropertyValue("ParaBottomMargin",     300)
         oWCursor.setPropertyValue("TopBorder",            oBL)
         oWCursor.setPropertyValue("BottomBorder",         oBL)
         oWCursor.setPropertyValue("LeftBorder",           oBL)
