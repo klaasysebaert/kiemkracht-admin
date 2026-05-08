@@ -448,6 +448,7 @@ Sub MaakOverzichten()
         Next d
 
         oWriter3.storeToURL(ConvertToURL(sOdtPath3), aSave())
+        oWriter3.close(True)
     End If
 
     ' -------------------------------------------------------
