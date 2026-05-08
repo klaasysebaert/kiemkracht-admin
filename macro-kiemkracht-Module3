@@ -247,6 +247,7 @@ Sub MaakOverzichten()
     Dim sOdtPath As String
     sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking.odt"
     oWriter.storeToURL(ConvertToURL(sOdtPath), aSave())
+    oWriter.close(True)
 
     ' -------------------------------------------------------
     ' Document 2: groenten totalen (tabel)
