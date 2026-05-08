@@ -175,6 +175,26 @@ Sub MaakOverzichten()
     oTC.ColumnCount = 2 : oTC.AutomaticDistance = 800
     oPS.TextColumns = oTC
 
+    ' Footer met paginanummers (centraal, formaat "X / Y")
+    oPS.FooterIsOn = True
+    Dim oFText As Object
+    Dim oFCurs As Object
+    oFText = oPS.FooterText
+    oFCurs = oFText.createTextCursor()
+    oFCurs.setPropertyValue("CharFontName", "Calibri")
+    oFCurs.setPropertyValue("CharHeight",   10)
+    oFCurs.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.CENTER)
+    Dim oFldPN As Object
+    oFldPN = oWriter.createInstance("com.sun.star.text.textfield.PageNumber")
+    oFldPN.SubType        = com.sun.star.text.PageNumberType.CURRENT
+    oFldPN.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+    oFText.insertTextContent(oFCurs, oFldPN, False)
+    oFText.insertString(oFCurs, " / ", False)
+    Dim oFldPC As Object
+    oFldPC = oWriter.createInstance("com.sun.star.text.textfield.PageCount")
+    oFldPC.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+    oFText.insertTextContent(oFCurs, oFldPC, False)
+
     Dim oBL As New com.sun.star.table.BorderLine2
     oBL.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
     oBL.LineWidth = 26
