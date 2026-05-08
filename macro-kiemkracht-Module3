@@ -198,7 +198,7 @@ Sub MaakOverzichten()
         End If
         If bNieuwAfh Then
             oWCursor.setPropertyValue("CharFontName",          "Calibri")
-            oWCursor.setPropertyValue("CharHeight",            12)
+            oWCursor.setPropertyValue("CharHeight",            16)
             oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.BOLD)
             oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.CENTER)
             oWCursor.setPropertyValue("TopBorder",             oNoBL)
@@ -207,7 +207,7 @@ Sub MaakOverzichten()
             oWCursor.setPropertyValue("RightBorder",           oNoBL)
             oWCursor.setPropertyValue("ParaTopMargin",         IIf(b = 0, 0, 400))
             oWCursor.setPropertyValue("ParaBottomMargin",      200)
-            oText.insertString(oWCursor, aAfh2(b), False)
+            oText.insertString(oWCursor, "--- " & aAfh2(b) & " ---", False)
             oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.NORMAL)
             oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
             oText.insertControlCharacter(oWCursor, _
