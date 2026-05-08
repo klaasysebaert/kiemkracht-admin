@@ -207,8 +207,8 @@ Sub MaakOverzichten()
                 oWCursor.setPropertyValue("RightBorderDistance",  0)
                 oWCursor.setPropertyValue("ParaLeftMargin",       500)
                 oWCursor.setPropertyValue("ParaRightMargin",      500)
-                oWCursor.setPropertyValue("ParaTopMargin",        300)
-                oWCursor.setPropertyValue("ParaBottomMargin",     300)
+                oWCursor.setPropertyValue("ParaTopMargin",        0)
+                oWCursor.setPropertyValue("ParaBottomMargin",     0)
                 oText.insertControlCharacter(oWCursor, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
             End If
