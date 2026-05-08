@@ -1050,6 +1050,7 @@ Sub MaakEtikettenBijbestelling()
     sWkPath   = ConvertFromURL(oDoc.getURL())
     sCalcPath = Left(sWkPath, Len(sWkPath) - 4) & "_etiketten_bijbestelling.ods"
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
+    oCalc.close(True)
 
     MsgBox nEt & " etiketten bijbestelling aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar"
 
