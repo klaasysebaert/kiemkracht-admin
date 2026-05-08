@@ -588,6 +588,7 @@ Sub MaakOverzichten()
         Next d
 
         oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
+        oWriter4.close(True)
     End If
 
     Dim sMsgWeg As String
