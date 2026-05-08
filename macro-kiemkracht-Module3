@@ -209,6 +209,22 @@ Sub MaakOverzichten()
 
     Dim oNoBL As New com.sun.star.table.BorderLine2
 
+    ' Schatting kolomhoogte en regelhoogtes (aanpasbaar als kopje te vroeg/laat springt)
+    ' nColH    : beschikbare hoogte per kolom in 1/100mm
+    '            = paginahoogte (29700) - bovenmarge (1500) - ondermarge (1500) - footer (~600)
+    ' nLineH14 : regelhoogte Calibri 14pt (enkelspatie ~120%) in 1/100mm
+    ' nLineH16 : regelhoogte Calibri 16pt in 1/100mm
+    ' nZone    : onderste zone waarin kopje NIET mag staan (5 regels × nLineH14)
+    Const nColH    = 26100
+    Const nLineH14 = 600
+    Const nLineH16 = 700
+    Const nZone    = 3000
+    Dim nRunH      As Long
+    Dim nHdgH      As Long
+    Dim nBlkH      As Long
+    Dim nStreepjes  As Integer
+    nRunH = 0
+
     For b = 0 To nBlok - 1
         ' Afhaalpuntkopje bij eerste blok of bij wisseling van afhaalpunt
         Dim bNieuwAfh As Boolean
@@ -217,6 +233,18 @@ Sub MaakOverzichten()
             If aAfh2(b) <> aAfh2(b - 1) Then bNieuwAfh = True
         End If
         If bNieuwAfh Then
+            ' Hoogte van dit kopje (incl. marges)
+            If b = 0 Then
+                nHdgH = nLineH16 + 200               ' alleen bottom margin
+            Else
+                nHdgH = nLineH16 + 400 + 200         ' top + bottom margin
+                ' Kolom-break alleen als kopje in onderste zone valt
+                If (nRunH Mod nColH) + nHdgH > nColH - nZone Then
+                    oWCursor.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+                    nRunH = (nRunH \ nColH + 1) * nColH
+                End If
+            End If
+
             oWCursor.setPropertyValue("CharFontName",          "Calibri")
             oWCursor.setPropertyValue("CharHeight",            16)
             oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.BOLD)
@@ -232,7 +260,6 @@ Sub MaakOverzichten()
             Const nKolBr    = 8900
             Const nStreepBr = 200
             Const nLetterBr = 310
-            Dim nStreepjes  As Integer
             nStreepjes = CInt((nKolBr - (Len(aAfh2(b)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
             If nStreepjes < 3 Then nStreepjes = 3
             oText.insertString(oWCursor, String(nStreepjes, "-") & " " & aAfh2(b) & " " & String(nStreepjes, "-"), False)
@@ -240,8 +267,13 @@ Sub MaakOverzichten()
             oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
             oText.insertControlCharacter(oWCursor, _
                 com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            nRunH = nRunH + nHdgH
         End If
 
+        ' Hoogte klantblok: regels × regelhoogte + border/marge-overhead
+        nBlkH = (UBound(Split(aBlok(b), Chr(10))) + 1) * nLineH14 + 500
+
+        oWCursor.setPropertyValue("BreakType",             com.sun.star.style.BreakType.NONE)
         oWCursor.setPropertyValue("CharFontName",          "Calibri")
         oWCursor.setPropertyValue("CharHeight",           14)
         oWCursor.setPropertyValue("ParaTopMargin",        0)
