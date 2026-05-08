@@ -148,7 +148,7 @@ Sub MaakOverzichten()
 
     Dim aArgs(0) As New com.sun.star.beans.PropertyValue
     aArgs(0).Name  = "Hidden"
-    aArgs(0).Value = False
+    aArgs(0).Value = True
 
     Dim aSave(0) As New com.sun.star.beans.PropertyValue
     aSave(0).Name  = "FilterName"
@@ -737,7 +737,7 @@ Sub MaakEtiketten()
     oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
     Dim aArgs(0) As New com.sun.star.beans.PropertyValue
     aArgs(0).Name  = "Hidden"
-    aArgs(0).Value = False
+    aArgs(0).Value = True
 
     Dim oCalc    As Object
     Dim oEtSheet As Object
@@ -966,7 +966,7 @@ Sub MaakEtikettenBijbestelling()
     oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
     Dim aArgs(0) As New com.sun.star.beans.PropertyValue
     aArgs(0).Name  = "Hidden"
-    aArgs(0).Value = False
+    aArgs(0).Value = True
 
     Dim oCalc    As Object
     Dim oEtSheet As Object
