@@ -177,11 +177,6 @@ Sub MaakOverzichten()
     oBL.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
     oBL.LineWidth = 26
 
-    Dim oNoBL  As New com.sun.star.table.BorderLine2
-    Dim oSepBL As New com.sun.star.table.BorderLine2
-    oSepBL.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
-    oSepBL.LineWidth = 88
-
     Dim oText    As Object : Dim oWCursor As Object
     oText    = oWriter.getText()
     oWCursor = oText.createTextCursor()
