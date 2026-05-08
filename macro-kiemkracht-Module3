@@ -209,6 +209,12 @@ Sub MaakOverzichten()
 
     Dim oNoBL As New com.sun.star.table.BorderLine2
 
+    ' Alineastijl voor kopje zodat ParaKeepWithNext werkt (niet beschikbaar op tekst-cursor)
+    Dim oKopjeStijl As Object
+    oKopjeStijl = oWriter.createInstance("com.sun.star.style.ParagraphStyle")
+    oWriter.StyleFamilies.getByName("ParagraphStyles").insertByName("Afhaalpunt", oKopjeStijl)
+    oKopjeStijl.setPropertyValue("ParaKeepWithNext", True)
+
     For b = 0 To nBlok - 1
         ' Afhaalpuntkopje bij eerste blok of bij wisseling van afhaalpunt
         Dim bNieuwAfh As Boolean
