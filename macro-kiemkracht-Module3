@@ -184,12 +184,17 @@ Sub MaakOverzichten()
     oFCurs.setPropertyValue("CharFontName", "Calibri")
     oFCurs.setPropertyValue("CharHeight",   10)
     oFCurs.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
-    Dim aTabStops(0) As New com.sun.star.style.TabStop
-    aTabStops(0).Position    = 9500
-    aTabStops(0).Alignment   = com.sun.star.style.TabAlign.CENTER
+    Dim aTabStops(1) As New com.sun.star.style.TabStop
+    aTabStops(0).Position    = 8700
+    aTabStops(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
     aTabStops(0).DecimalChar = ASC(".")
     aTabStops(0).FillChar    = ASC(" ")
+    aTabStops(1).Position    = 9500
+    aTabStops(1).Alignment   = com.sun.star.style.TabAlign.CENTER
+    aTabStops(1).DecimalChar = ASC(".")
+    aTabStops(1).FillChar    = ASC(" ")
     oFCurs.setPropertyValue("ParaTabStops", aTabStops())
+    oFText.insertString(oFCurs, Chr(9), False)
     oFText.insertString(oFCurs, "volgens formaat", False)
     oFText.insertString(oFCurs, Chr(9), False)
     Dim oFldPN As Object
