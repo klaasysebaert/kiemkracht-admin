@@ -130,8 +130,9 @@ Sub MaakOverzichten()
         Next w
 
         If nBlok <= 500 Then
-            aBlok(nBlok) = sBlok
-            aAfh2(nBlok) = sAfh2
+            aBlok(nBlok)   = sBlok
+            aAfh2(nBlok)   = sAfh2
+            aPakket(nBlok) = sPakket
             nBlok = nBlok + 1
         End If
 
