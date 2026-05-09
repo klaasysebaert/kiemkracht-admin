@@ -970,7 +970,7 @@ Sub MaakOverzichten()
                     If bEersteGr Then
                         oCurs4.setPropertyValue("CharHeight", 16)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-                        oText4.insertString(oCurs4, aFmtNamen(f), False)
+                        oText4.insertString(oCurs4, aFmtNamen(f) & " " & aDagen(d), False)
                         oText4.insertControlCharacter(oCurs4, _
                             com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                         oText4.insertControlCharacter(oCurs4, _
