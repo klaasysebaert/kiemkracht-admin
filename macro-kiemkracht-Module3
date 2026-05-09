@@ -698,7 +698,7 @@ Sub MaakOverzichten()
             oCurs3.setPropertyValue("CharHeight", 14)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
             oText3.insertString(oCurs3, UCase(aDagen(d)), False)
-            oCurs3.setPropertyValue("CharHeight", 10)
+            oCurs3.setPropertyValue("CharHeight", 14)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
             bEersteDag = False
 
