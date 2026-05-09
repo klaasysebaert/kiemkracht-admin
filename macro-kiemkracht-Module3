@@ -697,11 +697,16 @@ Sub MaakOverzichten()
             oFCurs3.setPropertyValue("CharFontName", "Calibri")
             oFCurs3.setPropertyValue("CharHeight",   10)
             oFCurs3.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
-            aTS3(0).Position    = 17500
+            aTS3(0).Position    = 8700
             aTS3(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
             aTS3(0).DecimalChar = ASC(".")
             aTS3(0).FillChar    = ASC(" ")
+            aTS3(1).Position    = 9500
+            aTS3(1).Alignment   = com.sun.star.style.TabAlign.CENTER
+            aTS3(1).DecimalChar = ASC(".")
+            aTS3(1).FillChar    = ASC(" ")
             oFCurs3.setPropertyValue("ParaTabStops", aTS3())
+            oFText3.insertString(oFCurs3, Chr(9), False)
             oFText3.insertString(oFCurs3, "Losse groenten afweeglijst", False)
             oFText3.insertString(oFCurs3, Chr(9), False)
             oFldPN3 = oWriter3.createInstance("com.sun.star.text.textfield.PageNumber")
