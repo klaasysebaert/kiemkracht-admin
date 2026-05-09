@@ -372,6 +372,7 @@ Sub MaakOverzichten()
     Dim aBlokF(500) As String : Dim aGrpF(500) As String
     Dim aDagF(500)  As String
     Dim nBlokF As Integer : nBlokF = 0
+    Dim fi As Integer
     For dd = 0 To nDagen - 1
         sD = aDagen(dd)
         For fi = 0 To 4
