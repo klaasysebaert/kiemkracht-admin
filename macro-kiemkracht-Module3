@@ -915,6 +915,16 @@ Sub MaakOverzichten()
         Dim oText4    As Object
         Dim oCurs4    As Object
         Dim sOdtPath4 As String
+        Dim oCtrl4    As Object
+        Dim oVC4      As Object
+        Dim oEnP4     As Object
+        Dim oParaP4   As Object
+        Dim oKopCurs4 As Object
+        Dim oPtP4     As Object
+        Dim nYInPg4   As Long
+        Dim nCharH4   As Single
+        Dim oBrCurs4  As Object
+        Dim bEersteFmtKop As Boolean
 
         For d = 0 To nDagen - 1
             oWriter4 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
