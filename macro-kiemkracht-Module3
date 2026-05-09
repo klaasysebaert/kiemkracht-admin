@@ -954,6 +954,9 @@ Sub MaakOverzichten()
                     ' Dag-kop: eenmalig bij eerste inhoud van die dag
                     ' Vorige groente liet cursor al op lege paragraaf (scheidt dagen)
                     If bEersteFmt4 And bEersteGr Then
+                        If d > 0 Then
+                            oCurs4.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
+                        End If
                         oCurs4.setPropertyValue("CharHeight", 18)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                         oText4.insertString(oCurs4, _
