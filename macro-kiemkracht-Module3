@@ -519,27 +519,37 @@ Sub MaakOverzichten()
         End If
     Next bF
 
-    ' --- Pass 2 formaat: geïsoleerde kopjes corrigeren ---
+    ' --- Pass 2 formaat: geïsoleerde kopjes en klantnamen corrigeren ---
     oWriterF.getCurrentController().getFrame().getContainerWindow().setVisible(True)
     Wait 400
 
     oCtrl = oWriterF.getCurrentController()
     oVC   = oCtrl.getViewCursor()
     bEersteKop = True
+    Dim oBrCursF As Object
     oEnP2 = oTextF.createEnumeration()
     Do While oEnP2.hasMoreElements()
         oParaP2 = oEnP2.nextElement()
         If Not oParaP2.supportsService("com.sun.star.text.Paragraph") Then GoTo VolgPF
         oKopCurs = oTextF.createTextCursorByRange(oParaP2.getStart())
-        If oKopCurs.getPropertyValue("CharHeight") <> 16 Then GoTo VolgPF
-        If bEersteKop Then : bEersteKop = False : GoTo VolgPF : End If
-        oCtrl.select(oKopCurs)
-        oPtP2  = oVC.getPosition()
-        nYInPg = oPtP2.Y Mod nPgHP2
-        If nYInPg > nKolBod - nZoneP2 Then
-            Dim oBrCursF As Object
-            oBrCursF = oTextF.createTextCursorByRange(oParaP2.getStart())
-            oBrCursF.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+        nCharH = oKopCurs.getPropertyValue("CharHeight")
+        If nCharH = 16 Then
+            If bEersteKop Then : bEersteKop = False : GoTo VolgPF : End If
+            oCtrl.select(oKopCurs)
+            oPtP2  = oVC.getPosition()
+            nYInPg = oPtP2.Y Mod nPgHP2
+            If nYInPg > nKolBod - nZoneP2 Then
+                oBrCursF = oTextF.createTextCursorByRange(oParaP2.getStart())
+                oBrCursF.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+            End If
+        ElseIf nCharH = 14 Then
+            oCtrl.select(oKopCurs)
+            oPtP2  = oVC.getPosition()
+            nYInPg = oPtP2.Y Mod nPgHP2
+            If nYInPg > nKolBod - 700 Then
+                oBrCursF = oTextF.createTextCursorByRange(oParaP2.getStart())
+                oBrCursF.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+            End If
         End If
         VolgPF:
     Loop
