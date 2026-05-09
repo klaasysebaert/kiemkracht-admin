@@ -794,7 +794,7 @@ Sub MaakOverzichten()
                 aTS3c(0).FillChar    = ASC(" ")
                 oCurs3.setPropertyValue("ParaTabStops", aTS3c())
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-                oText3.insertString(oCurs3, groentNaam(g) & " (" & aDagen(d) & "):", False)
+                oText3.insertString(oCurs3, groentNaam(g) & ":", False)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
                 kIdx = 0
