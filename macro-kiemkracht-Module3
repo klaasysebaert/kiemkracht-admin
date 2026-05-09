@@ -968,7 +968,7 @@ Sub MaakOverzichten()
 
                     ' Formaat-kop: eenmalig bij eerste inhoud van dat formaat
                     If bEersteGr Then
-                        oCurs4.setPropertyValue("CharHeight", 16)
+                        oCurs4.setPropertyValue("CharHeight", 18)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                         oText4.insertString(oCurs4, String(11, "-") & " " & aFmtNamen(f) & " " & String(11, "-"), False)
                         oText4.insertControlCharacter(oCurs4, _
