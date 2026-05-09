@@ -135,6 +135,7 @@ Sub MaakOverzichten()
             aBlok(nBlok)   = sBlok
             aAfh2(nBlok)   = sAfh2
             aPakket(nBlok) = sPakket
+            aDag2(nBlok)   = sKlaarDag
             nBlok = nBlok + 1
         End If
 
