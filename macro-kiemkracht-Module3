@@ -733,6 +733,12 @@ Sub MaakOverzichten()
             oText3.insertString(oCurs3, UCase(aDagen(d)), False)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
+            Select Case LCase(aDagen(d))
+                Case "donderdag" : nTotRij = 4
+                Case "vrijdag"   : nTotRij = 5
+                Case Else        : nTotRij = -1
+            End Select
+
             For g = 0 To nGroentSlots - 1
                 If groentNaam(g) = "" Then GoTo VolgendGroent
 
