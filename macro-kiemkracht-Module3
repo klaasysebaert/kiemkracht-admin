@@ -671,6 +671,8 @@ Sub MaakOverzichten()
         Dim oText3 As Object : Dim oCurs3 As Object
         oText3 = oWriter3.getText()
         oCurs3 = oText3.createTextCursor()
+        oCurs3.setPropertyValue("CharFontName", "Calibri")
+        oCurs3.setPropertyValue("CharHeight", 14)
 
         Dim aQty(500) As Double
         Dim nQty      As Integer
