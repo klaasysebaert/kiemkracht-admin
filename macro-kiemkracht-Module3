@@ -797,6 +797,7 @@ Sub MaakOverzichten()
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
                 kIdx = 0
+                bFirstLine = True
                 Do While kIdx < nQty
                     curVal = aQty(kIdx)
                     cnt = 0
@@ -808,17 +809,16 @@ Sub MaakOverzichten()
                     oText3.insertControlCharacter(oCurs3, _
                         com.sun.star.text.ControlCharacter.LINE_BREAK, False)
                     oText3.insertString(oCurs3, sQty & " " & groentEenh(g) & " : " & cnt & "x", False)
-                Loop
-
-                If nTotRij >= 0 Then
-                    oText3.insertControlCharacter(oCurs3, _
-                        com.sun.star.text.ControlCharacter.LINE_BREAK, False)
-                    If nLines <= 1 Then
-                        oText3.insertString(oCurs3, Chr(8594) & " tot: " & sTot3 & " (" & groentEenh(g) & ")", False)
-                    Else
-                        oText3.insertString(oCurs3, "} tot: " & sTot3 & " (" & groentEenh(g) & ")", False)
+                    If bFirstLine And nTotRij >= 0 Then
+                        oText3.insertString(oCurs3, Chr(9), False)
+                        If nLines <= 1 Then
+                            oText3.insertString(oCurs3, Chr(8594) & " tot: " & sTot3 & " " & groentEenh(g), False)
+                        Else
+                            oText3.insertString(oCurs3, "} tot: " & sTot3 & " " & groentEenh(g), False)
+                        End If
+                        bFirstLine = False
                     End If
-                End If
+                Loop
 
                 VolgendGroent:
             Next g
