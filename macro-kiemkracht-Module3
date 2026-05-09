@@ -812,11 +812,7 @@ Sub MaakOverzichten()
                     oText3.insertString(oCurs3, sQty & " " & groentEenh(g) & " : " & cnt & "x", False)
                     If bFirstLine And nTotRij >= 0 Then
                         oText3.insertString(oCurs3, Chr(9), False)
-                        If nLines <= 1 Then
-                            oText3.insertString(oCurs3, Chr(8594) & " tot: " & sTot3 & " " & groentEenh(g), False)
-                        Else
-                            oText3.insertString(oCurs3, "} tot: " & sTot3 & " " & groentEenh(g), False)
-                        End If
+                        oText3.insertString(oCurs3, sTotLabel & sTot3 & " " & groentEenh(g), False)
                         bFirstLine = False
                     End If
                 Loop
