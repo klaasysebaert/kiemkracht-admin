@@ -833,12 +833,10 @@ Sub MaakOverzichten()
                                     oCurs3.setPropertyValue("CharHeight", 9)
                                     oCurs3.setPropertyValue("CharColor", RGB(80, 80, 80))
                                     oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.ITALIC)
-                                    oCurs3.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.RIGHT)
-                                    oText3.insertString(oCurs3, "(vrijdag " & sTotVrij3 & " " & groentEenh(g) & ")", False)
+                                    oText3.insertString(oCurs3, Chr(9) & "(vrijdag " & sTotVrij3 & " " & groentEenh(g) & ")", False)
                                     oCurs3.setPropertyValue("CharHeight", 16)
                                     oCurs3.setPropertyValue("CharColor", RGB(0, 0, 0))
                                     oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
-                                    oCurs3.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
                                 End If
                             End If
                         End If
