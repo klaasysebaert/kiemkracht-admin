@@ -787,6 +787,11 @@ Sub MaakOverzichten()
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 oCurs3.setPropertyValue("ParaTopMargin", 300)
                 oCurs3.setPropertyValue("CharHeight", 16)
+                aTS3c(0).Position    = 8500
+                aTS3c(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
+                aTS3c(0).DecimalChar = ASC(".")
+                aTS3c(0).FillChar    = ASC(" ")
+                oCurs3.setPropertyValue("ParaTabStops", aTS3c())
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                 oText3.insertString(oCurs3, groentNaam(g) & " (" & aDagen(d) & "):", False)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
