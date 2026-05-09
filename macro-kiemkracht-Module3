@@ -928,10 +928,15 @@ Sub MaakOverzichten()
 
     Dim sMsgWeg As String
     If bHasAnyWeg Then sMsgWeg = Chr(10) & sOdtPath4 Else sMsgWeg = ""
+    Dim sMsgAfweeg As String : sMsgAfweeg = ""
+    Dim p3 As Integer
+    For p3 = 0 To nOdtPath3 - 1
+        sMsgAfweeg = sMsgAfweeg & Chr(10) & aOdtPath3(p3)
+    Next p3
     MsgBox nBlok & " klanten (orderpicking)" & Chr(10) & _
            nGroentActief & " groenten (totalen)" & Chr(10) & _
            nDagen & " dag(en) (afweeglijst)" & Chr(10) & Chr(10) & _
-           sOdtPath & Chr(10) & sOdtPath2 & Chr(10) & sOdtPath3 & sMsgWeg, _
+           sOdtPath & Chr(10) & sOdtPath2 & sMsgAfweeg & sMsgWeg, _
            64, "Overzichten klaar"
     Exit Sub
 
