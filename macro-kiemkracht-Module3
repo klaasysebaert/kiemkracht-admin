@@ -655,7 +655,7 @@ Sub MaakOverzichten()
     Next di
 
     Dim sOdtPath3 As String
-    sOdtPath3 = Left(sWkPath, Len(sWkPath) - 4) & "_afweeglijst.odt"
+    sOdtPath3 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_afweeglijst.odt"
 
     If nDagen > 0 Then
         Dim oWriter3 As Object
