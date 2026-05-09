@@ -668,6 +668,11 @@ Sub MaakOverzichten()
         oPS3.TopMargin    = 1500  : oPS3.BottomMargin = 1500
         oPS3.LeftMargin   = 1500  : oPS3.RightMargin  = 1500
 
+        Dim oTC3 As Object
+        oTC3 = oPS3.TextColumns
+        oTC3.ColumnCount = 2 : oTC3.AutomaticDistance = 800
+        oPS3.TextColumns = oTC3
+
         Dim oText3 As Object : Dim oCurs3 As Object
         oText3 = oWriter3.getText()
         oCurs3 = oText3.createTextCursor()
