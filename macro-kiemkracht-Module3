@@ -704,6 +704,7 @@ Sub MaakOverzichten()
                         com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 End If
             End If
+            oCurs3.setPropertyValue("ParaTopMargin", 0)
             oCurs3.setPropertyValue("CharHeight", 16)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
             oText3.insertString(oCurs3, UCase(aDagen(d)), False)
