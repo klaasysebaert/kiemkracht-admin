@@ -693,12 +693,16 @@ Sub MaakOverzichten()
 
         For d = 0 To nDagen - 1
 
-            ' Dag-kop (met lege regel ertussen)
+            ' Dag-kop (met lege regel ertussen; vrijdag op nieuw A4)
             If Not bEersteDag Then
                 oText3.insertControlCharacter(oCurs3, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                oText3.insertControlCharacter(oCurs3, _
-                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                If LCase(aDagen(d)) = "vrijdag" Then
+                    oCurs3.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
+                Else
+                    oText3.insertControlCharacter(oCurs3, _
+                        com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                End If
             End If
             oCurs3.setPropertyValue("CharHeight", 14)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
