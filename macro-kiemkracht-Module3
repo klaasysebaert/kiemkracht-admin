@@ -812,7 +812,10 @@ Sub MaakOverzichten()
                     oText3.insertString(oCurs3, sQty & " " & groentEenh(g) & " : " & cnt & "x", False)
                     If bFirstLine And nTotRij >= 0 Then
                         oText3.insertString(oCurs3, Chr(9), False)
-                        oText3.insertString(oCurs3, String(nLines, "}") & sTotLabel & sTot3 & " " & groentEenh(g), False)
+                        oText3.insertString(oCurs3, String(nLines, "}"), False)
+                        oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+                        oText3.insertString(oCurs3, sTotLabel & sTot3 & " " & groentEenh(g), False)
+                        oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
                         bFirstLine = False
                     End If
                 Loop
