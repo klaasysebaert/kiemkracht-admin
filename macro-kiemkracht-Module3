@@ -686,6 +686,8 @@ Sub MaakOverzichten()
         Dim aTS3c(0)  As New com.sun.star.style.TabStop
         Dim bFirstLine As Boolean
         Dim sTotLabel  As String
+        Dim dTotVrij3  As Double
+        Dim sTotVrij3  As String
 
         For d = 0 To nDagen - 1
             oWriter3 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
