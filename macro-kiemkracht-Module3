@@ -403,6 +403,11 @@ Sub MaakOverzichten()
     oTextF  = oWriterF.getText()
     oWCursF = oTextF.createTextCursor()
 
+    Dim oBLF As New com.sun.star.table.BorderLine2
+    oBLF.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
+    oBLF.LineWidth = 26
+    Dim oNoBLF As New com.sun.star.table.BorderLine2
+
     Dim bF As Integer : Dim aLinesF() As String
     Dim lF As Integer : Dim nStreepjesF As Integer
     Dim bNieuwGrp As Boolean
@@ -417,13 +422,13 @@ Sub MaakOverzichten()
             oWCursF.setPropertyValue("CharHeight",       16)
             oWCursF.setPropertyValue("CharWeight",       com.sun.star.awt.FontWeight.BOLD)
             oWCursF.setPropertyValue("ParaAdjust",       com.sun.star.style.ParagraphAdjust.CENTER)
-            oWCursF.setPropertyValue("TopBorder",        oNoBL)
-            oWCursF.setPropertyValue("BottomBorder",     oNoBL)
-            oWCursF.setPropertyValue("LeftBorder",       oNoBL)
-            oWCursF.setPropertyValue("RightBorder",      oNoBL)
+            oWCursF.setPropertyValue("TopBorder",        oNoBLF)
+            oWCursF.setPropertyValue("BottomBorder",     oNoBLF)
+            oWCursF.setPropertyValue("LeftBorder",       oNoBLF)
+            oWCursF.setPropertyValue("RightBorder",      oNoBLF)
             oWCursF.setPropertyValue("ParaTopMargin",    IIf(bF = 0, 0, 400))
             oWCursF.setPropertyValue("ParaBottomMargin", 200)
-            nStreepjesF = CInt((nKolBr - (Len(aGrpF(bF)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
+            nStreepjesF = CInt((8900 - (Len(aGrpF(bF)) * 310) - 620) / 2 / 200)
             If nStreepjesF < 3 Then nStreepjesF = 3
             oTextF.insertString(oWCursF, String(nStreepjesF, "-") & " " & aGrpF(bF) & " " & String(nStreepjesF, "-"), False)
             oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
@@ -435,10 +440,10 @@ Sub MaakOverzichten()
         oWCursF.setPropertyValue("CharFontName",         "Calibri")
         oWCursF.setPropertyValue("CharHeight",           14)
         oWCursF.setPropertyValue("ParaTopMargin",        0)
-        oWCursF.setPropertyValue("TopBorder",            oBL)
-        oWCursF.setPropertyValue("BottomBorder",         oBL)
-        oWCursF.setPropertyValue("LeftBorder",           oBL)
-        oWCursF.setPropertyValue("RightBorder",          oBL)
+        oWCursF.setPropertyValue("TopBorder",            oBLF)
+        oWCursF.setPropertyValue("BottomBorder",         oBLF)
+        oWCursF.setPropertyValue("LeftBorder",           oBLF)
+        oWCursF.setPropertyValue("RightBorder",          oBLF)
         oWCursF.setPropertyValue("TopBorderDistance",    100)
         oWCursF.setPropertyValue("BottomBorderDistance", 100)
         oWCursF.setPropertyValue("LeftBorderDistance",   150)
