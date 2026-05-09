@@ -1087,10 +1087,6 @@ Sub MaakPrint()
     sPaths(nPaths) = sBase & "_groenten.odt"               : nPaths = nPaths + 1
 
     Dim sWegPad As String
-    sWegPad = sBase & "_weglatingen.odt"
-    If FileExists(sWegPad) Then
-        sPaths(nPaths) = sWegPad : nPaths = nPaths + 1
-    End If
 
     Dim aDagNamen(6) As String
     aDagNamen(0) = "maandag"  : aDagNamen(1) = "dinsdag"
