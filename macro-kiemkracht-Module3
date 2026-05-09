@@ -689,86 +689,84 @@ Sub MaakOverzichten()
         Dim sQty      As String
         Dim qVal      As Double
         Dim bEersteDag As Boolean
+        Dim nCopy As Integer
         bEersteDag = True
 
         For d = 0 To nDagen - 1
+            For nCopy = 1 To 2
 
-            ' Dag-kop (met lege regel ertussen; vrijdag op nieuw A4)
-            If Not bEersteDag Then
-                oText3.insertControlCharacter(oCurs3, _
-                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                If LCase(aDagen(d)) = "vrijdag" Then
-                    oCurs3.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
-                Else
+                ' Dag-kop (elke sectie op nieuw A4, behalve de allereerste)
+                If Not bEersteDag Then
                     oText3.insertControlCharacter(oCurs3, _
                         com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                    oCurs3.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
                 End If
-            End If
-            oCurs3.setPropertyValue("ParaTopMargin", 0)
-            oCurs3.setPropertyValue("CharHeight", 16)
-            oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-            oText3.insertString(oCurs3, UCase(aDagen(d)), False)
-            oCurs3.setPropertyValue("CharHeight", 16)
-            oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
-            bEersteDag = False
-
-            For g = 0 To nGroentSlots - 1
-                If groentNaam(g) = "" Then GoTo VolgendGroent
-
-                ' Hoeveelheden verzamelen voor (dag, groente)
-                nQty = 0
-                For i = 6 To nLastRow
-                    sNaam = oWkSheet.getCellByPosition(cNaam, i).getString()
-                    If sNaam = "" Then GoTo VolgendKlant3
-                    sAfh2 = oWkSheet.getCellByPosition(cAfh, i).getString()
-                    If sAfh2 = "afhaalpunt/dag" Then GoTo VolgendKlant3
-                    If oWkSheet.getCellByPosition(cKlaarDag, i).getString() <> aDagen(d) Then GoTo VolgendKlant3
-                    qVal = oWkSheet.getCellByPosition(cGroent0 + g, i).getValue()
-                    If qVal > 0 And nQty < 500 Then
-                        aQty(nQty) = qVal
-                        nQty = nQty + 1
-                    End If
-                    VolgendKlant3:
-                Next i
-
-                If nQty = 0 Then GoTo VolgendGroent
-
-                ' Sorteren aflopend (bubble sort)
-                For qi = 0 To nQty - 2
-                    For qi2 = 0 To nQty - qi - 2
-                        If aQty(qi2) < aQty(qi2 + 1) Then
-                            tmpQty = aQty(qi2) : aQty(qi2) = aQty(qi2 + 1) : aQty(qi2 + 1) = tmpQty
-                        End If
-                    Next qi2
-                Next qi
-
-                ' Groente-kop
-                oText3.insertControlCharacter(oCurs3, _
-                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                oCurs3.setPropertyValue("ParaTopMargin", 300)
+                oCurs3.setPropertyValue("ParaTopMargin", 0)
                 oCurs3.setPropertyValue("CharHeight", 16)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-                oText3.insertString(oCurs3, groentNaam(g) & " (" & aDagen(d) & "):", False)
+                oText3.insertString(oCurs3, UCase(aDagen(d)), False)
+                oCurs3.setPropertyValue("CharHeight", 16)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+                bEersteDag = False
 
-                ' Gebundelde hoeveelheden (aflopend)
-                kIdx = 0
-                Do While kIdx < nQty
-                    curVal = aQty(kIdx)
-                    cnt = 0
-                    Do While kIdx < nQty And aQty(kIdx) = curVal
-                        cnt = cnt + 1
-                        kIdx = kIdx + 1
-                    Loop
-                    If curVal = Int(curVal) Then sQty = CStr(CLng(curVal)) Else sQty = CStr(curVal)
+                For g = 0 To nGroentSlots - 1
+                    If groentNaam(g) = "" Then GoTo VolgendGroent
+
+                    ' Hoeveelheden verzamelen voor (dag, groente)
+                    nQty = 0
+                    For i = 6 To nLastRow
+                        sNaam = oWkSheet.getCellByPosition(cNaam, i).getString()
+                        If sNaam = "" Then GoTo VolgendKlant3
+                        sAfh2 = oWkSheet.getCellByPosition(cAfh, i).getString()
+                        If sAfh2 = "afhaalpunt/dag" Then GoTo VolgendKlant3
+                        If oWkSheet.getCellByPosition(cKlaarDag, i).getString() <> aDagen(d) Then GoTo VolgendKlant3
+                        qVal = oWkSheet.getCellByPosition(cGroent0 + g, i).getValue()
+                        If qVal > 0 And nQty < 500 Then
+                            aQty(nQty) = qVal
+                            nQty = nQty + 1
+                        End If
+                        VolgendKlant3:
+                    Next i
+
+                    If nQty = 0 Then GoTo VolgendGroent
+
+                    ' Sorteren aflopend (bubble sort)
+                    For qi = 0 To nQty - 2
+                        For qi2 = 0 To nQty - qi - 2
+                            If aQty(qi2) < aQty(qi2 + 1) Then
+                                tmpQty = aQty(qi2) : aQty(qi2) = aQty(qi2 + 1) : aQty(qi2 + 1) = tmpQty
+                            End If
+                        Next qi2
+                    Next qi
+
+                    ' Groente-kop
                     oText3.insertControlCharacter(oCurs3, _
-                        com.sun.star.text.ControlCharacter.LINE_BREAK, False)
-                    oText3.insertString(oCurs3, sQty & " " & groentEenh(g) & " : " & cnt & "x", False)
-                Loop
+                        com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                    oCurs3.setPropertyValue("ParaTopMargin", 300)
+                    oCurs3.setPropertyValue("CharHeight", 16)
+                    oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+                    oText3.insertString(oCurs3, groentNaam(g) & " (" & aDagen(d) & "):", False)
+                    oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
-                VolgendGroent:
-            Next g
+                    ' Gebundelde hoeveelheden (aflopend)
+                    kIdx = 0
+                    Do While kIdx < nQty
+                        curVal = aQty(kIdx)
+                        cnt = 0
+                        Do While kIdx < nQty And aQty(kIdx) = curVal
+                            cnt = cnt + 1
+                            kIdx = kIdx + 1
+                        Loop
+                        If curVal = Int(curVal) Then sQty = CStr(CLng(curVal)) Else sQty = CStr(curVal)
+                        oText3.insertControlCharacter(oCurs3, _
+                            com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                        oText3.insertString(oCurs3, sQty & " " & groentEenh(g) & " : " & cnt & "x", False)
+                    Loop
 
+                    VolgendGroent:
+                Next g
+
+            Next nCopy
         Next d
 
         oWriter3.storeToURL(ConvertToURL(sOdtPath3), aSave())
