@@ -688,6 +688,7 @@ Sub MaakOverzichten()
         Dim sTotLabel  As String
         Dim dTotVrij3  As Double
         Dim sTotVrij3  As String
+        Dim bVrijPrev  As Boolean
 
         For d = 0 To nDagen - 1
             oWriter3 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
