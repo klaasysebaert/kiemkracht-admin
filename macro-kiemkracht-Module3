@@ -888,10 +888,10 @@ Sub MaakOverzichten()
 
     sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen.odt"
 
-    aFmtCols(0) = cKG   : aFmtNamen(0) = "Klein"
-    aFmtCols(1) = cGG   : aFmtNamen(1) = "Groot"
-    aFmtCols(2) = cEGG  : aFmtNamen(2) = "Extra groot"
-    aFmtCols(3) = cMINI : aFmtNamen(3) = "Mini"
+    aFmtCols(0) = cKG   : aFmtNamen(0) = "Klein pakket"
+    aFmtCols(1) = cGG   : aFmtNamen(1) = "Groot pakket"
+    aFmtCols(2) = cEGG  : aFmtNamen(2) = "Extra groot pakket"
+    aFmtCols(3) = cMINI : aFmtNamen(3) = "Mini pakket"
 
     bHasAnyWeg = False
     If nWeg > 0 And nDagen > 0 Then
