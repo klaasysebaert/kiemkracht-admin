@@ -195,7 +195,7 @@ Sub MaakOverzichten()
     aTabStops(1).FillChar    = ASC(" ")
     oFCurs.setPropertyValue("ParaTabStops", aTabStops())
     oFText.insertString(oFCurs, Chr(9), False)
-    oFText.insertString(oFCurs, "volgens formaat", False)
+    oFText.insertString(oFCurs, "volgens afhaalpunt", False)
     oFText.insertString(oFCurs, Chr(9), False)
     Dim oFldPN As Object
     oFldPN = oWriter.createInstance("com.sun.star.text.textfield.PageNumber")
