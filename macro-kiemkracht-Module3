@@ -94,7 +94,7 @@ Sub MaakOverzichten()
         Next g
         If Not bHasG Then GoTo VolgendeRij
 
-        sKlaarDag = LCase(Trim(oWkSheet.getCellByPosition(cKlaarDag, i).getString()))
+        sKlaarDag = oWkSheet.getCellByPosition(cKlaarDag, i).getString()
 
         ' Unieke dag bijhouden
         If sKlaarDag <> "" Then
