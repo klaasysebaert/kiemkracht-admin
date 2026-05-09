@@ -1033,6 +1033,40 @@ Sub MaakOverzichten()
             Next f
 
             If Not bEersteFmt4 Then
+                ' Pass 2: formaatkoppen en wegnamen die te ver onderaan staan, verplaatsen naar volgend blad
+                oWriter4.getCurrentController().getFrame().getContainerWindow().setVisible(True)
+                Wait 400
+                oCtrl4 = oWriter4.getCurrentController()
+                oVC4   = oCtrl4.getViewCursor()
+                bEersteFmtKop = True
+                oEnP4 = oText4.createEnumeration()
+                Do While oEnP4.hasMoreElements()
+                    oParaP4 = oEnP4.nextElement()
+                    If Not oParaP4.supportsService("com.sun.star.text.Paragraph") Then GoTo VolgP4
+                    If oParaP4.getString() = "" Then GoTo VolgP4
+                    oKopCurs4 = oText4.createTextCursorByRange(oParaP4.getStart())
+                    nCharH4 = oKopCurs4.getPropertyValue("CharHeight")
+                    If nCharH4 = 18 Then
+                        If bEersteFmtKop Then : bEersteFmtKop = False : GoTo VolgP4 : End If
+                        oCtrl4.select(oKopCurs4)
+                        oPtP4   = oVC4.getPosition()
+                        nYInPg4 = oPtP4.Y Mod 29700
+                        If nYInPg4 > 24000 Then
+                            oBrCurs4 = oText4.createTextCursorByRange(oParaP4.getStart())
+                            oBrCurs4.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
+                        End If
+                    ElseIf nCharH4 = 16 Then
+                        oCtrl4.select(oKopCurs4)
+                        oPtP4   = oVC4.getPosition()
+                        nYInPg4 = oPtP4.Y Mod 29700
+                        If nYInPg4 > 25300 Then
+                            oBrCurs4 = oText4.createTextCursorByRange(oParaP4.getStart())
+                            oBrCurs4.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
+                        End If
+                    End If
+                    VolgP4:
+                Loop
+
                 sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen_" & LCase(aDagen(d)) & ".odt"
                 oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
                 If nOdtPath4 <= 9 Then
