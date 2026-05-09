@@ -1097,6 +1097,12 @@ Sub MaakPrint()
     Dim dd As Integer
     Dim sAfweeg As String
     For dd = 0 To 6
+        sWegPad = sBase & "_weglatingen_" & aDagNamen(dd) & ".odt"
+        If FileExists(sWegPad) Then
+            sPaths(nPaths) = sWegPad : nPaths = nPaths + 1
+        End If
+    Next dd
+    For dd = 0 To 6
         sAfweeg = sBase & "_losse_groenten_afweeglijst_" & aDagNamen(dd) & ".odt"
         If FileExists(sAfweeg) Then
             sPaths(nPaths) = sAfweeg : nPaths = nPaths + 1
