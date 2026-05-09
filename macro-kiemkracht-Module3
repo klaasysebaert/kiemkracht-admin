@@ -803,6 +803,16 @@ Sub MaakOverzichten()
                     oText3.insertString(oCurs3, sQty & " " & groentEenh(g) & " : " & cnt & "x", False)
                 Loop
 
+                If nTotRij >= 0 Then
+                    oText3.insertControlCharacter(oCurs3, _
+                        com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                    If nLines <= 1 Then
+                        oText3.insertString(oCurs3, Chr(8594) & " tot: " & sTot3 & " (" & groentEenh(g) & ")", False)
+                    Else
+                        oText3.insertString(oCurs3, "} tot: " & sTot3 & " (" & groentEenh(g) & ")", False)
+                    End If
+                End If
+
                 VolgendGroent:
             Next g
 
