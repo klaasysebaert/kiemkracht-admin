@@ -716,7 +716,7 @@ Sub MaakOverzichten()
             aTS3(1).FillChar    = ASC(" ")
             oFCurs3.setPropertyValue("ParaTabStops", aTS3())
             oFText3.insertString(oFCurs3, Chr(9), False)
-            oFText3.insertString(oFCurs3, "Losse groenten afweeglijst", False)
+            oFText3.insertString(oFCurs3, "Losse groenten afweeglijst " & aDagen(d), False)
             oFText3.insertString(oFCurs3, Chr(9), False)
             oFldPN3 = oWriter3.createInstance("com.sun.star.text.textfield.PageNumber")
             oFldPN3.SubType       = com.sun.star.text.PageNumberType.CURRENT
