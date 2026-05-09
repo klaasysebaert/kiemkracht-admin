@@ -444,13 +444,23 @@ Sub MaakOverzichten()
     Dim bF As Integer : Dim aLinesF() As String
     Dim lF As Integer : Dim nStreepjesF As Integer
     Dim bNieuwGrp As Boolean
+    Dim bNieuwDagF As Boolean
 
     For bF = 0 To nBlokF - 1
         bNieuwGrp = (bF = 0)
+        bNieuwDagF = False
         If bF > 0 Then
-            If aGrpF(bF) <> aGrpF(bF - 1) Then bNieuwGrp = True
+            If aDagF(bF) <> aDagF(bF - 1) Then
+                bNieuwGrp = True
+                bNieuwDagF = True
+            ElseIf aGrpF(bF) <> aGrpF(bF - 1) Then
+                bNieuwGrp = True
+            End If
         End If
         If bNieuwGrp Then
+            If bNieuwDagF Then
+                oWCursF.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
+            End If
             oWCursF.setPropertyValue("CharFontName",     "Calibri")
             oWCursF.setPropertyValue("CharHeight",       16)
             oWCursF.setPropertyValue("CharWeight",       com.sun.star.awt.FontWeight.BOLD)
@@ -459,7 +469,7 @@ Sub MaakOverzichten()
             oWCursF.setPropertyValue("BottomBorder",     oNoBLF)
             oWCursF.setPropertyValue("LeftBorder",       oNoBLF)
             oWCursF.setPropertyValue("RightBorder",      oNoBLF)
-            oWCursF.setPropertyValue("ParaTopMargin",    IIf(bF = 0, 0, 400))
+            oWCursF.setPropertyValue("ParaTopMargin",    IIf((bF = 0) Or bNieuwDagF, 0, 400))
             oWCursF.setPropertyValue("ParaBottomMargin", 200)
             nStreepjesF = CInt((8900 - (Len(aGrpF(bF)) * 310) - 620) / 2 / 200)
             If nStreepjesF < 3 Then nStreepjesF = 3
