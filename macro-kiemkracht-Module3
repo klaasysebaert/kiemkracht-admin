@@ -677,7 +677,7 @@ Sub MaakOverzichten()
         oText3 = oWriter3.getText()
         oCurs3 = oText3.createTextCursor()
         oCurs3.setPropertyValue("CharFontName", "Calibri")
-        oCurs3.setPropertyValue("CharHeight", 14)
+        oCurs3.setPropertyValue("CharHeight", 16)
 
         Dim aQty(500) As Double
         Dim nQty      As Integer
@@ -704,10 +704,10 @@ Sub MaakOverzichten()
                         com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 End If
             End If
-            oCurs3.setPropertyValue("CharHeight", 14)
+            oCurs3.setPropertyValue("CharHeight", 16)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
             oText3.insertString(oCurs3, UCase(aDagen(d)), False)
-            oCurs3.setPropertyValue("CharHeight", 14)
+            oCurs3.setPropertyValue("CharHeight", 16)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
             bEersteDag = False
 
@@ -746,7 +746,7 @@ Sub MaakOverzichten()
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 oText3.insertControlCharacter(oCurs3, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                oCurs3.setPropertyValue("CharHeight", 14)
+                oCurs3.setPropertyValue("CharHeight", 16)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                 oText3.insertString(oCurs3, groentNaam(g) & " (" & aDagen(d) & "):", False)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
