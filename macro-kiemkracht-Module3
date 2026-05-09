@@ -818,6 +818,21 @@ Sub MaakOverzichten()
                         oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                         oText3.insertString(oCurs3, sTotLabel & sTot3 & " " & groentEenh(g), False)
                         oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+                        If nTotRij = 4 Then
+                            dTotVrij3 = oWkSheet.getCellByPosition(cGroent0 + g, 5).getValue()
+                            If dTotVrij3 > 0 Then
+                                If dTotVrij3 = Int(dTotVrij3) Then sTotVrij3 = CStr(CLng(dTotVrij3)) Else sTotVrij3 = CStr(dTotVrij3)
+                                oText3.insertControlCharacter(oCurs3, _
+                                    com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                                oCurs3.setPropertyValue("CharHeight", 9)
+                                oCurs3.setPropertyValue("CharColor", RGB(80, 80, 80))
+                                oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.ITALIC)
+                                oText3.insertString(oCurs3, "(vrijdag " & sTotVrij3 & " " & groentEenh(g) & ")", False)
+                                oCurs3.setPropertyValue("CharHeight", 16)
+                                oCurs3.setPropertyValue("CharColor", RGB(0, 0, 0))
+                                oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
+                            End If
+                        End If
                         bFirstLine = False
                     End If
                 Loop
