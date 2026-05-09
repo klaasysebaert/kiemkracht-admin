@@ -759,6 +759,20 @@ Sub MaakOverzichten()
 
                 If nQty = 0 Then GoTo VolgendGroent
 
+                nLines = 0 : tmpIdx = 0
+                Do While tmpIdx < nQty
+                    tmpVal = aQty(tmpIdx)
+                    Do While tmpIdx < nQty And aQty(tmpIdx) = tmpVal
+                        tmpIdx = tmpIdx + 1
+                    Loop
+                    nLines = nLines + 1
+                Loop
+
+                If nTotRij >= 0 Then
+                    dTot = oWkSheet.getCellByPosition(cGroent0 + g, nTotRij).getValue()
+                    If dTot = Int(dTot) Then sTot3 = CStr(CLng(dTot)) Else sTot3 = CStr(dTot)
+                End If
+
                 For qi = 0 To nQty - 2
                     For qi2 = 0 To nQty - qi - 2
                         If aQty(qi2) < aQty(qi2 + 1) Then
