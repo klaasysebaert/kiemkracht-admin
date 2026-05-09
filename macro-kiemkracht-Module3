@@ -735,6 +735,9 @@ Sub MaakOverzichten()
                 ' Groente-kop
                 oText3.insertControlCharacter(oCurs3, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oText3.insertControlCharacter(oCurs3, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oCurs3.setPropertyValue("CharHeight", 14)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                 oText3.insertString(oCurs3, groentNaam(g) & " (" & aDagen(d) & "):", False)
                 oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
