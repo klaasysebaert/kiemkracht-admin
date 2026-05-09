@@ -229,14 +229,42 @@ Sub MaakOverzichten()
 
     Dim nStreepjes As Integer
 
-    For b = 0 To nBlok - 1
-        ' Afhaalpuntkopje bij eerste blok of bij wisseling van afhaalpunt
+    ' Sorteer per dag dan per afhaalpunt
+    Dim aBlok1(500) As String
+    Dim aAfh21(500) As String
+    Dim aDag1(500)  As String
+    Dim n1          As Integer : n1 = 0
+    Dim dd          As Integer
+    Dim sD          As String
+    Dim bNieuwDag   As Boolean
+    For dd = 0 To nDagen - 1
+        sD = aDagen(dd)
+        For b = 0 To nBlok - 1
+            If aDag2(b) = sD Then
+                aBlok1(n1) = aBlok(b)
+                aAfh21(n1) = aAfh2(b)
+                aDag1(n1)  = sD
+                n1 = n1 + 1
+            End If
+        Next b
+    Next dd
+
+    For b = 0 To n1 - 1
         Dim bNieuwAfh As Boolean
         bNieuwAfh = (b = 0)
+        bNieuwDag = False
         If b > 0 Then
-            If aAfh2(b) <> aAfh2(b - 1) Then bNieuwAfh = True
+            If aDag1(b) <> aDag1(b - 1) Then
+                bNieuwAfh = True
+                bNieuwDag = True
+            ElseIf aAfh21(b) <> aAfh21(b - 1) Then
+                bNieuwAfh = True
+            End If
         End If
         If bNieuwAfh Then
+            If bNieuwDag Then
+                oWCursor.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
+            End If
             oWCursor.setPropertyValue("CharFontName",          "Calibri")
             oWCursor.setPropertyValue("CharHeight",            16)
             oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.BOLD)
@@ -245,16 +273,14 @@ Sub MaakOverzichten()
             oWCursor.setPropertyValue("BottomBorder",          oNoBL)
             oWCursor.setPropertyValue("LeftBorder",            oNoBL)
             oWCursor.setPropertyValue("RightBorder",           oNoBL)
-            oWCursor.setPropertyValue("ParaTopMargin",         IIf(b = 0, 0, 400))
+            oWCursor.setPropertyValue("ParaTopMargin",         IIf((b = 0) Or bNieuwDag, 0, 400))
             oWCursor.setPropertyValue("ParaBottomMargin",      200)
-            ' Kolombreedte ~8900 (1/100mm), koppelteken Calibri 16pt bold ~200 (1/100mm),
-            ' gemiddeld letter ~310 (1/100mm)
             Const nKolBr    = 8900
             Const nStreepBr = 200
             Const nLetterBr = 310
-            nStreepjes = CInt((nKolBr - (Len(aAfh2(b)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
+            nStreepjes = CInt((nKolBr - (Len(aAfh21(b)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
             If nStreepjes < 3 Then nStreepjes = 3
-            oText.insertString(oWCursor, String(nStreepjes, "-") & " " & aAfh2(b) & " " & String(nStreepjes, "-"), False)
+            oText.insertString(oWCursor, String(nStreepjes, "-") & " " & aAfh21(b) & " " & String(nStreepjes, "-"), False)
             oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.NORMAL)
             oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
             oText.insertControlCharacter(oWCursor, _
@@ -274,7 +300,7 @@ Sub MaakOverzichten()
         oWCursor.setPropertyValue("RightBorderDistance",  150)
         oWCursor.setPropertyValue("ParaBottomMargin",     300)
 
-        aLines = Split(aBlok(b), Chr(10))
+        aLines = Split(aBlok1(b), Chr(10))
         oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
         oText.insertString(oWCursor, aLines(0), False)
         oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
@@ -285,7 +311,7 @@ Sub MaakOverzichten()
             oText.insertString(oWCursor, aLines(l), False)
         Next l
 
-        If b < nBlok - 1 Then
+        If b < n1 - 1 Then
             oText.insertControlCharacter(oWCursor, _
                 com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
         End If
