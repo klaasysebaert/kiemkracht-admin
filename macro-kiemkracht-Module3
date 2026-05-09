@@ -955,6 +955,12 @@ Sub MaakOverzichten()
             oText4 = oWriter4.getText()
             oCurs4 = oText4.createTextCursor()
             oCurs4.setPropertyValue("CharFontName", "Calibri")
+            oCurs4.setPropertyValue("CharHeight", 20)
+            oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+            oText4.insertString(oCurs4, "Weglatingen " & UCase(Left(aDagen(d), 1)) & Mid(aDagen(d), 2), False)
+            oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+            oText4.insertControlCharacter(oCurs4, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            oText4.insertControlCharacter(oCurs4, com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
             oCurs4.setPropertyValue("CharHeight", 16)
 
             bEersteFmt4 = True
