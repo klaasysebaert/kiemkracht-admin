@@ -845,6 +845,10 @@ Sub MaakOverzichten()
            nDagen & " dag(en) (afweeglijst)" & Chr(10) & Chr(10) & _
            sOdtPath & Chr(10) & sOdtPath2 & Chr(10) & sOdtPath3 & sMsgWeg, _
            64, "Overzichten klaar"
+    Exit Sub
+
+DebugFout:
+    MsgBox "Fout " & Err & ": " & Error & Chr(10) & "Regel: " & Erl, 16, "Debug MaakOverzichten"
 
 End Sub
 
