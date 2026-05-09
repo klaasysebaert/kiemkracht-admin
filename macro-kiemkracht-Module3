@@ -867,14 +867,8 @@ Sub MaakOverzichten()
     End If
 
     ' -------------------------------------------------------
-    ' Document 4: overzicht weglatingen
-    ' per dag > per formaat (Klein/Groot/Extra groot/Mini) > per groente
+    ' Document 4: overzicht weglatingen, per dag één document
     ' -------------------------------------------------------
-    Dim sOdtPath4    As String
-    Dim oWriter4     As Object
-    Dim oPS4         As Object
-    Dim oText4       As Object
-    Dim oCurs4       As Object
     Dim aFmtCols(3)  As Integer
     Dim aFmtNamen(3) As String
     Dim f            As Integer
@@ -885,8 +879,9 @@ Sub MaakOverzichten()
     Dim bHasAnyWeg   As Boolean
     Dim aKlantLines() As String
     Dim kl           As Integer
-
-    sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen.odt"
+    Dim aOdtPath4(9) As String
+    Dim nOdtPath4    As Integer
+    nOdtPath4 = 0
 
     aFmtCols(0) = cKG   : aFmtNamen(0) = "Klein pakket"
     aFmtCols(1) = cGG   : aFmtNamen(1) = "Groot pakket"
@@ -910,20 +905,58 @@ Sub MaakOverzichten()
     End If
 
     If bHasAnyWeg Then
-        oWriter4 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
-
-        oPS4 = oWriter4.StyleFamilies.getByName("PageStyles").getByIndex(0)
-        oPS4.IsLandscape  = False
-        oPS4.Width        = 21000 : oPS4.Height       = 29700
-        oPS4.TopMargin    = 1500  : oPS4.BottomMargin = 1500
-        oPS4.LeftMargin   = 1500  : oPS4.RightMargin  = 1500
-
-        oText4 = oWriter4.getText()
-        oCurs4 = oText4.createTextCursor()
-        oCurs4.setPropertyValue("CharFontName", "Calibri")
-        oCurs4.setPropertyValue("CharHeight", 16)
+        Dim oWriter4  As Object
+        Dim oPS4      As Object
+        Dim oFText4   As Object
+        Dim oFCurs4   As Object
+        Dim oFldPN4   As Object
+        Dim oFldPC4   As Object
+        Dim aTS4(1)   As New com.sun.star.style.TabStop
+        Dim oText4    As Object
+        Dim oCurs4    As Object
+        Dim sOdtPath4 As String
 
         For d = 0 To nDagen - 1
+            oWriter4 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+
+            oPS4 = oWriter4.StyleFamilies.getByName("PageStyles").getByIndex(0)
+            oPS4.IsLandscape  = False
+            oPS4.Width        = 21000 : oPS4.Height       = 29700
+            oPS4.TopMargin    = 1500  : oPS4.BottomMargin = 1500
+            oPS4.LeftMargin   = 1500  : oPS4.RightMargin  = 1500
+
+            oPS4.FooterIsOn = True
+            oFText4 = oPS4.FooterText
+            oFCurs4 = oFText4.createTextCursor()
+            oFCurs4.setPropertyValue("CharFontName", "Calibri")
+            oFCurs4.setPropertyValue("CharHeight",   10)
+            oFCurs4.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
+            aTS4(0).Position    = 8700
+            aTS4(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
+            aTS4(0).DecimalChar = ASC(".")
+            aTS4(0).FillChar    = ASC(" ")
+            aTS4(1).Position    = 9500
+            aTS4(1).Alignment   = com.sun.star.style.TabAlign.CENTER
+            aTS4(1).DecimalChar = ASC(".")
+            aTS4(1).FillChar    = ASC(" ")
+            oFCurs4.setPropertyValue("ParaTabStops", aTS4())
+            oFText4.insertString(oFCurs4, Chr(9), False)
+            oFText4.insertString(oFCurs4, "Weglatingen " & aDagen(d), False)
+            oFText4.insertString(oFCurs4, Chr(9), False)
+            oFldPN4 = oWriter4.createInstance("com.sun.star.text.textfield.PageNumber")
+            oFldPN4.SubType       = com.sun.star.text.PageNumberType.CURRENT
+            oFldPN4.NumberingType = com.sun.star.style.NumberingType.ARABIC
+            oFText4.insertTextContent(oFCurs4, oFldPN4, False)
+            oFText4.insertString(oFCurs4, " / ", False)
+            oFldPC4 = oWriter4.createInstance("com.sun.star.text.textfield.PageCount")
+            oFldPC4.NumberingType = com.sun.star.style.NumberingType.ARABIC
+            oFText4.insertTextContent(oFCurs4, oFldPC4, False)
+
+            oText4 = oWriter4.getText()
+            oCurs4 = oText4.createTextCursor()
+            oCurs4.setPropertyValue("CharFontName", "Calibri")
+            oCurs4.setPropertyValue("CharHeight", 16)
+
             bEersteFmt4 = True
 
             For f = 0 To 3
@@ -951,25 +984,6 @@ Sub MaakOverzichten()
 
                     If nKlanten = 0 Then GoTo VolgendeWeg
 
-                    ' Dag-kop: eenmalig bij eerste inhoud van die dag
-                    ' Vorige groente liet cursor al op lege paragraaf (scheidt dagen)
-                    If bEersteFmt4 And bEersteGr Then
-                        If d > 0 Then
-                            oCurs4.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
-                        End If
-                        oCurs4.setPropertyValue("CharHeight", 18)
-                        oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-                        oText4.insertString(oCurs4, _
-                            "Weglatingen " & UCase(Left(aDagen(d), 1)) & Mid(aDagen(d), 2), False)
-                        oText4.insertControlCharacter(oCurs4, _
-                            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                        oText4.insertControlCharacter(oCurs4, _
-                            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                        oCurs4.setPropertyValue("CharHeight", 16)
-                        oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
-                    End If
-
-                    ' Formaat-kop: eenmalig bij eerste inhoud van dat formaat
                     If bEersteGr Then
                         oCurs4.setPropertyValue("CharHeight", 18)
                         oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
@@ -984,7 +998,6 @@ Sub MaakOverzichten()
                         bEersteGr   = False
                     End If
 
-                    ' Groente-naam bold, klanten elk op nieuwe regel met inspringing
                     oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
                     oText4.insertString(oCurs4, wegNaam(w) & ":", False)
                     oCurs4.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
@@ -994,7 +1007,6 @@ Sub MaakOverzichten()
                             com.sun.star.text.ControlCharacter.LINE_BREAK, False)
                         oText4.insertString(oCurs4, "    " & aKlantLines(kl), False)
                     Next kl
-                    ' Lege paragraaf na groente-blok (scheidt groenten én formaten/dagen)
                     oText4.insertControlCharacter(oCurs4, _
                         com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                     oText4.insertControlCharacter(oCurs4, _
@@ -1003,14 +1015,25 @@ Sub MaakOverzichten()
                     VolgendeWeg:
                 Next w
             Next f
-        Next d
 
-        oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
-        oWriter4.close(True)
+            If Not bEersteFmt4 Then
+                sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen_" & LCase(aDagen(d)) & ".odt"
+                oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
+                If nOdtPath4 <= 9 Then
+                    aOdtPath4(nOdtPath4) = sOdtPath4
+                    nOdtPath4 = nOdtPath4 + 1
+                End If
+            End If
+            oWriter4.close(True)
+        Next d
     End If
 
     Dim sMsgWeg As String
-    If bHasAnyWeg Then sMsgWeg = Chr(10) & sOdtPath4 Else sMsgWeg = ""
+    sMsgWeg = ""
+    Dim p4 As Integer
+    For p4 = 0 To nOdtPath4 - 1
+        sMsgWeg = sMsgWeg & Chr(10) & aOdtPath4(p4)
+    Next p4
     Dim sMsgAfweeg As String : sMsgAfweeg = ""
     Dim p3 As Integer
     For p3 = 0 To nOdtPath3 - 1
