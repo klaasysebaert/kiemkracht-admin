@@ -97,4 +97,9 @@ Sub StartSyncMetSheets()
     ReloadKiemkracht()
     SyncMetSheets()
 End Sub
+
+Sub StartMaakPrint()
+    ReloadKiemkracht()
+    MaakPrint()
+End Sub
 </script:module>

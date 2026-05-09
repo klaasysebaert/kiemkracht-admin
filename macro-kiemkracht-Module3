@@ -665,7 +665,7 @@ Sub MaakOverzichten()
         Dim oFText3   As Object : Dim oFCurs3 As Object
         Dim oFldPN3   As Object : Dim oFldPC3 As Object
         Dim oText3    As Object : Dim oCurs3  As Object
-        Dim aTS3(0)   As New com.sun.star.style.TabStop
+        Dim aTS3(1)   As New com.sun.star.style.TabStop
         Dim sOdtPath3 As String
 
         Dim aQty(500) As Double
