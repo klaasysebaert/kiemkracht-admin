@@ -324,7 +324,7 @@ Sub MaakOverzichten()
     Loop
 
     Dim sOdtPath As String
-    sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_formaat.odt"
+    sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_afhaalpunt.odt"
     oWriter.storeToURL(ConvertToURL(sOdtPath), aSave())
     oWriter.close(True)
 
