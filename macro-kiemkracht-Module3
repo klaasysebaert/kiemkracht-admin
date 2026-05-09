@@ -737,8 +737,8 @@ Sub MaakOverzichten()
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
             Select Case LCase(aDagen(d))
-                Case "donderdag" : nTotRij = 4 : sTotLabel = "} tot don: "
-                Case "vrijdag"   : nTotRij = 5 : sTotLabel = "} tot vrij: "
+                Case "donderdag" : nTotRij = 4 : sTotLabel = " tot don: "
+                Case "vrijdag"   : nTotRij = 5 : sTotLabel = " tot vrij: "
                 Case Else        : nTotRij = -1 : sTotLabel = ""
             End Select
 
