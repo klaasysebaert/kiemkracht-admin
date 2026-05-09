@@ -331,6 +331,166 @@ Sub MaakOverzichten()
     oWriter.close(True)
 
     ' -------------------------------------------------------
+    ' Document 1b: orderpicking per formaat (klantblokken, 2 kolommen)
+    ' -------------------------------------------------------
+    Dim aFmVgl(4) As String : Dim aFmNam(4) As String
+    aFmVgl(0) = "geen pakket"  : aFmNam(0) = "Geen pakket"
+    aFmVgl(1) = "klein"        : aFmNam(1) = "Klein pakket"
+    aFmVgl(2) = "groot"        : aFmNam(2) = "Groot pakket"
+    aFmVgl(3) = "extra groot"  : aFmNam(3) = "Extra groot pakket"
+    aFmVgl(4) = "mini"         : aFmNam(4) = "Mini pakket"
+
+    Dim aBlokF(500) As String : Dim aGrpF(500) As String
+    Dim nBlokF As Integer : nBlokF = 0
+    Dim f As Integer
+    For f = 0 To 4
+        For b = 0 To nBlok - 1
+            If aPakket(b) = aFmVgl(f) Then
+                aBlokF(nBlokF) = aBlok(b)
+                aGrpF(nBlokF)  = aFmNam(f)
+                nBlokF = nBlokF + 1
+            End If
+        Next b
+    Next f
+
+    Dim oWriterF As Object
+    oWriterF = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+
+    Dim oPSF As Object
+    oPSF = oWriterF.StyleFamilies.getByName("PageStyles").getByIndex(0)
+    oPSF.IsLandscape  = False
+    oPSF.Width        = 21000 : oPSF.Height       = 29700
+    oPSF.TopMargin    = 1500  : oPSF.BottomMargin = 1500
+    oPSF.LeftMargin   = 1200  : oPSF.RightMargin  = 1200
+
+    Dim oTCF As Object
+    oTCF = oPSF.TextColumns
+    oTCF.ColumnCount = 2 : oTCF.AutomaticDistance = 800
+    oPSF.TextColumns = oTCF
+
+    oPSF.FooterIsOn = True
+    Dim oFTextF As Object : Dim oFCursF As Object
+    oFTextF = oPSF.FooterText
+    oFCursF = oFTextF.createTextCursor()
+    oFCursF.setPropertyValue("CharFontName", "Calibri")
+    oFCursF.setPropertyValue("CharHeight",   10)
+    oFCursF.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
+    Dim aTabStopsF(1) As New com.sun.star.style.TabStop
+    aTabStopsF(0).Position    = 8700
+    aTabStopsF(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
+    aTabStopsF(0).DecimalChar = ASC(".")
+    aTabStopsF(0).FillChar    = ASC(" ")
+    aTabStopsF(1).Position    = 9500
+    aTabStopsF(1).Alignment   = com.sun.star.style.TabAlign.CENTER
+    aTabStopsF(1).DecimalChar = ASC(".")
+    aTabStopsF(1).FillChar    = ASC(" ")
+    oFCursF.setPropertyValue("ParaTabStops", aTabStopsF())
+    oFTextF.insertString(oFCursF, Chr(9), False)
+    oFTextF.insertString(oFCursF, "volgens formaat", False)
+    oFTextF.insertString(oFCursF, Chr(9), False)
+    Dim oFldPNF As Object
+    oFldPNF = oWriterF.createInstance("com.sun.star.text.textfield.PageNumber")
+    oFldPNF.SubType        = com.sun.star.text.PageNumberType.CURRENT
+    oFldPNF.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+    oFTextF.insertTextContent(oFCursF, oFldPNF, False)
+    oFTextF.insertString(oFCursF, " / ", False)
+    Dim oFldPCF As Object
+    oFldPCF = oWriterF.createInstance("com.sun.star.text.textfield.PageCount")
+    oFldPCF.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+    oFTextF.insertTextContent(oFCursF, oFldPCF, False)
+
+    Dim oTextF As Object : Dim oWCursF As Object
+    oTextF  = oWriterF.getText()
+    oWCursF = oTextF.createTextCursor()
+
+    Dim bF As Integer : Dim aLinesF() As String
+    Dim lF As Integer : Dim nStreepjesF As Integer
+    Dim bNieuwGrp As Boolean
+
+    For bF = 0 To nBlokF - 1
+        bNieuwGrp = (bF = 0)
+        If bF > 0 Then
+            If aGrpF(bF) <> aGrpF(bF - 1) Then bNieuwGrp = True
+        End If
+        If bNieuwGrp Then
+            oWCursF.setPropertyValue("CharFontName",     "Calibri")
+            oWCursF.setPropertyValue("CharHeight",       16)
+            oWCursF.setPropertyValue("CharWeight",       com.sun.star.awt.FontWeight.BOLD)
+            oWCursF.setPropertyValue("ParaAdjust",       com.sun.star.style.ParagraphAdjust.CENTER)
+            oWCursF.setPropertyValue("TopBorder",        oNoBL)
+            oWCursF.setPropertyValue("BottomBorder",     oNoBL)
+            oWCursF.setPropertyValue("LeftBorder",       oNoBL)
+            oWCursF.setPropertyValue("RightBorder",      oNoBL)
+            oWCursF.setPropertyValue("ParaTopMargin",    IIf(bF = 0, 0, 400))
+            oWCursF.setPropertyValue("ParaBottomMargin", 200)
+            nStreepjesF = CInt((nKolBr - (Len(aGrpF(bF)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
+            If nStreepjesF < 3 Then nStreepjesF = 3
+            oTextF.insertString(oWCursF, String(nStreepjesF, "-") & " " & aGrpF(bF) & " " & String(nStreepjesF, "-"), False)
+            oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+            oWCursF.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
+            oTextF.insertControlCharacter(oWCursF, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+        End If
+
+        oWCursF.setPropertyValue("CharFontName",         "Calibri")
+        oWCursF.setPropertyValue("CharHeight",           14)
+        oWCursF.setPropertyValue("ParaTopMargin",        0)
+        oWCursF.setPropertyValue("TopBorder",            oBL)
+        oWCursF.setPropertyValue("BottomBorder",         oBL)
+        oWCursF.setPropertyValue("LeftBorder",           oBL)
+        oWCursF.setPropertyValue("RightBorder",          oBL)
+        oWCursF.setPropertyValue("TopBorderDistance",    100)
+        oWCursF.setPropertyValue("BottomBorderDistance", 100)
+        oWCursF.setPropertyValue("LeftBorderDistance",   150)
+        oWCursF.setPropertyValue("RightBorderDistance",  150)
+        oWCursF.setPropertyValue("ParaBottomMargin",     300)
+
+        aLinesF = Split(aBlokF(bF), Chr(10))
+        oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+        oTextF.insertString(oWCursF, aLinesF(0), False)
+        oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+        For lF = 1 To UBound(aLinesF)
+            oTextF.insertControlCharacter(oWCursF, _
+                com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+            oTextF.insertString(oWCursF, aLinesF(lF), False)
+        Next lF
+        If bF < nBlokF - 1 Then
+            oTextF.insertControlCharacter(oWCursF, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+        End If
+    Next bF
+
+    ' --- Pass 2 formaat: geïsoleerde kopjes corrigeren ---
+    oWriterF.getCurrentController().getFrame().getContainerWindow().setVisible(True)
+    Wait 400
+
+    oCtrl = oWriterF.getCurrentController()
+    oVC   = oCtrl.getViewCursor()
+    bEersteKop = True
+    oEnP2 = oTextF.createEnumeration()
+    Do While oEnP2.hasMoreElements()
+        oParaP2 = oEnP2.nextElement()
+        If Not oParaP2.supportsService("com.sun.star.text.Paragraph") Then GoTo VolgPF
+        oKopCurs = oTextF.createTextCursorByRange(oParaP2.getStart())
+        If oKopCurs.getPropertyValue("CharHeight") <> 16 Then GoTo VolgPF
+        If bEersteKop Then : bEersteKop = False : GoTo VolgPF : End If
+        oCtrl.select(oKopCurs)
+        oPtP2  = oVC.getPosition()
+        nYInPg = oPtP2.Y Mod nPgHP2
+        If nYInPg > nKolBod - nZoneP2 Then
+            Dim oBrCursF As Object
+            oBrCursF = oTextF.createTextCursorByRange(oParaP2.getStart())
+            oBrCursF.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+        End If
+        VolgPF:
+    Loop
+
+    Dim sOdtPathF As String
+    sOdtPathF = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_formaat.odt"
+    oWriterF.storeToURL(ConvertToURL(sOdtPathF), aSave())
+    oWriterF.close(True)
+
+    ' -------------------------------------------------------
     ' Document 2: groenten totalen (tabel)
     ' -------------------------------------------------------
     Dim nGroentActief As Integer
