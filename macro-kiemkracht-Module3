@@ -343,16 +343,16 @@ Sub MaakOverzichten()
 
     Dim aBlokF(500) As String : Dim aGrpF(500) As String
     Dim nBlokF As Integer : nBlokF = 0
-    Dim f As Integer
-    For f = 0 To 4
+    Dim fi As Integer
+    For fi = 0 To 4
         For b = 0 To nBlok - 1
-            If aPakket(b) = aFmVgl(f) Then
+            If aPakket(b) = aFmVgl(fi) Then
                 aBlokF(nBlokF) = aBlok(b)
-                aGrpF(nBlokF)  = aFmNam(f)
+                aGrpF(nBlokF)  = aFmNam(fi)
                 nBlokF = nBlokF + 1
             End If
         Next b
-    Next f
+    Next fi
 
     Dim oWriterF As Object
     oWriterF = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
