@@ -275,7 +275,7 @@ Sub MaakOverzichten()
 
     ' --- Pass 2: geïsoleerde kopjes corrigeren via echte layout-positie ---
     ' Document kort zichtbaar maken zodat LibreOffice de layout berekent
-    oWriter.getCurrentController().getFrame().setVisible(True)
+    oWriter.getCurrentController().getFrame().getContainerWindow().setVisible(True)
     Wait 400
 
     Dim oCtrl   As Object : oCtrl  = oWriter.getCurrentController()
