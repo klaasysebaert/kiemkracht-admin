@@ -595,6 +595,11 @@ Sub MaakOverzichten()
     Dim oWriter2 As Object
     Dim oPS2     As Object
     Dim oText2   As Object : Dim oCurs2 As Object
+    Dim oHText2  As Object : Dim oHCurs2 As Object
+    Dim oFText2  As Object : Dim oFCurs2 As Object
+    Dim oFldPN2  As Object : Dim oFldPC2 As Object
+    Dim aTabStops2(1) As New com.sun.star.style.TabStop
+    Dim sHeader2 As String
     Dim sTot     As String : Dim sDon As String : Dim sVrij As String
     Dim bEersteG2 As Boolean
     Dim sOdtPath2 As String
