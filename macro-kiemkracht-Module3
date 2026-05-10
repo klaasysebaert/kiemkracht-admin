@@ -1227,6 +1227,7 @@ Sub MaakOverzichten()
                     End If
                     VolgP4:
                 Loop
+                Wait 1500
 
                 sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen_" & LCase(aDagen(d)) & ".odt"
                 oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
