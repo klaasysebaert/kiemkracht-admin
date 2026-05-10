@@ -584,7 +584,7 @@ Sub MaakOverzichten()
     Next dd
 
     ' -------------------------------------------------------
-    ' Document 2: groenten totalen (tabel)
+    ' Document 2: groenten totalen (tekstvorm)
     ' -------------------------------------------------------
     Dim nGroentActief As Integer
     nGroentActief = 0
@@ -600,48 +600,41 @@ Sub MaakOverzichten()
     oPS2.IsLandscape  = False
     oPS2.Width        = 21000 : oPS2.Height       = 29700
     oPS2.TopMargin    = 1500  : oPS2.BottomMargin = 1500
-    oPS2.LeftMargin   = 1200  : oPS2.RightMargin  = 1200
+    oPS2.LeftMargin   = 1500  : oPS2.RightMargin  = 1500
 
     Dim oText2 As Object : Dim oCurs2 As Object
     oText2 = oWriter2.getText()
     oCurs2 = oText2.createTextCursor()
+    oCurs2.setPropertyValue("CharFontName", "Calibri")
+    oCurs2.setPropertyValue("CharHeight", 12)
 
-    Dim oTabel As Object
-    oTabel = oWriter2.createInstance("com.sun.star.text.TextTable")
-    oTabel.initialize(nGroentActief + 1, 4)
-    oText2.insertTextContent(oCurs2, oTabel, False)
-
-    Dim oColSep(2) As New com.sun.star.text.TableColumnSeparator
-    oColSep(0).Position = 4500 : oColSep(0).IsVisible = True
-    oColSep(1).Position = 6500 : oColSep(1).IsVisible = True
-    oColSep(2).Position = 8500 : oColSep(2).IsVisible = True
-    oTabel.TableColumnSeparators = oColSep
-
-    Dim aHdr(3) As String
-    aHdr(0) = "Groente" : aHdr(1) = "Totaal" : aHdr(2) = "Donderdag" : aHdr(3) = "Vrijdag"
-
-    Dim c As Integer
-    Dim oCelTxt As Object : Dim oCelCurs As Object
-    For c = 0 To 3
-        oCelTxt  = oTabel.getCellByPosition(c, 0).getText()
-        oCelCurs = oCelTxt.createTextCursor()
-        oCelCurs.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-        oCelTxt.insertString(oCelCurs, aHdr(c), False)
-    Next c
-
-    Dim nRij As Integer
-    nRij = 1
     Dim sTot As String : Dim sDon As String : Dim sVrij As String
+    Dim bEersteG2 As Boolean : bEersteG2 = True
     For g = 0 To nGroentSlots - 1
         If aTotaal(g) > 0 Then
             If aTotaal(g)  = Int(aTotaal(g))  Then sTot  = CStr(CLng(aTotaal(g)))  Else sTot  = CStr(aTotaal(g))
             If aTotDon(g)  = Int(aTotDon(g))  Then sDon  = CStr(CLng(aTotDon(g)))  Else sDon  = CStr(aTotDon(g))
             If aTotVrij(g) = Int(aTotVrij(g)) Then sVrij = CStr(CLng(aTotVrij(g))) Else sVrij = CStr(aTotVrij(g))
-            oTabel.getCellByPosition(0, nRij).setString(groentNaam(g) & " (" & groentEenh(g) & ")")
-            oTabel.getCellByPosition(1, nRij).setString(sTot)
-            oTabel.getCellByPosition(2, nRij).setString(sDon)
-            oTabel.getCellByPosition(3, nRij).setString(sVrij)
-            nRij = nRij + 1
+
+            If Not bEersteG2 Then
+                oText2.insertControlCharacter(oCurs2, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            End If
+
+            oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+            oText2.insertString(oCurs2, groentNaam(g), False)
+            oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+            oText2.insertControlCharacter(oCurs2, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            oText2.insertString(oCurs2, "Donderdag: " & sDon & " " & groentEenh(g), False)
+            oText2.insertControlCharacter(oCurs2, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
+            oText2.insertControlCharacter(oCurs2, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            oText2.insertString(oCurs2, "Totaal: " & sTot & " " & groentEenh(g), False)
+
+            bEersteG2 = False
         End If
     Next g
 
