@@ -669,7 +669,7 @@ Sub MaakOverzichten()
         oText2 = oWriter2.getText()
         oCurs2 = oText2.createTextCursor()
         oCurs2.setPropertyValue("CharFontName", "Calibri")
-        oCurs2.setPropertyValue("CharHeight", 14)
+        oCurs2.setPropertyValue("CharHeight", 13.5)
 
         bEersteG2 = True
         For g = 0 To nGroentSlots - 1
@@ -690,7 +690,7 @@ Sub MaakOverzichten()
                 oCurs2.setPropertyValue("CharHeight", 7)
                 oText2.insertControlCharacter(oCurs2, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                oCurs2.setPropertyValue("CharHeight", 14)
+                oCurs2.setPropertyValue("CharHeight", 13.5)
             End If
 
             oCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
@@ -714,7 +714,7 @@ Sub MaakOverzichten()
                 oText2.insertControlCharacter(oCurs2, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 oText2.insertString(oCurs2, "Totaal: " & sTot & " " & groentEenh(g), False)
-                oCurs2.setPropertyValue("CharHeight", 14)
+                oCurs2.setPropertyValue("CharHeight", 13.5)
             Else
                 oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
             End If
