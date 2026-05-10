@@ -1208,7 +1208,13 @@ Sub MaakPrint()
             sPaths(nPaths) = sOPad : nPaths = nPaths + 1
         End If
     Next dd
-    sPaths(nPaths) = sBase & "_groenten.odt"               : nPaths = nPaths + 1
+    Dim sGrPad As String
+    For dd = 0 To 6
+        sGrPad = sBase & "_groenten_" & aDagNamen(dd) & ".odt"
+        If FileExists(sGrPad) Then
+            sPaths(nPaths) = sGrPad : nPaths = nPaths + 1
+        End If
+    Next dd
 
     Dim sWegPad As String
     Dim sAfweeg As String
