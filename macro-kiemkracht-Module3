@@ -694,6 +694,8 @@ Sub MaakOverzichten()
             End If
 
             oCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
+            oCurs2.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
+            oCurs2.setPropertyValue("CharColor", RGB(0, 0, 0))
             oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
             oText2.insertString(oCurs2, groentNaam(g), False)
             oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
@@ -705,10 +707,14 @@ Sub MaakOverzichten()
                 oText2.insertControlCharacter(oCurs2, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 oCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.RIGHT)
+                oCurs2.setPropertyValue("CharHeight", 9)
+                oCurs2.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.ITALIC)
+                oCurs2.setPropertyValue("CharColor", RGB(80, 80, 80))
                 oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
                 oText2.insertControlCharacter(oCurs2, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 oText2.insertString(oCurs2, "Totaal: " & sTot & " " & groentEenh(g), False)
+                oCurs2.setPropertyValue("CharHeight", 14)
             Else
                 oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
             End If
