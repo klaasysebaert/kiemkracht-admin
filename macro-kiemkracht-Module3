@@ -1005,6 +1005,15 @@ Sub MaakOverzichten()
 
             oWriter3.getCurrentController().getFrame().getContainerWindow().setVisible(True)
             Wait 400
+            Dim oCtrlS3 As Object : oCtrlS3 = oWriter3.getCurrentController()
+            Dim oEnS3 As Object : oEnS3 = oText3.createEnumeration()
+            Dim oParaS3 As Object
+            Do While oEnS3.hasMoreElements()
+                oParaS3 = oEnS3.nextElement()
+                If oParaS3.supportsService("com.sun.star.text.Paragraph") Then
+                    oCtrlS3.select(oText3.createTextCursorByRange(oParaS3.getStart()))
+                End If
+            Loop
             sOdtPath3 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_afweeglijst_" & LCase(aDagen(d)) & ".odt"
             oWriter3.storeToURL(ConvertToURL(sOdtPath3), aSave())
             oWriter3.close(True)
