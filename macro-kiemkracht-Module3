@@ -274,6 +274,15 @@ Sub MaakOverzichten()
 
         oText    = oWriter.getText()
         oWCursor = oText.createTextCursor()
+        oWCursor.setPropertyValue("CharFontName", "Calibri")
+        oWCursor.setPropertyValue("CharHeight", 16)
+        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+        oWCursor.setPropertyValue("ParaTopMargin", 0)
+        oWCursor.setPropertyValue("ParaBottomMargin", 200)
+        oText.insertString(oWCursor, "Losse groenten " & sD & " (afh.punt)", False)
+        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+        oText.insertControlCharacter(oWCursor, _
+            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
         bFirstInDoc1 = True
         sPrevAfh1    = ""
 
