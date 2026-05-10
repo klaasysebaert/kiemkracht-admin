@@ -607,9 +607,19 @@ Sub MaakOverzichten()
     Dim nOdtPath2    As Integer : nOdtPath2 = 0
     Dim bShowG2      As Boolean
 
+    Dim nBody2  As Single
+    Dim nBlank2 As Single
     For d = 0 To nDagen - 1
         sD = aDagen(d)
         If sD <> "donderdag" And sD <> "vrijdag" Then GoTo VolgendeDag2
+
+        If sD = "donderdag" Then
+            nBody2  = 13.5
+            nBlank2 = 4
+        Else
+            nBody2  = 14
+            nBlank2 = 14
+        End If
 
         oWriter2 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
 
