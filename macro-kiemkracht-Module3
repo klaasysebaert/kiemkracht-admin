@@ -756,7 +756,6 @@ Sub MaakOverzichten()
             VolgendG2:
         Next g
 
-        oWriter2.getCurrentController().getFrame().getContainerWindow().setVisible(True)
         Wait 400
         Dim oCtrlS2 As Object : oCtrlS2 = oWriter2.getCurrentController()
         Dim oEnS2 As Object : oEnS2 = oText2.createEnumeration()
