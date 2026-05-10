@@ -1196,7 +1196,6 @@ Sub MaakOverzichten()
 
             If Not bEersteFmt4 Then
                 ' Pass 2: formaatkoppen en wegnamen die te ver onderaan staan, verplaatsen naar volgend blad
-                oWriter4.getCurrentController().getFrame().getContainerWindow().setVisible(True)
                 Wait 400
                 oCtrl4 = oWriter4.getCurrentController()
                 oVC4   = oCtrl4.getViewCursor()
