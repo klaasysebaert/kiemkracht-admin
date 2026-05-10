@@ -1141,8 +1141,19 @@ Sub MaakPrint()
     Dim nPaths     As Integer
     nPaths = 0
 
-    sPaths(nPaths) = sBase & "_orderpicking_afhaalpunt.odt" : nPaths = nPaths + 1
-    sPaths(nPaths) = sBase & "_orderpicking_formaat.odt"   : nPaths = nPaths + 1
+    Dim sOPad As String
+    For dd = 0 To 6
+        sOPad = sBase & "_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt"
+        If FileExists(sOPad) Then
+            sPaths(nPaths) = sOPad : nPaths = nPaths + 1
+        End If
+    Next dd
+    For dd = 0 To 6
+        sOPad = sBase & "_orderpicking_formaat_" & aDagNamen(dd) & ".odt"
+        If FileExists(sOPad) Then
+            sPaths(nPaths) = sOPad : nPaths = nPaths + 1
+        End If
+    Next dd
     sPaths(nPaths) = sBase & "_groenten.odt"               : nPaths = nPaths + 1
 
     Dim sWegPad As String
