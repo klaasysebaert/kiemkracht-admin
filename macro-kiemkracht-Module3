@@ -660,7 +660,7 @@ Sub MaakOverzichten()
             VolgendG2:
         Next g
 
-        sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_groenten_" & sD & ".odt"
+        sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_oogstlijst_" & sD & ".odt"
         oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
         If nOdtPath2 <= 9 Then : aOdtPath2(nOdtPath2) = sOdtPath2 : nOdtPath2 = nOdtPath2 + 1 : End If
         oWriter2.close(True)
@@ -1210,7 +1210,7 @@ Sub MaakPrint()
     Next dd
     Dim sGrPad As String
     For dd = 0 To 6
-        sGrPad = sBase & "_groenten_" & aDagNamen(dd) & ".odt"
+        sGrPad = sBase & "_losse_groenten_oogstlijst_" & aDagNamen(dd) & ".odt"
         If FileExists(sGrPad) Then
             sPaths(nPaths) = sGrPad : nPaths = nPaths + 1
         End If
