@@ -630,10 +630,14 @@ Sub MaakOverzichten()
         oHText2 = oPS2.HeaderText
         oHCurs2 = oHText2.createTextCursor()
         oHCurs2.setPropertyValue("CharFontName", "Calibri")
-        oHCurs2.setPropertyValue("CharHeight", 16)
+        oHCurs2.setPropertyValue("CharHeight", 18)
         oHCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-        oHCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.CENTER)
+        oHCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
         oHText2.insertString(oHCurs2, sHeader2, False)
+        oHText2.insertControlCharacter(oHCurs2, _
+            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+        oHCurs2.setPropertyValue("CharHeight", 9)
+        oHCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
         oPS2.FooterIsOn = True
         oFText2 = oPS2.FooterText
