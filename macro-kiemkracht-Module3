@@ -735,6 +735,7 @@ Sub MaakOverzichten()
                 oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
             End If
 
+            iShow2 = iShow2 + 1
             bEersteG2 = False
 
             VolgendG2:
