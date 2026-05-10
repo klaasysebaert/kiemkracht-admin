@@ -755,6 +755,8 @@ Sub MaakOverzichten()
             VolgendG2:
         Next g
 
+        oWriter2.getCurrentController().getFrame().getContainerWindow().setVisible(True)
+        Wait 400
         sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_oogstlijst_" & sD & ".odt"
         oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
         If nOdtPath2 <= 9 Then : aOdtPath2(nOdtPath2) = sOdtPath2 : nOdtPath2 = nOdtPath2 + 1 : End If
