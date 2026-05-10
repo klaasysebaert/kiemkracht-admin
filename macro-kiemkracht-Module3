@@ -1167,6 +1167,10 @@ Sub MaakOverzichten()
 
                 sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen_" & LCase(aDagen(d)) & ".odt"
                 oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
+                If d = nDagen - 1 Then
+                    ' tweede write op het laatste bestand: vangt verloren Explorer-notificatie op
+                    oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
+                End If
                 If nOdtPath4 <= 9 Then
                     aOdtPath4(nOdtPath4) = sOdtPath4
                     nOdtPath4 = nOdtPath4 + 1
