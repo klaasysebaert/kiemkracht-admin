@@ -584,7 +584,7 @@ Sub MaakOverzichten()
     Next dd
 
     ' -------------------------------------------------------
-    ' Document 2: groenten totalen (tekstvorm)
+    ' Document 2: groenten totalen (tekstvorm), per dag één document
     ' -------------------------------------------------------
     Dim nGroentActief As Integer
     nGroentActief = 0
@@ -593,25 +593,41 @@ Sub MaakOverzichten()
     Next g
 
     Dim oWriter2 As Object
-    oWriter2 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+    Dim oPS2     As Object
+    Dim oText2   As Object : Dim oCurs2 As Object
+    Dim sTot     As String : Dim sDon As String : Dim sVrij As String
+    Dim bEersteG2 As Boolean
+    Dim sOdtPath2 As String
+    Dim aOdtPath2(9) As String
+    Dim nOdtPath2    As Integer : nOdtPath2 = 0
+    Dim bShowG2      As Boolean
 
-    Dim oPS2 As Object
-    oPS2 = oWriter2.StyleFamilies.getByName("PageStyles").getByIndex(0)
-    oPS2.IsLandscape  = False
-    oPS2.Width        = 21000 : oPS2.Height       = 29700
-    oPS2.TopMargin    = 1500  : oPS2.BottomMargin = 1500
-    oPS2.LeftMargin   = 1500  : oPS2.RightMargin  = 1500
+    For d = 0 To nDagen - 1
+        sD = aDagen(d)
+        If sD <> "donderdag" And sD <> "vrijdag" Then GoTo VolgendeDag2
 
-    Dim oText2 As Object : Dim oCurs2 As Object
-    oText2 = oWriter2.getText()
-    oCurs2 = oText2.createTextCursor()
-    oCurs2.setPropertyValue("CharFontName", "Calibri")
-    oCurs2.setPropertyValue("CharHeight", 12)
+        oWriter2 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
 
-    Dim sTot As String : Dim sDon As String : Dim sVrij As String
-    Dim bEersteG2 As Boolean : bEersteG2 = True
-    For g = 0 To nGroentSlots - 1
-        If aTotaal(g) > 0 Then
+        oPS2 = oWriter2.StyleFamilies.getByName("PageStyles").getByIndex(0)
+        oPS2.IsLandscape  = False
+        oPS2.Width        = 21000 : oPS2.Height       = 29700
+        oPS2.TopMargin    = 1500  : oPS2.BottomMargin = 1500
+        oPS2.LeftMargin   = 1500  : oPS2.RightMargin  = 1500
+
+        oText2 = oWriter2.getText()
+        oCurs2 = oText2.createTextCursor()
+        oCurs2.setPropertyValue("CharFontName", "Calibri")
+        oCurs2.setPropertyValue("CharHeight", 12)
+
+        bEersteG2 = True
+        For g = 0 To nGroentSlots - 1
+            If sD = "donderdag" Then
+                bShowG2 = (aTotaal(g) > 0)
+            Else
+                bShowG2 = (aTotVrij(g) > 0)
+            End If
+            If Not bShowG2 Then GoTo VolgendG2
+
             If aTotaal(g)  = Int(aTotaal(g))  Then sTot  = CStr(CLng(aTotaal(g)))  Else sTot  = CStr(aTotaal(g))
             If aTotDon(g)  = Int(aTotDon(g))  Then sDon  = CStr(CLng(aTotDon(g)))  Else sDon  = CStr(aTotDon(g))
             If aTotVrij(g) = Int(aTotVrij(g)) Then sVrij = CStr(CLng(aTotVrij(g))) Else sVrij = CStr(aTotVrij(g))
@@ -626,22 +642,31 @@ Sub MaakOverzichten()
             oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
             oText2.insertControlCharacter(oCurs2, _
                 com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-            oText2.insertString(oCurs2, "Donderdag: " & sDon & " " & groentEenh(g), False)
-            oText2.insertControlCharacter(oCurs2, _
-                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-            oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
-            oText2.insertControlCharacter(oCurs2, _
-                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-            oText2.insertString(oCurs2, "Totaal: " & sTot & " " & groentEenh(g), False)
+
+            If sD = "donderdag" Then
+                oText2.insertString(oCurs2, "Donderdag: " & sDon & " " & groentEenh(g), False)
+                oText2.insertControlCharacter(oCurs2, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
+                oText2.insertControlCharacter(oCurs2, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oText2.insertString(oCurs2, "Totaal: " & sTot & " " & groentEenh(g), False)
+            Else
+                oText2.insertString(oCurs2, "Vrijdag: " & sVrij & " " & groentEenh(g), False)
+            End If
 
             bEersteG2 = False
-        End If
-    Next g
 
-    Dim sOdtPath2 As String
-    sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_groenten.odt"
-    oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
-    oWriter2.close(True)
+            VolgendG2:
+        Next g
+
+        sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_groenten_" & sD & ".odt"
+        oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
+        If nOdtPath2 <= 9 Then : aOdtPath2(nOdtPath2) = sOdtPath2 : nOdtPath2 = nOdtPath2 + 1 : End If
+        oWriter2.close(True)
+
+        VolgendeDag2:
+    Next d
 
     ' -------------------------------------------------------
     ' Document 3: afweeglijst per dag
