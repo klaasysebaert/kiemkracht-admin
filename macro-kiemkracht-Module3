@@ -636,7 +636,7 @@ Sub MaakOverzichten()
         oHText2.insertString(oHCurs2, sHeader2, False)
         oHText2.insertControlCharacter(oHCurs2, _
             com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-        oHCurs2.setPropertyValue("CharHeight", 9)
+        oHCurs2.setPropertyValue("CharHeight", 6)
         oHCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
         oPS2.FooterIsOn = True
