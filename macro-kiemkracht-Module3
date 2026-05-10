@@ -624,6 +624,44 @@ Sub MaakOverzichten()
         oTC2.ColumnCount = 2 : oTC2.AutomaticDistance = 800
         oPS2.TextColumns = oTC2
 
+        sHeader2 = "Oogstlijst losse groenten " & sD
+
+        oPS2.HeaderIsOn = True
+        oHText2 = oPS2.HeaderText
+        oHCurs2 = oHText2.createTextCursor()
+        oHCurs2.setPropertyValue("CharFontName", "Calibri")
+        oHCurs2.setPropertyValue("CharHeight", 16)
+        oHCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+        oHCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.CENTER)
+        oHText2.insertString(oHCurs2, sHeader2, False)
+
+        oPS2.FooterIsOn = True
+        oFText2 = oPS2.FooterText
+        oFCurs2 = oFText2.createTextCursor()
+        oFCurs2.setPropertyValue("CharFontName", "Calibri")
+        oFCurs2.setPropertyValue("CharHeight",   10)
+        oFCurs2.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
+        aTabStops2(0).Position    = 8700
+        aTabStops2(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
+        aTabStops2(0).DecimalChar = ASC(".")
+        aTabStops2(0).FillChar    = ASC(" ")
+        aTabStops2(1).Position    = 9500
+        aTabStops2(1).Alignment   = com.sun.star.style.TabAlign.CENTER
+        aTabStops2(1).DecimalChar = ASC(".")
+        aTabStops2(1).FillChar    = ASC(" ")
+        oFCurs2.setPropertyValue("ParaTabStops", aTabStops2())
+        oFText2.insertString(oFCurs2, Chr(9), False)
+        oFText2.insertString(oFCurs2, sHeader2, False)
+        oFText2.insertString(oFCurs2, Chr(9), False)
+        oFldPN2 = oWriter2.createInstance("com.sun.star.text.textfield.PageNumber")
+        oFldPN2.SubType       = com.sun.star.text.PageNumberType.CURRENT
+        oFldPN2.NumberingType = com.sun.star.style.NumberingType.ARABIC
+        oFText2.insertTextContent(oFCurs2, oFldPN2, False)
+        oFText2.insertString(oFCurs2, " / ", False)
+        oFldPC2 = oWriter2.createInstance("com.sun.star.text.textfield.PageCount")
+        oFldPC2.NumberingType = com.sun.star.style.NumberingType.ARABIC
+        oFText2.insertTextContent(oFCurs2, oFldPC2, False)
+
         oText2 = oWriter2.getText()
         oCurs2 = oText2.createTextCursor()
         oCurs2.setPropertyValue("CharFontName", "Calibri")
