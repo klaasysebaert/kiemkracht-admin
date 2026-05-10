@@ -163,71 +163,28 @@ Sub MaakOverzichten()
     sWkPath = ConvertFromURL(oDoc.getURL())
 
     ' -------------------------------------------------------
-    ' Document 1: orderpicking (klantblokken, 2 kolommen)
+    ' Document 1: orderpicking afhaalpunt, per dag één document
     ' -------------------------------------------------------
-    Dim oWriter As Object
-    oWriter = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
-
-    Dim oPS As Object
-    oPS = oWriter.StyleFamilies.getByName("PageStyles").getByIndex(0)
-    oPS.IsLandscape  = False
-    oPS.Width        = 21000 : oPS.Height       = 29700
-    oPS.TopMargin    = 1500  : oPS.BottomMargin = 1500
-    oPS.LeftMargin   = 1200  : oPS.RightMargin  = 1200
-
-    Dim oTC As Object
-    oTC = oPS.TextColumns
-    oTC.ColumnCount = 2 : oTC.AutomaticDistance = 800
-    oPS.TextColumns = oTC
-
-    ' Footer met paginanummers (centraal, formaat "X / Y")
-    oPS.FooterIsOn = True
-    Dim oFText As Object
-    Dim oFCurs As Object
-    oFText = oPS.FooterText
-    oFCurs = oFText.createTextCursor()
-    oFCurs.setPropertyValue("CharFontName", "Calibri")
-    oFCurs.setPropertyValue("CharHeight",   10)
-    oFCurs.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
-    Dim aTabStops(1) As New com.sun.star.style.TabStop
-    aTabStops(0).Position    = 8700
-    aTabStops(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
-    aTabStops(0).DecimalChar = ASC(".")
-    aTabStops(0).FillChar    = ASC(" ")
-    aTabStops(1).Position    = 9500
-    aTabStops(1).Alignment   = com.sun.star.style.TabAlign.CENTER
-    aTabStops(1).DecimalChar = ASC(".")
-    aTabStops(1).FillChar    = ASC(" ")
-    oFCurs.setPropertyValue("ParaTabStops", aTabStops())
-    oFText.insertString(oFCurs, Chr(9), False)
-    oFText.insertString(oFCurs, "volgens afhaalpunt", False)
-    oFText.insertString(oFCurs, Chr(9), False)
-    Dim oFldPN As Object
-    oFldPN = oWriter.createInstance("com.sun.star.text.textfield.PageNumber")
-    oFldPN.SubType        = com.sun.star.text.PageNumberType.CURRENT
-    oFldPN.NumberingType  = com.sun.star.style.NumberingType.ARABIC
-    oFText.insertTextContent(oFCurs, oFldPN, False)
-    oFText.insertString(oFCurs, " / ", False)
-    Dim oFldPC As Object
-    oFldPC = oWriter.createInstance("com.sun.star.text.textfield.PageCount")
-    oFldPC.NumberingType  = com.sun.star.style.NumberingType.ARABIC
-    oFText.insertTextContent(oFCurs, oFldPC, False)
+    Dim oWriter   As Object
+    Dim oPS       As Object
+    Dim oTC       As Object
+    Dim oFText    As Object
+    Dim oFCurs    As Object
+    Dim oFldPN    As Object
+    Dim oFldPC    As Object
+    Dim oText     As Object
+    Dim oWCursor  As Object
 
     Dim oBL As New com.sun.star.table.BorderLine2
     oBL.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
     oBL.LineWidth = 26
-
-    Dim oText    As Object : Dim oWCursor As Object
-    oText    = oWriter.getText()
-    oWCursor = oText.createTextCursor()
-
-    Dim b        As Integer
-    Dim aLines() As String
-    Dim l        As Integer
-
     Dim oNoBL As New com.sun.star.table.BorderLine2
 
+    Dim b          As Integer
+    Dim aLines()   As String
+    Dim l          As Integer
     Dim nStreepjes As Integer
+    Dim bNieuwAfh  As Boolean
 
     ' Sorteer per dag dan per afhaalpunt
     Dim aBlok1(500) As String
@@ -249,125 +206,169 @@ Sub MaakOverzichten()
         Next b
     Next dd
 
-    For b = 0 To n1 - 1
-        Dim bNieuwAfh As Boolean
-        bNieuwAfh = (b = 0)
-        bNieuwDag = False
-        If b > 0 Then
-            If aDag1(b) <> aDag1(b - 1) Then
-                bNieuwAfh = True
-                bNieuwDag = True
-            ElseIf aAfh21(b) <> aAfh21(b - 1) Then
-                bNieuwAfh = True
-            End If
-        End If
-        If bNieuwAfh Then
-            If bNieuwDag Then
-                oWCursor.setPropertyValue("BreakType", com.sun.star.style.BreakType.PAGE_BEFORE)
-            End If
-            oWCursor.setPropertyValue("CharFontName",          "Calibri")
-            oWCursor.setPropertyValue("CharHeight",            16)
-            oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.BOLD)
-            oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.CENTER)
-            oWCursor.setPropertyValue("TopBorder",             oNoBL)
-            oWCursor.setPropertyValue("BottomBorder",          oNoBL)
-            oWCursor.setPropertyValue("LeftBorder",            oNoBL)
-            oWCursor.setPropertyValue("RightBorder",           oNoBL)
-            oWCursor.setPropertyValue("ParaTopMargin",         IIf((b = 0) Or bNieuwDag, 0, 400))
-            oWCursor.setPropertyValue("ParaBottomMargin",      200)
-            Const nKolBr    = 8900
-            Const nStreepBr = 200
-            Const nLetterBr = 310
-            nStreepjes = CInt((nKolBr - (Len(aAfh21(b)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
-            If nStreepjes < 3 Then nStreepjes = 3
-            oText.insertString(oWCursor, String(nStreepjes, "-") & " " & aAfh21(b) & " " & String(nStreepjes, "-"), False)
-            oWCursor.setPropertyValue("CharWeight",            com.sun.star.awt.FontWeight.NORMAL)
-            oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
-            oText.insertControlCharacter(oWCursor, _
-                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-        End If
-
-        oWCursor.setPropertyValue("CharFontName",          "Calibri")
-        oWCursor.setPropertyValue("CharHeight",           14)
-        oWCursor.setPropertyValue("ParaTopMargin",        0)
-        oWCursor.setPropertyValue("TopBorder",            oBL)
-        oWCursor.setPropertyValue("BottomBorder",         oBL)
-        oWCursor.setPropertyValue("LeftBorder",           oBL)
-        oWCursor.setPropertyValue("RightBorder",          oBL)
-        oWCursor.setPropertyValue("TopBorderDistance",    100)
-        oWCursor.setPropertyValue("BottomBorderDistance", 100)
-        oWCursor.setPropertyValue("LeftBorderDistance",   150)
-        oWCursor.setPropertyValue("RightBorderDistance",  150)
-        oWCursor.setPropertyValue("ParaBottomMargin",     300)
-
-        aLines = Split(aBlok1(b), Chr(10))
-        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-        oText.insertString(oWCursor, aLines(0), False)
-        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
-
-        For l = 1 To UBound(aLines)
-            oText.insertControlCharacter(oWCursor, _
-                com.sun.star.text.ControlCharacter.LINE_BREAK, False)
-            oText.insertString(oWCursor, aLines(l), False)
-        Next l
-
-        If b < n1 - 1 Then
-            oText.insertControlCharacter(oWCursor, _
-                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-        End If
-    Next b
-
-    ' --- Pass 2: geïsoleerde kopjes corrigeren via echte layout-positie ---
-    ' Document kort zichtbaar maken zodat LibreOffice de layout berekent
-    oWriter.getCurrentController().getFrame().getContainerWindow().setVisible(True)
-    Wait 400
-
-    Dim oCtrl   As Object : oCtrl  = oWriter.getCurrentController()
-    Dim oVC     As Object : oVC    = oCtrl.getViewCursor()
-    ' Paginahoogte en kolombodem in 1/100mm
-    ' nKolBod = paginahoogte - bovenmarge - ondermarge - footer
-    ' nZoneP2 = verboden zone onderaan (pas aan als kopje nog te laat/vroeg springt)
     Const nPgHP2   = 29700
     Const nKolBod  = 26000
     Const nZoneP2  = 4000
-    Dim bEersteKop As Boolean : bEersteKop = True
-    Dim oEnP2      As Object  : oEnP2 = oText.createEnumeration()
+    Const nKolBr   = 8900
+    Const nStreepBr = 200
+    Const nLetterBr = 310
+
+    Dim oCtrl      As Object
+    Dim oVC        As Object
+    Dim bEersteKop As Boolean
+    Dim oEnP2      As Object
     Dim oParaP2    As Object
     Dim oKopCurs   As Object
     Dim oPtP2      As Object
     Dim nYInPg     As Long
     Dim nCharH     As Single
     Dim oBrCurs    As Object
-    Do While oEnP2.hasMoreElements()
-        oParaP2 = oEnP2.nextElement()
-        If Not oParaP2.supportsService("com.sun.star.text.Paragraph") Then GoTo VolgP2
-        oKopCurs = oText.createTextCursorByRange(oParaP2.getStart())
-        nCharH = oKopCurs.getPropertyValue("CharHeight")
-        If nCharH = 16 Then
-            If bEersteKop Then : bEersteKop = False : GoTo VolgP2 : End If
-            oCtrl.select(oKopCurs)
-            oPtP2  = oVC.getPosition()
-            nYInPg = oPtP2.Y Mod nPgHP2
-            If nYInPg > nKolBod - nZoneP2 Then
-                oBrCurs = oText.createTextCursorByRange(oParaP2.getStart())
-                oBrCurs.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
-            End If
-        ElseIf nCharH = 14 Then
-            oCtrl.select(oKopCurs)
-            oPtP2  = oVC.getPosition()
-            nYInPg = oPtP2.Y Mod nPgHP2
-            If nYInPg > nKolBod - 700 Then
-                oBrCurs = oText.createTextCursorByRange(oParaP2.getStart())
-                oBrCurs.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
-            End If
-        End If
-        VolgP2:
-    Loop
+    Dim aTabStops(1) As New com.sun.star.style.TabStop
+    Dim sOdtPath     As String
+    Dim aOdtPath1(9) As String
+    Dim nOdtPath1    As Integer : nOdtPath1 = 0
+    Dim bFirstInDoc1 As Boolean
+    Dim sPrevAfh1    As String
 
-    Dim sOdtPath As String
-    sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_afhaalpunt.odt"
-    oWriter.storeToURL(ConvertToURL(sOdtPath), aSave())
-    oWriter.close(True)
+    For dd = 0 To nDagen - 1
+        sD = aDagen(dd)
+
+        oWriter = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+
+        oPS = oWriter.StyleFamilies.getByName("PageStyles").getByIndex(0)
+        oPS.IsLandscape  = False
+        oPS.Width        = 21000 : oPS.Height       = 29700
+        oPS.TopMargin    = 1500  : oPS.BottomMargin = 1500
+        oPS.LeftMargin   = 1200  : oPS.RightMargin  = 1200
+
+        oTC = oPS.TextColumns
+        oTC.ColumnCount = 2 : oTC.AutomaticDistance = 800
+        oPS.TextColumns = oTC
+
+        oPS.FooterIsOn = True
+        oFText = oPS.FooterText
+        oFCurs = oFText.createTextCursor()
+        oFCurs.setPropertyValue("CharFontName", "Calibri")
+        oFCurs.setPropertyValue("CharHeight",   10)
+        oFCurs.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
+        aTabStops(0).Position    = 8700
+        aTabStops(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
+        aTabStops(0).DecimalChar = ASC(".")
+        aTabStops(0).FillChar    = ASC(" ")
+        aTabStops(1).Position    = 9500
+        aTabStops(1).Alignment   = com.sun.star.style.TabAlign.CENTER
+        aTabStops(1).DecimalChar = ASC(".")
+        aTabStops(1).FillChar    = ASC(" ")
+        oFCurs.setPropertyValue("ParaTabStops", aTabStops())
+        oFText.insertString(oFCurs, Chr(9), False)
+        oFText.insertString(oFCurs, "orderpicking afhaalpunt " & sD, False)
+        oFText.insertString(oFCurs, Chr(9), False)
+        oFldPN = oWriter.createInstance("com.sun.star.text.textfield.PageNumber")
+        oFldPN.SubType        = com.sun.star.text.PageNumberType.CURRENT
+        oFldPN.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+        oFText.insertTextContent(oFCurs, oFldPN, False)
+        oFText.insertString(oFCurs, " / ", False)
+        oFldPC = oWriter.createInstance("com.sun.star.text.textfield.PageCount")
+        oFldPC.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+        oFText.insertTextContent(oFCurs, oFldPC, False)
+
+        oText    = oWriter.getText()
+        oWCursor = oText.createTextCursor()
+        bFirstInDoc1 = True
+        sPrevAfh1    = ""
+
+        For b = 0 To n1 - 1
+            If aDag1(b) <> sD Then GoTo VolgendBlok1
+            bNieuwAfh = (sPrevAfh1 = "") Or (aAfh21(b) <> sPrevAfh1)
+            If bNieuwAfh Then
+                oWCursor.setPropertyValue("CharFontName",     "Calibri")
+                oWCursor.setPropertyValue("CharHeight",       16)
+                oWCursor.setPropertyValue("CharWeight",       com.sun.star.awt.FontWeight.BOLD)
+                oWCursor.setPropertyValue("ParaAdjust",       com.sun.star.style.ParagraphAdjust.CENTER)
+                oWCursor.setPropertyValue("TopBorder",        oNoBL)
+                oWCursor.setPropertyValue("BottomBorder",     oNoBL)
+                oWCursor.setPropertyValue("LeftBorder",       oNoBL)
+                oWCursor.setPropertyValue("RightBorder",      oNoBL)
+                oWCursor.setPropertyValue("ParaTopMargin",    IIf(bFirstInDoc1, 0, 400))
+                oWCursor.setPropertyValue("ParaBottomMargin", 200)
+                nStreepjes = CInt((nKolBr - (Len(aAfh21(b)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
+                If nStreepjes < 3 Then nStreepjes = 3
+                oText.insertString(oWCursor, String(nStreepjes, "-") & " " & aAfh21(b) & " " & String(nStreepjes, "-"), False)
+                oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+                oWCursor.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
+                oText.insertControlCharacter(oWCursor, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                sPrevAfh1 = aAfh21(b)
+            End If
+
+            oWCursor.setPropertyValue("CharFontName",          "Calibri")
+            oWCursor.setPropertyValue("CharHeight",            14)
+            oWCursor.setPropertyValue("ParaTopMargin",         0)
+            oWCursor.setPropertyValue("TopBorder",             oBL)
+            oWCursor.setPropertyValue("BottomBorder",          oBL)
+            oWCursor.setPropertyValue("LeftBorder",            oBL)
+            oWCursor.setPropertyValue("RightBorder",           oBL)
+            oWCursor.setPropertyValue("TopBorderDistance",     100)
+            oWCursor.setPropertyValue("BottomBorderDistance",  100)
+            oWCursor.setPropertyValue("LeftBorderDistance",    150)
+            oWCursor.setPropertyValue("RightBorderDistance",   150)
+            oWCursor.setPropertyValue("ParaBottomMargin",      300)
+
+            aLines = Split(aBlok1(b), Chr(10))
+            oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+            oText.insertString(oWCursor, aLines(0), False)
+            oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+
+            For l = 1 To UBound(aLines)
+                oText.insertControlCharacter(oWCursor, _
+                    com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                oText.insertString(oWCursor, aLines(l), False)
+            Next l
+
+            oText.insertControlCharacter(oWCursor, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            bFirstInDoc1 = False
+
+            VolgendBlok1:
+        Next b
+
+        oWriter.getCurrentController().getFrame().getContainerWindow().setVisible(True)
+        Wait 400
+        oCtrl      = oWriter.getCurrentController()
+        oVC        = oCtrl.getViewCursor()
+        bEersteKop = True
+        oEnP2 = oText.createEnumeration()
+        Do While oEnP2.hasMoreElements()
+            oParaP2 = oEnP2.nextElement()
+            If Not oParaP2.supportsService("com.sun.star.text.Paragraph") Then GoTo VolgP2
+            oKopCurs = oText.createTextCursorByRange(oParaP2.getStart())
+            nCharH = oKopCurs.getPropertyValue("CharHeight")
+            If nCharH = 16 Then
+                If bEersteKop Then : bEersteKop = False : GoTo VolgP2 : End If
+                oCtrl.select(oKopCurs)
+                oPtP2  = oVC.getPosition()
+                nYInPg = oPtP2.Y Mod nPgHP2
+                If nYInPg > nKolBod - nZoneP2 Then
+                    oBrCurs = oText.createTextCursorByRange(oParaP2.getStart())
+                    oBrCurs.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+                End If
+            ElseIf nCharH = 14 Then
+                oCtrl.select(oKopCurs)
+                oPtP2  = oVC.getPosition()
+                nYInPg = oPtP2.Y Mod nPgHP2
+                If nYInPg > nKolBod - 700 Then
+                    oBrCurs = oText.createTextCursorByRange(oParaP2.getStart())
+                    oBrCurs.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+                End If
+            End If
+            VolgP2:
+        Loop
+
+        sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_afhaalpunt_" & LCase(sD) & ".odt"
+        oWriter.storeToURL(ConvertToURL(sOdtPath), aSave())
+        If nOdtPath1 <= 9 Then : aOdtPath1(nOdtPath1) = sOdtPath : nOdtPath1 = nOdtPath1 + 1 : End If
+        oWriter.close(True)
+    Next dd
 
     ' -------------------------------------------------------
     ' Document 1b: orderpicking per formaat (klantblokken, 2 kolommen)
