@@ -1015,6 +1015,7 @@ Sub MaakOverzichten()
                     oCtrlS3.select(oText3.createTextCursorByRange(oParaS3.getStart()))
                 End If
             Loop
+            Wait 1500
             sOdtPath3 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_afweeglijst_" & LCase(aDagen(d)) & ".odt"
             oWriter3.storeToURL(ConvertToURL(sOdtPath3), aSave())
             oWriter3.close(True)
