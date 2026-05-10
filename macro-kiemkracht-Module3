@@ -1005,7 +1005,6 @@ Sub MaakOverzichten()
                 VolgendGroent:
             Next g
 
-            oWriter3.getCurrentController().getFrame().getContainerWindow().setVisible(True)
             Wait 400
             Dim oCtrlS3 As Object : oCtrlS3 = oWriter3.getCurrentController()
             Dim oEnS3 As Object : oEnS3 = oText3.createEnumeration()
