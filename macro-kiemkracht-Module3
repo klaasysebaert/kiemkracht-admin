@@ -766,7 +766,7 @@ Sub MaakOverzichten()
                 oCtrlS2.select(oText2.createTextCursorByRange(oParaS2.getStart()))
             End If
         Loop
-        Wait 1500
+        Wait 500
         sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_oogstlijst_" & sD & ".odt"
         oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
         If nOdtPath2 <= 9 Then : aOdtPath2(nOdtPath2) = sOdtPath2 : nOdtPath2 = nOdtPath2 + 1 : End If
@@ -1015,7 +1015,7 @@ Sub MaakOverzichten()
                     oCtrlS3.select(oText3.createTextCursorByRange(oParaS3.getStart()))
                 End If
             Loop
-            Wait 1500
+            Wait 500
             sOdtPath3 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_afweeglijst_" & LCase(aDagen(d)) & ".odt"
             oWriter3.storeToURL(ConvertToURL(sOdtPath3), aSave())
             oWriter3.close(True)
@@ -1227,7 +1227,7 @@ Sub MaakOverzichten()
                     End If
                     VolgP4:
                 Loop
-                Wait 1500
+                Wait 500
 
                 sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen_" & LCase(aDagen(d)) & ".odt"
                 oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
