@@ -1141,6 +1141,13 @@ Sub MaakPrint()
     Dim nPaths     As Integer
     nPaths = 0
 
+    Dim aDagNamen(6) As String
+    aDagNamen(0) = "maandag"  : aDagNamen(1) = "dinsdag"
+    aDagNamen(2) = "woensdag" : aDagNamen(3) = "donderdag"
+    aDagNamen(4) = "vrijdag"  : aDagNamen(5) = "zaterdag"
+    aDagNamen(6) = "zondag"
+
+    Dim dd As Integer
     Dim sOPad As String
     For dd = 0 To 6
         sOPad = sBase & "_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt"
@@ -1157,14 +1164,6 @@ Sub MaakPrint()
     sPaths(nPaths) = sBase & "_groenten.odt"               : nPaths = nPaths + 1
 
     Dim sWegPad As String
-
-    Dim aDagNamen(6) As String
-    aDagNamen(0) = "maandag"  : aDagNamen(1) = "dinsdag"
-    aDagNamen(2) = "woensdag" : aDagNamen(3) = "donderdag"
-    aDagNamen(4) = "vrijdag"  : aDagNamen(5) = "zaterdag"
-    aDagNamen(6) = "zondag"
-
-    Dim dd As Integer
     Dim sAfweeg As String
     For dd = 0 To 6
         sWegPad = sBase & "_weglatingen_" & aDagNamen(dd) & ".odt"
