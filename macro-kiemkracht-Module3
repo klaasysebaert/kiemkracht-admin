@@ -376,7 +376,7 @@ Sub MaakOverzichten()
             VolgP2:
         Loop
 
-        sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_afhaalpunt_" & LCase(sD) & ".odt"
+        sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_per_klant_afhaalpunt_" & LCase(sD) & ".odt"
         oWriter.storeToURL(ConvertToURL(sOdtPath), aSave())
         If nOdtPath1 <= 9 Then : aOdtPath1(nOdtPath1) = sOdtPath : nOdtPath1 = nOdtPath1 + 1 : End If
         oWriter.close(True)
@@ -1174,7 +1174,7 @@ Sub MaakPrint()
     Dim dd As Integer
     Dim sOPad As String
     For dd = 0 To 6
-        sOPad = sBase & "_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt"
+        sOPad = sBase & "_losse_groenten_per_klant_afhaalpunt_" & aDagNamen(dd) & ".odt"
         If FileExists(sOPad) Then
             sPaths(nPaths) = sOPad : nPaths = nPaths + 1
         End If
