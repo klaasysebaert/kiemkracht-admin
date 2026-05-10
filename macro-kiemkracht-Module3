@@ -687,7 +687,7 @@ Sub MaakOverzichten()
             If Not bEersteG2 Then
                 oText2.insertControlCharacter(oCurs2, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
-                oCurs2.setPropertyValue("CharHeight", 7)
+                oCurs2.setPropertyValue("CharHeight", 5)
                 oText2.insertControlCharacter(oCurs2, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
                 oCurs2.setPropertyValue("CharHeight", 13.5)
