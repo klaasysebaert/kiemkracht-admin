@@ -614,10 +614,15 @@ Sub MaakOverzichten()
         oPS2.TopMargin    = 1500  : oPS2.BottomMargin = 1500
         oPS2.LeftMargin   = 1500  : oPS2.RightMargin  = 1500
 
+        Dim oTC2 As Object
+        oTC2 = oPS2.TextColumns
+        oTC2.ColumnCount = 2 : oTC2.AutomaticDistance = 800
+        oPS2.TextColumns = oTC2
+
         oText2 = oWriter2.getText()
         oCurs2 = oText2.createTextCursor()
         oCurs2.setPropertyValue("CharFontName", "Calibri")
-        oCurs2.setPropertyValue("CharHeight", 12)
+        oCurs2.setPropertyValue("CharHeight", 14)
 
         bEersteG2 = True
         For g = 0 To nGroentSlots - 1
@@ -635,6 +640,10 @@ Sub MaakOverzichten()
             If Not bEersteG2 Then
                 oText2.insertControlCharacter(oCurs2, _
                     com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oCurs2.setPropertyValue("CharHeight", 7)
+                oText2.insertControlCharacter(oCurs2, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                oCurs2.setPropertyValue("CharHeight", 14)
             End If
 
             oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
