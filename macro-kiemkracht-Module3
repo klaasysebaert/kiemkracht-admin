@@ -461,7 +461,7 @@ Sub MaakOverzichten()
         aTabStopsF(1).FillChar    = ASC(" ")
         oFCursF.setPropertyValue("ParaTabStops", aTabStopsF())
         oFTextF.insertString(oFCursF, Chr(9), False)
-        oFTextF.insertString(oFCursF, "orderpicking formaat " & sD, False)
+        oFTextF.insertString(oFCursF, "Losse groenten " & sD & " (formaat)", False)
         oFTextF.insertString(oFCursF, Chr(9), False)
         oFldPNF = oWriterF.createInstance("com.sun.star.text.textfield.PageNumber")
         oFldPNF.SubType        = com.sun.star.text.PageNumberType.CURRENT
