@@ -649,8 +649,6 @@ Sub MaakOverzichten()
         oHCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
         If sD = "vrijdag" Then
             oHCurs2.setPropertyValue("CharHeight", 14)
-            oHText2.insertControlCharacter(oHCurs2, _
-                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
         Else
             oHCurs2.setPropertyValue("CharHeight", 6)
         End If
