@@ -671,6 +671,19 @@ Sub MaakOverzichten()
         oCurs2.setPropertyValue("CharFontName", "Calibri")
         oCurs2.setPropertyValue("CharHeight", 13.5)
 
+        ' Tel hoeveel groenten getoond worden, voor evenwichtige kolomverdeling
+        Dim nShow2 As Integer : nShow2 = 0
+        Dim gCount As Integer
+        For gCount = 0 To nGroentSlots - 1
+            If sD = "donderdag" Then
+                If aTotaal(gCount) > 0 Then nShow2 = nShow2 + 1
+            Else
+                If aTotVrij(gCount) > 0 Then nShow2 = nShow2 + 1
+            End If
+        Next gCount
+        Dim nLeft2 As Integer : nLeft2 = (nShow2 + 1) \ 2
+        Dim iShow2 As Integer : iShow2 = 0
+
         bEersteG2 = True
         For g = 0 To nGroentSlots - 1
             If sD = "donderdag" Then
@@ -696,6 +709,9 @@ Sub MaakOverzichten()
             oCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
             oCurs2.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
             oCurs2.setPropertyValue("CharColor", RGB(0, 0, 0))
+            If iShow2 = nLeft2 And iShow2 > 0 Then
+                oCurs2.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+            End If
             oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
             oText2.insertString(oCurs2, groentNaam(g), False)
             oCurs2.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
