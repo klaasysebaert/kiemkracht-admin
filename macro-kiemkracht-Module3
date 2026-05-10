@@ -757,6 +757,15 @@ Sub MaakOverzichten()
 
         oWriter2.getCurrentController().getFrame().getContainerWindow().setVisible(True)
         Wait 400
+        Dim oCtrlS2 As Object : oCtrlS2 = oWriter2.getCurrentController()
+        Dim oEnS2 As Object : oEnS2 = oText2.createEnumeration()
+        Dim oParaS2 As Object
+        Do While oEnS2.hasMoreElements()
+            oParaS2 = oEnS2.nextElement()
+            If oParaS2.supportsService("com.sun.star.text.Paragraph") Then
+                oCtrlS2.select(oText2.createTextCursorByRange(oParaS2.getStart()))
+            End If
+        Loop
         sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_oogstlijst_" & sD & ".odt"
         oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
         If nOdtPath2 <= 9 Then : aOdtPath2(nOdtPath2) = sOdtPath2 : nOdtPath2 = nOdtPath2 + 1 : End If
