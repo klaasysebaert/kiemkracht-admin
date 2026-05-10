@@ -1089,6 +1089,7 @@ Sub MaakOverzichten()
 
         For d = 0 To nDagen - 1
             oWriter4 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+            oWriter4.getCurrentController().getFrame().getContainerWindow().setVisible(True)
 
             oPS4 = oWriter4.StyleFamilies.getByName("PageStyles").getByIndex(0)
             oPS4.IsLandscape  = False
