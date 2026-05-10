@@ -1089,10 +1089,19 @@ Sub MaakOverzichten()
     For p3 = 0 To nOdtPath3 - 1
         sMsgAfweeg = sMsgAfweeg & Chr(10) & aOdtPath3(p3)
     Next p3
+    Dim sMsgOp As String : sMsgOp = ""
+    Dim p1 As Integer
+    For p1 = 0 To nOdtPath1 - 1
+        sMsgOp = sMsgOp & Chr(10) & aOdtPath1(p1)
+    Next p1
+    Dim p1b As Integer
+    For p1b = 0 To nOdtPath1b - 1
+        sMsgOp = sMsgOp & Chr(10) & aOdtPath1b(p1b)
+    Next p1b
     MsgBox nBlok & " klanten (orderpicking)" & Chr(10) & _
            nGroentActief & " groenten (totalen)" & Chr(10) & _
            nDagen & " dag(en) (afweeglijst)" & Chr(10) & Chr(10) & _
-           sOdtPath & Chr(10) & sOdtPath2 & sMsgAfweeg & sMsgWeg, _
+           sMsgOp & Chr(10) & sOdtPath2 & sMsgAfweeg & sMsgWeg, _
            64, "Overzichten klaar"
     Exit Sub
 
