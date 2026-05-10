@@ -474,6 +474,15 @@ Sub MaakOverzichten()
 
         oTextF  = oWriterF.getText()
         oWCursF = oTextF.createTextCursor()
+        oWCursF.setPropertyValue("CharFontName", "Calibri")
+        oWCursF.setPropertyValue("CharHeight", 16)
+        oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+        oWCursF.setPropertyValue("ParaTopMargin", 0)
+        oWCursF.setPropertyValue("ParaBottomMargin", 200)
+        oTextF.insertString(oWCursF, "Losse groenten " & sD & " (formaat)", False)
+        oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+        oTextF.insertControlCharacter(oWCursF, _
+            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
         bFirstInDocF = True
         sPrevGrpF    = ""
 
