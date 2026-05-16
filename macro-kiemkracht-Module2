@@ -97,7 +97,8 @@ Sub BereidMailmergeVoor()
     oRS = oStmt.executeQuery( _
         "SELECT k.voornaam, k.familienaam, k.email1, k.type, k.formaat, " & _
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
-        "COALESCE(a.dag_afhaling, '') AS leverdag " & _
+        "COALESCE(a.dag_afhaling, '') AS leverdag, " & _
+        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,'') " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "WHERE k.type NOT IN ('stop-tijdelijk', 'stop-definitief') " & _
