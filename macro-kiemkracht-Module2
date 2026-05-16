@@ -112,6 +112,10 @@ Sub BereidMailmergeVoor()
     Dim kFormaat(1000) As String
     Dim kAfhaal(1000) As String
     Dim kLevdag(1000) As String
+    Dim kID(1000)     As String
+    Dim kEmail2(1000) As String
+    Dim kEmail3(1000) As String
+    Dim kEmail4(1000) As String
     Dim nKlanten     As Integer
     nKlanten = 0
 
