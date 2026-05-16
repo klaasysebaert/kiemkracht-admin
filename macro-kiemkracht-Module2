@@ -187,7 +187,7 @@ Sub BereidMailmergeVoor()
     End If
 
     ' --- Stap 4: kolomhoofden schrijven ---
-    Dim hoofden(10) As String
+    Dim hoofden(19) As String
     hoofden(0) = "Voornaam"
     hoofden(1) = "Familienaam"
     hoofden(2) = "Email"
