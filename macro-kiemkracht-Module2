@@ -372,7 +372,7 @@ Sub BereidMailmergeVoor()
     Dim oKolommen As Object
     oKolommen = oSheet.getColumns()
     Dim cIdx As Integer
-    For cIdx = 0 To 10
+    For cIdx = 0 To 19
         oKolommen.getByIndex(cIdx).OptimalWidth = True
     Next cIdx
     ' URL-kolom wat breder zetten (OptimalWidth kan erg breed worden)
