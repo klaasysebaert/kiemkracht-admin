@@ -320,6 +320,7 @@ Sub BereidMailmergeVoor()
                "?voornaam="  & sVoornaamURL & _
                "&naam="      & JoinPlus(kFam(k)) & _
                "&email="     & kEmail(k) & _
+               "&klant_id="  & kID(k) & _
                "&type="      & sTypeURL & _
                "&leverdag="  & sLevdag & _
                "&afhaalpunt=" & sAfhaalURL
