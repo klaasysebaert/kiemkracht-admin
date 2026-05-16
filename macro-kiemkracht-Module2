@@ -348,6 +348,7 @@ Sub BereidMailmergeVoor()
         sQuerystring = "voornaam="    & UrlEncodeValue(kVoor(k))  & _
                        "&naam="       & UrlEncodeValue(kFam(k))   & _
                        "&email="      & UrlEncodeValue(kEmail(k)) & _
+                       "&klant_id="   & kID(k)                    & _
                        "&type="       & UrlEncodeValue(sTypeURL)  & _
                        "&leverdag="   & UrlEncodeValue(sLevdag)   & _
                        "&afhaalpunt=" & UrlEncodeValue(sAfhaal)
