@@ -361,7 +361,7 @@ Sub MaakWeekbestand()
         "COALESCE(bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
         "COALESCE(bap.id_intern, 9999) AS id_intern_sort " & _
         "FROM bestellingen b " & _
-        "LEFT JOIN klanten k ON k.email1 = b.klant_email " & _
+        "LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL AND k.email1 = b.klant_email)) " & _
         "LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt " & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
         " AND b.klant_email NOT IN (" & _
