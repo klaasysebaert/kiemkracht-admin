@@ -127,6 +127,10 @@ Sub BereidMailmergeVoor()
         kFormaat(nKlanten) = oRS.getString(5)
         kAfhaal(nKlanten)  = oRS.getString(6)
         kLevdag(nKlanten)  = oRS.getString(7)
+        kID(nKlanten)      = oRS.getString(8)
+        kEmail2(nKlanten)  = oRS.getString(9)
+        kEmail3(nKlanten)  = oRS.getString(10)
+        kEmail4(nKlanten)  = oRS.getString(11)
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
