@@ -281,7 +281,9 @@ Sub BereidMailmergeVoor()
             End If
         Next v
 
-        If sType = "weekperweek" Or sType = "weekperweek-pare-week" Or sType = "weekperweek-onpare-week" Then
+        If sType = "weekperweek" Or sType = "weekperweek-pare-week" Or sType = "weekperweek-onpare-week" _
+           Or sType = "abonnee-toekomst" Or sType = "abonnee-pare-week-toekomst" _
+           Or sType = "abonnee-onpare-week-toekomst" Then
             If bVooruitBesteld Then
                 sMailtype  = "bevestiging"
                 sPakketURL = sFormaat   ' pakket WEL in URL
