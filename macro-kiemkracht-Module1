@@ -113,6 +113,10 @@ Sub LaadAlleTabellen()
     End If
     oSheets = oDoc.Sheets
 
+    ' Startmelding
+    MsgBox "Alle tabellen worden geladen." & Chr(10) & _
+           "In de statusbalk links onderaan kan je de voortgang volgen.", 64, "LaadAlleTabellen"
+
     ' Voortgangsbalk in de statusbalk (onderaan het venster)
     oIndicator = oDoc.getCurrentController().getFrame().createStatusIndicator()
     oIndicator.start("Kiemkracht - tabellen laden", 13)
