@@ -45,7 +45,8 @@ Function MaakDBVerbinding() As Object
     Dim sPass    As String
 
     If BepaalOmgeving() = "dev" Then
-        Shell "cmd.exe /c start /min ssh -N -L 5434:t47pqd5hxpuxjif97hww1erg:5432 root@91.98.140.165 -i %USERPROFILE%\.ssh\id_ed25519"
+        ' Staging-DB op het Coolify bridge-netwerk (IP kan wijzigen bij Coolify-reset)
+        Shell "cmd.exe /c start /min ssh -N -L 5434:10.0.1.9:5432 root@91.98.140.165 -i %USERPROFILE%\.ssh\id_ed25519"
         sJdbcUrl = "jdbc:postgresql://localhost:5434/postgres"
         sUser    = "postgres"
         sPass    = "iKbZmOneZCodIWPqJLkqxv9c0hGhcMhCgmFPrSBppMYK1V3rSdm5AGAveApY4Eo2"
