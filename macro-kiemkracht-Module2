@@ -23,13 +23,13 @@ Sub BereidMailmergeVoor()
     ' van de vorige week werkt).
     ' =============================================
 
-    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
-    Wait 3000
-
-    Const JDBC_URL  As String = "jdbc:postgresql://localhost:5433/postgres"
-    Const DB_USER   As String = "postgres"
-    Const DB_PASS   As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
-    Const BESTEL_URL As String = "https://bestel.kiemkracht.be/"
+    ' Webshop-URL volgt de omgeving (dev-bestand -> dev-webshop)
+    Dim BESTEL_URL As String
+    If BepaalOmgeving() = "dev" Then
+        BESTEL_URL = "https://bestel.dev.kiemkracht.be/"
+    Else
+        BESTEL_URL = "https://bestel.kiemkracht.be/"
+    End If
 
     ' --- Weeknummer berekenen: komende donderdag ---
     Dim dVandaag   As Date
