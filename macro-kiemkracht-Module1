@@ -248,11 +248,14 @@ Sub LaadAlleTabellen()
     oStmt.close()
 
     oConn.close()
+    oIndicator.setValue(13)
+    oIndicator.end()
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
     Shell "cmd.exe /c taskkill /F /IM ssh.exe"
     Exit Sub
 
 VerbindingsFout:
+    If Not IsNull(oIndicator) Then oIndicator.end()
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
 
