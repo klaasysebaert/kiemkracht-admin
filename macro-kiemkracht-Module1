@@ -1639,24 +1639,9 @@ Sub VoegNieuweKlantToe()
         Exit Sub
     End If
 
-    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
-    Wait 3000
-
-    Const JDBC_URL As String = "jdbc:postgresql://localhost:5433/postgres"
-    Const DB_USER  As String = "postgres"
-    Const DB_PASS  As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
-
     On Error GoTo VerbindingsFout3
-
-    Dim oManager As Object
-    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
-    Dim aProps(2) As New com.sun.star.beans.PropertyValue
-    aProps(0).Name = "user"            : aProps(0).Value = DB_USER
-    aProps(1).Name = "password"        : aProps(1).Value = DB_PASS
-    aProps(2).Name = "JavaDriverClass" : aProps(2).Value = "org.postgresql.Driver"
-
     Dim oConn As Object
-    oConn = oManager.getConnectionWithInfo(JDBC_URL, aProps())
+    oConn = MaakDBVerbinding()
     Dim oStmt As Object : oStmt = oConn.createStatement()
 
     Dim sSQL As String
