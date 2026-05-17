@@ -253,8 +253,9 @@ Sub LaadAlleTabellen()
 
     oConn.close()
     oIndicator.setValue(13)
-    oIndicator.end()
+    oIndicator.setText("Bijna klaar...")
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
+    oIndicator.end()
     Shell "cmd.exe /c taskkill /F /IM ssh.exe"
     Exit Sub
 
