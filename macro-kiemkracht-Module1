@@ -1288,9 +1288,7 @@ Sub SchrijfWijzigingenTerug()
     ' Stuurt alleen UPDATE voor rijen die werkelijk gewijzigd zijn.
     ' =============================================
 
-    Const JDBC_URL As String = "jdbc:postgresql://localhost:5433/postgres"
-    Const DB_USER  As String = "postgres"
-    Const DB_PASS  As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
+    ' DB-verbinding: zie MaakDBVerbinding()
 
     ' kiemkracht-data.ods opzoeken
     Dim oDoc As Object
