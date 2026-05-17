@@ -319,9 +319,14 @@ Sub BereidMailmergeVoor()
         sVoornaamURL = JoinPlus(kVoor(k))
         sAfhaalURL   = JoinPlus(sAfhaal)
 
-        ' type-parameter: rechtstreeks uit database meegeven
+        ' type-parameter: toekomst-abonnees gedragen zich tot de startweek
+        ' als weekperweek -> stuur weekperweek in de URL, niet abonnee-*-toekomst
         Dim sTypeURL As String
-        sTypeURL = sType
+        If InStr(sType, "-toekomst") > 0 Then
+            sTypeURL = "weekperweek"
+        Else
+            sTypeURL = sType
+        End If
 
         Dim sURL As String
         sURL = BESTEL_URL & _
