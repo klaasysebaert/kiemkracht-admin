@@ -1285,24 +1285,12 @@ Sub SchrijfWijzigingenTerug()
 
     ' DB-verbinding: zie MaakDBVerbinding()
 
-    ' kiemkracht-data.ods opzoeken
+    ' Actief kiemkracht-data-bestand bepalen (prod of dev volgt dit bestand)
     Dim oDoc As Object
-    Dim oEnum As Object
-    Dim oComp As Object
-    oEnum = StarDesktop.Components.createEnumeration()
-    Do While oEnum.hasMoreElements()
-        oComp = oEnum.nextElement()
-        If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
-            If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
-                If InStr(LCase(oComp.getURL()), "kiemkracht-data") > 0 Then
-                    oDoc = oComp
-                    Exit Do
-                End If
-            End If
-        End If
-    Loop
-    If IsNull(oDoc) Or IsEmpty(oDoc) Then
-        MsgBox "kiemkracht-data.ods is niet open. Open het bestand eerst.", 16, "Fout"
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
         Exit Sub
     End If
 
