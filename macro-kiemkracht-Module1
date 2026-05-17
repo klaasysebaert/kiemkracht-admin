@@ -128,6 +128,9 @@ Sub LaadAlleTabellen()
         Dim sNaam As String
         sNaam = tabellen(i)
 
+        oIndicator.setValue(i + 1)
+        oIndicator.setText("Laden: " & sNaam & " (" & (i + 1) & "/12)")
+
         ' Tabblad aanmaken of leegmaken
         If oSheets.hasByName(sNaam) Then
             oSheet = oSheets.getByName(sNaam)
