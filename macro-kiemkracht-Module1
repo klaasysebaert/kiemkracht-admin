@@ -2107,8 +2107,12 @@ Sub VerwerkStopStart()
                 aSql(nItem) = "INSERT INTO vooruitbestellingen " & _
                     "(voornaam, familienaam, klant_email, klant_id, formaat, datum, " & _
                     "week_bestelling, week_start_abonnement, jaar) VALUES (" & _
-                    sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", " & sFmtQ & ", '" & _
+                    sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & riFmt(i) & "', '" & _
                     sDatum & "', " & w & ", " & w & ", " & iJaar & ")"
+                nItem = nItem + 1
+                ' Klant in toekomst-toestand zetten; de VPS-cron schakelt om op de startweek
+                aSql(nItem) = "UPDATE klanten SET type = '" & riType(i) & "-toekomst', " & _
+                    "formaat = '" & riFmt(i) & "' WHERE id = " & sKid
                 nItem = nItem + 1
                 sBestVb = sBestVb & sSleutel & "|"
                 nStart = nStart + 1
