@@ -1,5 +1,71 @@
 Option Explicit
 
+' =============================================
+' OMGEVING & DATABASEVERBINDING — gedeelde helpers
+' Eén centrale plek voor alle DB-macro's: bepaalt prod vs dev op
+' basis van het open kiemkracht-data-bestand en geeft de juiste
+' JDBC-verbinding terug.
+' =============================================
+
+' Geeft "dev" als een bestand "...-dev.ods" openstaat, anders "prod".
+' Niets gevonden -> "dev" (veilig: raakt nooit per ongeluk productie).
+Function BepaalOmgeving() As String
+    Dim oEnum As Object
+    Dim oComp As Object
+    Dim sUrl  As String
+    BepaalOmgeving = "dev"
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oComp = oEnum.nextElement()
+        If Not IsNull(oComp) Then
+            If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
+                If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                    sUrl = LCase(oComp.getURL())
+                    If InStr(sUrl, "kiemkracht-data") > 0 Then
+                        If InStr(sUrl, "-dev.ods") > 0 Then
+                            BepaalOmgeving = "dev"
+                        Else
+                            BepaalOmgeving = "prod"
+                        End If
+                        Exit Function
+                    End If
+                End If
+            End If
+        End If
+    Loop
+End Function
+
+' Start de juiste SSH-tunnel en geeft een JDBC-verbinding terug.
+' prod -> tunnel 5433, productiedatabase
+' dev  -> tunnel 5434, staging-database (geanonimiseerde kopie van prod)
+Function MaakDBVerbinding() As Object
+    Dim sJdbcUrl As String
+    Dim sUser    As String
+    Dim sPass    As String
+
+    If BepaalOmgeving() = "dev" Then
+        Shell "cmd.exe /c start /min ssh -N -L 5434:t47pqd5hxpuxjif97hww1erg:5432 root@91.98.140.165 -i %USERPROFILE%\.ssh\id_ed25519"
+        sJdbcUrl = "jdbc:postgresql://localhost:5434/postgres"
+        sUser    = "postgres"
+        sPass    = "iKbZmOneZCodIWPqJLkqxv9c0hGhcMhCgmFPrSBppMYK1V3rSdm5AGAveApY4Eo2"
+    Else
+        Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
+        sJdbcUrl = "jdbc:postgresql://localhost:5433/postgres"
+        sUser    = "postgres"
+        sPass    = "nAchtbr1l?0chtendst0ND4*0verjAs&"
+    End If
+    Wait 3000
+
+    Dim aProps(2) As New com.sun.star.beans.PropertyValue
+    aProps(0).Name  = "user"            : aProps(0).Value = sUser
+    aProps(1).Name  = "password"        : aProps(1).Value = sPass
+    aProps(2).Name  = "JavaDriverClass" : aProps(2).Value = "org.postgresql.Driver"
+
+    Dim oManager As Object
+    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
+    MaakDBVerbinding = oManager.getConnectionWithInfo(sJdbcUrl, aProps())
+End Function
+
 Sub LaadAlleTabellen()
 
     ' =============================================
