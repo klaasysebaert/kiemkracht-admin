@@ -1810,9 +1810,16 @@ End Function
 '   - kolom R = stopzetting          (één week,  bv. "W30")
 '   - kolom S = vooruitbestellingen  (tekst, bv. "W22-W24, W26")
 '   - kolom T = start abonnement     (één week,  bv. "W38")
-' INSERT't in postgres-tabellen annulaties / vooruitbestellingen,
-' slaat bestaande (klant_id, jaar, week) over en maakt de
-' verwerkte cellen Q-T daarna leeg.
+'   - kolom U = abonnementstype      (verplicht bij een start: abonnee /
+'               abonnee-pare-week / abonnee-onpare-week)
+'   - kolom V = formaat              (verplicht bij een start: klein /
+'               groot / extra-groot / mini)
+' INSERT't in postgres-tabellen annulaties / vooruitbestellingen.
+' Bij een start zet de macro de klant bovendien op een toekomst-
+' abonneetype (klanten.type = '<U>-toekomst', formaat = '<V>'); een
+' VPS-cron schakelt dat op de startweek om naar het echte type.
+' Bestaande (klant_id, jaar, week) worden overgeslagen; de verwerkte
+' cellen Q-V worden daarna leeggemaakt.
 ' =============================================
 Sub VerwerkStopStart()
 
