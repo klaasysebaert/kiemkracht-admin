@@ -1827,6 +1827,8 @@ Sub VerwerkStopStart()
     Const COL_STOP  = 17   ' R
     Const COL_VB    = 18   ' S
     Const COL_START = 19   ' T
+    Const COL_TYPE  = 20   ' U
+    Const COL_FORMAAT = 21 ' V
     Const DATA_RIJ0 = 6    ' rij 7 = eerste datarij
     Const MAX_RIJ   = 1000
     Const MAX_ITEM  = 12000
