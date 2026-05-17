@@ -1434,20 +1434,10 @@ Sub SchrijfWijzigingenTerug()
         Exit Sub
     End If
 
-    ' === Pas na bevestiging: SSH + DB-verbinding ===
-    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
-    Wait 3000
-
-    Dim aProps(2) As New com.sun.star.beans.PropertyValue
-    aProps(0).Name  = "user"            : aProps(0).Value = DB_USER
-    aProps(1).Name  = "password"        : aProps(1).Value = DB_PASS
-    aProps(2).Name  = "JavaDriverClass" : aProps(2).Value = "org.postgresql.Driver"
-
+    ' === Pas na bevestiging: DB-verbinding (juiste omgeving) ===
     On Error GoTo VerbindingsFout2
-    Dim oManager As Object
-    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
     Dim oConn As Object
-    oConn = oManager.getConnectionWithInfo(JDBC_URL, aProps())
+    oConn = MaakDBVerbinding()
     On Error GoTo 0
 
     ' === Stap 4: UPDATE enkel gewijzigde rijen ===
