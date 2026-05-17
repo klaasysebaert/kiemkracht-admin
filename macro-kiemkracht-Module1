@@ -1555,7 +1555,13 @@ End Function
 ' =============================================
 Sub VoegNieuweKlantToe()
 
-    Dim oDoc As Object : oDoc = ThisComponent
+    Dim oDoc As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        Exit Sub
+    End If
     If Not oDoc.Sheets.hasByName("klant_nieuw") Then
         MsgBox "Tabblad 'klant_nieuw' niet gevonden.", 16, "Fout"
         Exit Sub
