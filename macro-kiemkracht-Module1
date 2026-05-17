@@ -2176,9 +2176,13 @@ Sub VerwerkStopStart()
     Next i
 
     Shell "cmd.exe /c taskkill /F /IM ssh.exe"
-    MsgBox nItem & " record(s) toegevoegd aan de database." & Chr(10) & _
-           "(" & nAnn & " annulaties, " & nStopz & " stopzettingen, " & _
-           nVb & " vooruitbestellingen, " & nStart & " starts)", 64, "Klaar"
+    Dim sKlaar As String
+    sKlaar = "Verwerkt: " & nAnn & " annulaties, " & nStopz & " stopzettingen, " & _
+             nVb & " vooruitbestellingen, " & nStart & " abonnementstarts."
+    If nStart > 0 Then
+        sKlaar = sKlaar & Chr(10) & nStart & " klant(en) op een toekomst-abonneetype gezet."
+    End If
+    MsgBox sKlaar, 64, "Klaar"
     Exit Sub
 
 UitvoerFout:
