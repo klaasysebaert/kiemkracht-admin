@@ -85,6 +85,7 @@ Sub LaadAlleTabellen()
     Dim oRS          As Object
     Dim oSheet       As Object
     Dim oMeta        As Object
+    Dim oIndicator   As Object
     Dim i            As Integer
     Dim col          As Integer
     Dim row          As Integer
