@@ -102,23 +102,11 @@ Sub LaadAlleTabellen()
     tabellen(9)  = "vooruitbestellingen"
     tabellen(10) = "bestelling_overzicht"
 
-    ' kiemkracht-data.ods opzoeken in geopende documenten
-    Dim oEnum2 As Object
-    Dim oComp2 As Object
-    oEnum2 = StarDesktop.Components.createEnumeration()
-    Do While oEnum2.hasMoreElements()
-        oComp2 = oEnum2.nextElement()
-        If HasUnoInterfaces(oComp2, "com.sun.star.lang.XServiceInfo") Then
-            If oComp2.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
-                If InStr(LCase(oComp2.getURL()), "kiemkracht-data") > 0 Then
-                    oDoc = oComp2
-                    Exit Do
-                End If
-            End If
-        End If
-    Loop
-    If IsNull(oDoc) Or IsEmpty(oDoc) Then
-        MsgBox "kiemkracht-data.ods is niet open. Open het bestand eerst.", 16, "Fout"
+    ' Actief kiemkracht-data-bestand bepalen (prod of dev volgt dit bestand)
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
         Exit Sub
     End If
     oSheets = oDoc.Sheets
