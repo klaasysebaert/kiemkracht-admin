@@ -2144,6 +2144,9 @@ Sub VerwerkStopStart()
     If nDup > 0 Then
         sVraag = sVraag & nDup & " week(en) worden overgeslagen (staan al in de DB)." & Chr(10) & Chr(10)
     End If
+    If nStart > 0 Then
+        sVraag = sVraag & "Elke start zet de klant ook op een toekomst-abonneetype." & Chr(10) & Chr(10)
+    End If
     sVraag = sVraag & "Akkoord?"
     If MsgBox(sVraag, 33, "VerwerkStopStart") <> 1 Then
         oConn.close()
