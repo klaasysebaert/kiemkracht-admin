@@ -75,17 +75,10 @@ Sub BereidMailmergeVoor()
         Exit Sub
     End If
 
-    ' --- JDBC-verbinding ---
-    Dim aProps(2) As New com.sun.star.beans.PropertyValue
-    aProps(0).Name  = "user"           : aProps(0).Value = DB_USER
-    aProps(1).Name  = "password"       : aProps(1).Value = DB_PASS
-    aProps(2).Name  = "JavaDriverClass": aProps(2).Value = "org.postgresql.Driver"
-
+    ' --- JDBC-verbinding (juiste omgeving via MaakDBVerbinding) ---
     On Error GoTo VerbindingsFout
-    Dim oManager As Object
-    oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
     Dim oConn As Object
-    oConn = oManager.getConnectionWithInfo(JDBC_URL, aProps())
+    oConn = MaakDBVerbinding()
     On Error GoTo 0
 
     Dim oStmt As Object
