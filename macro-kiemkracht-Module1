@@ -263,12 +263,7 @@ Sub MaakWeekbestand()
     Dim oCallerDoc As Object
     oCallerDoc = ThisComponent
 
-    Shell "cmd.exe /c start /min ssh -N -L 5433:localhost:5432 root@91.98.140.165"
-    Wait 3000
-
-    Const JDBC_URL  As String = "jdbc:postgresql://localhost:5433/postgres"
-    Const DB_USER   As String = "postgres"
-    Const DB_PASS   As String = "nAchtbr1l?0chtendst0ND4*0verjAs&"
+    ' DB-verbinding en SSH-tunnel: zie MaakDBVerbinding()
     Const SAVE_MAP  As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
 
     ' Weeknummer en datums: vanaf zaterdag → komende week, anders huidige week
