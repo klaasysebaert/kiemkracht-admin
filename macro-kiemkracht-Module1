@@ -1676,3 +1676,457 @@ VerbindingsFout3:
     Shell "cmd.exe /c taskkill /F /IM ssh.exe"
 
 End Sub
+
+' =============================================
+' Helper: ISO-weeknummer (1-53) van een datum.
+' =============================================
+Function ISOWeek(d As Date) As Integer
+    ' Donderdag van de week waarin d valt (WeekDay type 2: ma=1 .. zo=7)
+    Dim dThu As Date : dThu = d - (WeekDay(d, 2) - 1) + 3
+    Dim dJan1 As Date : dJan1 = DateSerial(Year(dThu), 1, 1)
+    ' Dagen van 1 januari tot de eerste donderdag van dat jaar
+    Dim iOffset As Integer : iOffset = (4 - WeekDay(dJan1, 2) + 7) Mod 7
+    Dim dEersteDo As Date : dEersteDo = dJan1 + iOffset
+    ISOWeek = (dThu - dEersteDo) \ 7 + 1
+End Function
+
+' =============================================
+' Helper: donderdag-datum van het eerstvolgende voorkomen
+' van ISO-weeknummer iWeek, gerekend vanaf vandaag.
+' Geeft 0 als het weeknummer niet gevonden wordt.
+' =============================================
+Function WeekNaarDonderdag(iWeek As Integer) As Date
+    Dim dToday As Date : dToday = Date
+    Dim dThuNu As Date : dThuNu = dToday - (WeekDay(dToday, 2) - 1) + 3
+    Dim n As Integer
+    For n = 0 To 60
+        Dim dCand As Date : dCand = dThuNu + 7 * n
+        If ISOWeek(dCand) = iWeek Then
+            WeekNaarDonderdag = dCand
+            Exit Function
+        End If
+    Next n
+    WeekNaarDonderdag = 0
+End Function
+
+' =============================================
+' Helper: parseert weekinvoer "W22-W24, W26" naar een
+' CSV-string van weeknummers "22,23,24,26".
+'   bEnkel = True  -> slechts één week toegelaten (stop/start)
+' Lege invoer -> "". Bij een fout -> "" en sFout ingevuld.
+' =============================================
+Function ParseerWeken(sInvoer As String, bEnkel As Boolean, ByRef sFout As String) As String
+    sFout = ""
+    Dim s As String : s = Trim(sInvoer)
+    If s = "" Then
+        ParseerWeken = ""
+        Exit Function
+    End If
+    s = Replace(s, "W", "")
+    s = Replace(s, "w", "")
+    s = Replace(s, " ", "")
+
+    Dim aDelen() As String : aDelen = Split(s, ",")
+    If bEnkel And UBound(aDelen) > 0 Then
+        sFout = "hier mag maar één week staan"
+        ParseerWeken = ""
+        Exit Function
+    End If
+
+    Dim sResult As String : sResult = ""
+    Dim i As Integer
+    For i = 0 To UBound(aDelen)
+        Dim sDeel As String : sDeel = aDelen(i)
+        If sDeel = "" Then
+            ' lege sectie (dubbele komma) negeren
+        ElseIf InStr(sDeel, "-") > 0 Then
+            If bEnkel Then
+                sFout = "hier mag geen bereik staan"
+                ParseerWeken = "" : Exit Function
+            End If
+            Dim aR() As String : aR = Split(sDeel, "-")
+            If UBound(aR) <> 1 Or Not IsNumeric(aR(0)) Or Not IsNumeric(aR(1)) Then
+                sFout = "ongeldig bereik '" & sDeel & "'"
+                ParseerWeken = "" : Exit Function
+            End If
+            Dim wVan As Integer : wVan = CInt(aR(0))
+            Dim wTot As Integer : wTot = CInt(aR(1))
+            If wVan < 1 Or wVan > 53 Or wTot < 1 Or wTot > 53 Then
+                sFout = "weeknummer buiten 1-53 in '" & sDeel & "'"
+                ParseerWeken = "" : Exit Function
+            End If
+            If wTot < wVan Then
+                sFout = "bereik '" & sDeel & "' loopt over een jaargrens — splits het op"
+                ParseerWeken = "" : Exit Function
+            End If
+            Dim w As Integer
+            For w = wVan To wTot
+                If sResult <> "" Then sResult = sResult & ","
+                sResult = sResult & CStr(w)
+            Next w
+        Else
+            If Not IsNumeric(sDeel) Then
+                sFout = "ongeldig weeknummer '" & sDeel & "'"
+                ParseerWeken = "" : Exit Function
+            End If
+            Dim wE As Integer : wE = CInt(sDeel)
+            If wE < 1 Or wE > 53 Then
+                sFout = "weeknummer buiten 1-53: '" & sDeel & "'"
+                ParseerWeken = "" : Exit Function
+            End If
+            If sResult <> "" Then sResult = sResult & ","
+            sResult = sResult & CStr(wE)
+        End If
+    Next i
+    ParseerWeken = sResult
+End Function
+
+' =============================================
+' Kiemkracht - Annulaties / stopzetting / vooruitbestellingen
+'               / abonnementstart verwerken
+' Tabblad "klanten_stop_start":
+'   - kolommen A-P : formules met klantgegevens, één rij per klant
+'                    (rij 1 = weeklegende, rij 2 = kolomhoofden, data vanaf rij 3)
+'   - één kolom in A-P heeft de kop "klant_id"
+'   - kolom Q = annulaties           (tekst, bv. "W22-W24, W26")
+'   - kolom R = stopzetting          (één week,  bv. "W30")
+'   - kolom S = vooruitbestellingen  (tekst, bv. "W22-W24, W26")
+'   - kolom T = start abonnement     (één week,  bv. "W38")
+' INSERT't in postgres-tabellen annulaties / vooruitbestellingen,
+' slaat bestaande (klant_id, jaar, week) over en maakt de
+' verwerkte cellen Q-T daarna leeg.
+' =============================================
+Sub VerwerkStopStart()
+
+    Const COL_ANN   = 16   ' Q
+    Const COL_STOP  = 17   ' R
+    Const COL_VB    = 18   ' S
+    Const COL_START = 19   ' T
+    Const DATA_RIJ0 = 2    ' rij 3 = eerste datarij
+    Const MAX_RIJ   = 1000
+    Const MAX_ITEM  = 12000
+
+    Dim oDoc As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName("klanten_stop_start") Then
+        MsgBox "Tabblad 'klanten_stop_start' niet gevonden.", 16, "Fout"
+        Exit Sub
+    End If
+    Dim oSheet As Object : oSheet = oDoc.Sheets.getByName("klanten_stop_start")
+
+    ' --- klant_id-kolom zoeken in de kophoek (rij 1 of 2, kolom A-P) ---
+    Dim iIdCol As Integer : iIdCol = -1
+    Dim hr As Integer, hc As Integer
+    For hr = 0 To 1
+        For hc = 0 To 15
+            If LCase(Trim(oSheet.getCellByPosition(hc, hr).getString())) = "klant_id" Then
+                iIdCol = hc
+            End If
+        Next hc
+    Next hr
+    If iIdCol = -1 Then
+        MsgBox "Geen kolom met de kop 'klant_id' gevonden in A-P (rij 1 of 2)." & Chr(10) & _
+               "Geef één van je formulekolommen die kop.", 16, "Fout"
+        Exit Sub
+    End If
+
+    ' === Fase 1: invoerrijen verzamelen en parseren ===
+    Dim riRij(MAX_RIJ)   As Integer
+    Dim riKlant(MAX_RIJ) As Long
+    Dim riAnn(MAX_RIJ)   As String
+    Dim riStop(MAX_RIJ)  As Integer
+    Dim riVb(MAX_RIJ)    As String
+    Dim riStart(MAX_RIJ) As Integer
+    Dim nRij As Integer : nRij = 0
+
+    Dim r As Integer
+    For r = DATA_RIJ0 To DATA_RIJ0 + MAX_RIJ - 1
+        Dim sAnn   As String : sAnn   = Trim(oSheet.getCellByPosition(COL_ANN,   r).getString())
+        Dim sStop  As String : sStop  = Trim(oSheet.getCellByPosition(COL_STOP,  r).getString())
+        Dim sVb    As String : sVb    = Trim(oSheet.getCellByPosition(COL_VB,    r).getString())
+        Dim sStart As String : sStart = Trim(oSheet.getCellByPosition(COL_START, r).getString())
+
+        If sAnn <> "" Or sStop <> "" Or sVb <> "" Or sStart <> "" Then
+            Dim dKlant As Double : dKlant = oSheet.getCellByPosition(iIdCol, r).getValue()
+            If dKlant < 1 Then
+                MsgBox "Rij " & (r + 1) & ": er staat invoer in Q-T maar geen geldig klant_id." & Chr(10) & _
+                       "Controleer of je in de juiste rij staat.", 16, "Fout"
+                Exit Sub
+            End If
+
+            Dim sFout As String
+            Dim sAnnCsv   As String : sAnnCsv   = ParseerWeken(sAnn, False, sFout)
+            If sFout <> "" Then
+                MsgBox "Rij " & (r + 1) & ", kolom Q (annulaties): " & sFout, 16, "Fout"
+                Exit Sub
+            End If
+            Dim sVbCsv    As String : sVbCsv    = ParseerWeken(sVb, False, sFout)
+            If sFout <> "" Then
+                MsgBox "Rij " & (r + 1) & ", kolom S (vooruitbestellingen): " & sFout, 16, "Fout"
+                Exit Sub
+            End If
+            Dim sStopCsv  As String : sStopCsv  = ParseerWeken(sStop, True, sFout)
+            If sFout <> "" Then
+                MsgBox "Rij " & (r + 1) & ", kolom R (stopzetting): " & sFout, 16, "Fout"
+                Exit Sub
+            End If
+            Dim sStartCsv As String : sStartCsv = ParseerWeken(sStart, True, sFout)
+            If sFout <> "" Then
+                MsgBox "Rij " & (r + 1) & ", kolom T (start abonnement): " & sFout, 16, "Fout"
+                Exit Sub
+            End If
+
+            riRij(nRij)   = r
+            riKlant(nRij) = CLng(dKlant)
+            riAnn(nRij)   = sAnnCsv
+            riVb(nRij)    = sVbCsv
+            If sStopCsv  = "" Then riStop(nRij)  = 0 Else riStop(nRij)  = CInt(sStopCsv)
+            If sStartCsv = "" Then riStart(nRij) = 0 Else riStart(nRij) = CInt(sStartCsv)
+            nRij = nRij + 1
+        End If
+    Next r
+
+    If nRij = 0 Then
+        MsgBox "Geen invoer gevonden in de kolommen Q-T.", 64, "VerwerkStopStart"
+        Exit Sub
+    End If
+
+    ' === Fase 2: DB-verbinding + klantgegevens + bestaande records ===
+    On Error GoTo VerbindingsFoutSS
+    Dim oConn As Object
+    oConn = MaakDBVerbinding()
+    On Error GoTo 0
+
+    Dim oStmt As Object, oRS As Object
+
+    Dim klId(5000)      As Long
+    Dim klVn(5000)      As String
+    Dim klFn(5000)      As String
+    Dim klMail(5000)    As String
+    Dim klFormaat(5000) As String
+    Dim nKl As Integer : nKl = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery("SELECT id, voornaam, familienaam, email1, formaat FROM klanten")
+    Do While oRS.next()
+        klId(nKl)      = CLng(oRS.getString(1))
+        klVn(nKl)      = oRS.getString(2)
+        klFn(nKl)      = oRS.getString(3)
+        klMail(nKl)    = oRS.getString(4)
+        klFormaat(nKl) = oRS.getString(5)
+        nKl = nKl + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' Bestaande (klant_id, jaar, week) als doorzoekbare sleutelreeksen
+    Dim sBestAnn As String : sBestAnn = "|"
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery("SELECT klant_id, jaar, week_annulatie FROM annulaties " & _
+                             "WHERE klant_id IS NOT NULL AND week_annulatie IS NOT NULL")
+    Do While oRS.next()
+        sBestAnn = sBestAnn & oRS.getString(1) & "#" & oRS.getString(2) & "#" & oRS.getString(3) & "|"
+    Loop
+    oRS.close() : oStmt.close()
+
+    Dim sBestVb As String : sBestVb = "|"
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery("SELECT klant_id, jaar, week_bestelling FROM vooruitbestellingen " & _
+                             "WHERE klant_id IS NOT NULL AND week_bestelling IS NOT NULL")
+    Do While oRS.next()
+        sBestVb = sBestVb & oRS.getString(1) & "#" & oRS.getString(2) & "#" & oRS.getString(3) & "|"
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' === Fase 3: INSERT-opdrachten opbouwen (jaar/datum berekenen, dubbels filteren) ===
+    Dim aSql(MAX_ITEM) As String
+    Dim nItem As Integer : nItem = 0
+    Dim nAnn As Integer, nStopz As Integer, nVb As Integer, nStart As Integer, nDup As Integer
+
+    Dim i As Integer, k As Integer, kIdx As Integer
+    Dim aW() As String, wi As Integer, w As Integer
+    Dim dDo As Date, iJaar As Integer
+    Dim sSleutel As String, sDatum As String
+    Dim sVnQ As String, sFnQ As String, sMailQ As String, sFmtQ As String, sKid As String
+
+    For i = 0 To nRij - 1
+        kIdx = -1
+        For k = 0 To nKl - 1
+            If klId(k) = riKlant(i) Then kIdx = k : Exit For
+        Next k
+        If kIdx = -1 Then
+            oConn.close()
+            Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+            MsgBox "Rij " & (riRij(i) + 1) & ": klant_id " & riKlant(i) & _
+                   " bestaat niet in de klanten-tabel.", 16, "Fout"
+            Exit Sub
+        End If
+
+        sVnQ   = SqlStr(klVn(kIdx))
+        sFnQ   = SqlStr(klFn(kIdx))
+        sMailQ = SqlStr(klMail(kIdx))
+        sFmtQ  = SqlStr(klFormaat(kIdx))
+        sKid   = CStr(riKlant(i))
+
+        ' --- annulaties (kolom Q) ---
+        If riAnn(i) <> "" Then
+            aW = Split(riAnn(i), ",")
+            For wi = 0 To UBound(aW)
+                w = CInt(aW(wi))
+                dDo = WeekNaarDonderdag(w)
+                iJaar = Year(dDo)
+                sDatum = Format(dDo, "YYYY-MM-DD")
+                sSleutel = sKid & "#" & iJaar & "#" & w
+                If InStr(sBestAnn, "|" & sSleutel & "|") > 0 Then
+                    nDup = nDup + 1
+                Else
+                    aSql(nItem) = "INSERT INTO annulaties " & _
+                        "(voornaam, familienaam, klant_email, klant_id, datum, " & _
+                        "week_annulatie, week_stopzetten_abonnement, jaar) VALUES (" & _
+                        sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & sDatum & "', " & _
+                        w & ", NULL, " & iJaar & ")"
+                    nItem = nItem + 1
+                    sBestAnn = sBestAnn & sSleutel & "|"
+                    nAnn = nAnn + 1
+                End If
+            Next wi
+        End If
+
+        ' --- stopzetting (kolom R) ---
+        If riStop(i) > 0 Then
+            w = riStop(i)
+            dDo = WeekNaarDonderdag(w)
+            iJaar = Year(dDo)
+            sDatum = Format(dDo, "YYYY-MM-DD")
+            sSleutel = sKid & "#" & iJaar & "#" & w
+            If InStr(sBestAnn, "|" & sSleutel & "|") > 0 Then
+                nDup = nDup + 1
+            Else
+                aSql(nItem) = "INSERT INTO annulaties " & _
+                    "(voornaam, familienaam, klant_email, klant_id, datum, " & _
+                    "week_annulatie, week_stopzetten_abonnement, jaar) VALUES (" & _
+                    sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & sDatum & "', " & _
+                    w & ", " & w & ", " & iJaar & ")"
+                nItem = nItem + 1
+                sBestAnn = sBestAnn & sSleutel & "|"
+                nStopz = nStopz + 1
+            End If
+        End If
+
+        ' --- vooruitbestellingen (kolom S) ---
+        If riVb(i) <> "" Then
+            aW = Split(riVb(i), ",")
+            For wi = 0 To UBound(aW)
+                w = CInt(aW(wi))
+                dDo = WeekNaarDonderdag(w)
+                iJaar = Year(dDo)
+                sDatum = Format(dDo, "YYYY-MM-DD")
+                sSleutel = sKid & "#" & iJaar & "#" & w
+                If InStr(sBestVb, "|" & sSleutel & "|") > 0 Then
+                    nDup = nDup + 1
+                Else
+                    aSql(nItem) = "INSERT INTO vooruitbestellingen " & _
+                        "(voornaam, familienaam, klant_email, klant_id, formaat, datum, " & _
+                        "week_bestelling, week_start_abonnement, jaar) VALUES (" & _
+                        sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", " & sFmtQ & ", '" & _
+                        sDatum & "', " & w & ", NULL, " & iJaar & ")"
+                    nItem = nItem + 1
+                    sBestVb = sBestVb & sSleutel & "|"
+                    nVb = nVb + 1
+                End If
+            Next wi
+        End If
+
+        ' --- start abonnement (kolom T) ---
+        If riStart(i) > 0 Then
+            w = riStart(i)
+            dDo = WeekNaarDonderdag(w)
+            iJaar = Year(dDo)
+            sDatum = Format(dDo, "YYYY-MM-DD")
+            sSleutel = sKid & "#" & iJaar & "#" & w
+            If InStr(sBestVb, "|" & sSleutel & "|") > 0 Then
+                nDup = nDup + 1
+            Else
+                aSql(nItem) = "INSERT INTO vooruitbestellingen " & _
+                    "(voornaam, familienaam, klant_email, klant_id, formaat, datum, " & _
+                    "week_bestelling, week_start_abonnement, jaar) VALUES (" & _
+                    sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", " & sFmtQ & ", '" & _
+                    sDatum & "', " & w & ", " & w & ", " & iJaar & ")"
+                nItem = nItem + 1
+                sBestVb = sBestVb & sSleutel & "|"
+                nStart = nStart + 1
+            End If
+        End If
+    Next i
+
+    ' === Fase 4: bevestiging (of melding dat alles al bestond) ===
+    If nItem = 0 Then
+        oConn.close()
+        For i = 0 To nRij - 1
+            oSheet.getCellByPosition(COL_ANN,   riRij(i)).setString("")
+            oSheet.getCellByPosition(COL_STOP,  riRij(i)).setString("")
+            oSheet.getCellByPosition(COL_VB,    riRij(i)).setString("")
+            oSheet.getCellByPosition(COL_START, riRij(i)).setString("")
+        Next i
+        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        MsgBox "Alle " & nDup & " ingevoerde week(en) stonden al in de database." & Chr(10) & _
+               "De invoercellen zijn leeggemaakt.", 64, "VerwerkStopStart"
+        Exit Sub
+    End If
+
+    Dim sVraag As String
+    sVraag = "Te verwerken in de database:" & Chr(10) & Chr(10) & _
+             "  Annulaties:           " & nAnn   & Chr(10) & _
+             "  Stopzettingen:        " & nStopz & Chr(10) & _
+             "  Vooruitbestellingen:  " & nVb    & Chr(10) & _
+             "  Abonnementstarts:     " & nStart & Chr(10) & Chr(10)
+    If nDup > 0 Then
+        sVraag = sVraag & nDup & " week(en) worden overgeslagen (staan al in de DB)." & Chr(10) & Chr(10)
+    End If
+    sVraag = sVraag & "Akkoord?"
+    If MsgBox(sVraag, 33, "VerwerkStopStart") <> 1 Then
+        oConn.close()
+        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        Exit Sub
+    End If
+
+    ' === Fase 5: uitvoeren ===
+    On Error GoTo UitvoerFout
+    oStmt = oConn.createStatement()
+    Dim it As Integer
+    For it = 0 To nItem - 1
+        oStmt.executeUpdate(aSql(it))
+    Next it
+    oStmt.close()
+    oConn.close()
+    On Error GoTo 0
+
+    ' Verwerkte invoercellen leegmaken
+    For i = 0 To nRij - 1
+        oSheet.getCellByPosition(COL_ANN,   riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_STOP,  riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_VB,    riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_START, riRij(i)).setString("")
+    Next i
+
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    MsgBox nItem & " record(s) toegevoegd aan de database." & Chr(10) & _
+           "(" & nAnn & " annulaties, " & nStopz & " stopzettingen, " & _
+           nVb & " vooruitbestellingen, " & nStart & " starts)", 64, "Klaar"
+    Exit Sub
+
+UitvoerFout:
+    MsgBox "Databasefout tijdens het wegschrijven: " & Err & " - " & Error & Chr(10) & Chr(10) & _
+           "Niet alle records zijn verwerkt. De invoer is bewaard — draai de macro " & _
+           "opnieuw; reeds verwerkte weken worden automatisch overgeslagen.", 16, "Fout"
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    Exit Sub
+
+VerbindingsFoutSS:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error, 16, "Fout"
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+
+End Sub
