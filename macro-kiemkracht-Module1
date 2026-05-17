@@ -2167,10 +2167,12 @@ Sub VerwerkStopStart()
 
     ' Verwerkte invoercellen leegmaken
     For i = 0 To nRij - 1
-        oSheet.getCellByPosition(COL_ANN,   riRij(i)).setString("")
-        oSheet.getCellByPosition(COL_STOP,  riRij(i)).setString("")
-        oSheet.getCellByPosition(COL_VB,    riRij(i)).setString("")
-        oSheet.getCellByPosition(COL_START, riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_ANN,     riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_STOP,    riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_VB,      riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_START,   riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_TYPE,    riRij(i)).setString("")
+        oSheet.getCellByPosition(COL_FORMAAT, riRij(i)).setString("")
     Next i
 
     Shell "cmd.exe /c taskkill /F /IM ssh.exe"
