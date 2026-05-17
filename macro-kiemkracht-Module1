@@ -156,6 +156,9 @@ Sub LaadAlleTabellen()
         ' Data schrijven
         row = 1
         Do While oRS.next()
+            If (row Mod 200) = 0 Then
+                oIndicator.setText("Laden: " & sNaam & " - " & row & " rijen")
+            End If
             For col = 1 To nKolommen
                 Dim sVal As String
                 sVal = oRS.getString(col)
