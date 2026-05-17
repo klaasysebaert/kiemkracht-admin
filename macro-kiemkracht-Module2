@@ -253,6 +253,11 @@ Sub BereidMailmergeVoor()
             bMail = True
         ElseIf sType = "weekperweek-onpare-week" And sPareOnpare = "onpare" Then
             bMail = True
+        ElseIf sType = "abonnee-toekomst" _
+            Or sType = "abonnee-pare-week-toekomst" _
+            Or sType = "abonnee-onpare-week-toekomst" Then
+            ' Abonnement start pas later -> tot dan vrijblijvend zoals weekperweek
+            bMail = True
         End If
 
         If Not bMail Then GoTo VolgendeKlant
