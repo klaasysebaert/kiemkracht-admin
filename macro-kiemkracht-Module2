@@ -168,7 +168,13 @@ Sub BereidMailmergeVoor()
     Dim oDoc    As Object
     Dim oSheets As Object
     Dim oSheet  As Object
-    oDoc    = ThisComponent
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        Exit Sub
+    End If
     oSheets = oDoc.Sheets
 
     If oSheets.hasByName("Mailmerge") Then
