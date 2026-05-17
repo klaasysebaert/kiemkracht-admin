@@ -1910,10 +1910,35 @@ Sub VerwerkStopStart()
                 Exit Sub
             End If
 
+            ' Kolom U (abonnementstype) en V (formaat): verplicht bij een start
+            Dim sTypeIn As String : sTypeIn = Trim(oSheet.getCellByPosition(COL_TYPE,    r).getString())
+            Dim sFmtIn  As String : sFmtIn  = Trim(oSheet.getCellByPosition(COL_FORMAAT, r).getString())
+            If sStart <> "" Then
+                If sTypeIn <> "abonnee" And sTypeIn <> "abonnee-pare-week" _
+                   And sTypeIn <> "abonnee-onpare-week" Then
+                    MsgBox "Rij " & (r + 1) & ", kolom U: een startweek vereist een geldig " & _
+                           "abonnementstype:" & Chr(10) & _
+                           "abonnee / abonnee-pare-week / abonnee-onpare-week.", 16, "Fout"
+                    Exit Sub
+                End If
+                If sFmtIn <> "klein" And sFmtIn <> "groot" _
+                   And sFmtIn <> "extra-groot" And sFmtIn <> "mini" Then
+                    MsgBox "Rij " & (r + 1) & ", kolom V: een startweek vereist een geldig " & _
+                           "formaat:" & Chr(10) & "klein / groot / extra-groot / mini.", 16, "Fout"
+                    Exit Sub
+                End If
+            ElseIf sTypeIn <> "" Or sFmtIn <> "" Then
+                MsgBox "Rij " & (r + 1) & ": type/formaat (kolom U/V) horen bij een " & _
+                       "startweek in kolom T. Vul de startweek aan of maak U/V leeg.", 16, "Fout"
+                Exit Sub
+            End If
+
             riRij(nRij)   = r
             riKlant(nRij) = CLng(dKlant)
             riAnn(nRij)   = sAnnCsv
             riVb(nRij)    = sVbCsv
+            riType(nRij)  = sTypeIn
+            riFmt(nRij)   = sFmtIn
             If sStopCsv  = "" Then riStop(nRij)  = 0 Else riStop(nRij)  = CInt(sStopCsv)
             If sStartCsv = "" Then riStart(nRij) = 0 Else riStart(nRij) = CInt(sStartCsv)
             nRij = nRij + 1
