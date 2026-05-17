@@ -1869,6 +1869,8 @@ Sub VerwerkStopStart()
     Dim riStop(MAX_RIJ)  As Integer
     Dim riVb(MAX_RIJ)    As String
     Dim riStart(MAX_RIJ) As Integer
+    Dim riType(MAX_RIJ)  As String
+    Dim riFmt(MAX_RIJ)   As String
     Dim nRij As Integer : nRij = 0
 
     Dim r As Integer
