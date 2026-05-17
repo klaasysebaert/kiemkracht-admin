@@ -190,6 +190,9 @@ Sub LaadAlleTabellen()
 
     Next i
 
+    oIndicator.setValue(12)
+    oIndicator.setText("Laden: klanten_beheer (12/12)")
+
     ' --- klanten_beheer: geselecteerde kolommen schrijven vanaf kolom F (index 5) ---
     Dim oKB As Object
     If oSheets.hasByName("klanten_beheer") Then
