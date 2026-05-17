@@ -7,32 +7,33 @@ Option Explicit
 ' JDBC-verbinding terug.
 ' =============================================
 
-' Geeft "dev" als een bestand "...-dev.ods" openstaat, anders "prod".
-' Niets gevonden -> "dev" (veilig: raakt nooit per ongeluk productie).
-Function BepaalOmgeving() As String
-    Dim oEnum As Object
-    Dim oComp As Object
-    Dim sUrl  As String
-    BepaalOmgeving = "dev"
-    oEnum = StarDesktop.Components.createEnumeration()
-    Do While oEnum.hasMoreElements()
-        oComp = oEnum.nextElement()
-        If Not IsNull(oComp) Then
-            If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
-                If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
-                    sUrl = LCase(oComp.getURL())
-                    If InStr(sUrl, "kiemkracht-data") > 0 Then
-                        If InStr(sUrl, "-dev.ods") > 0 Then
-                            BepaalOmgeving = "dev"
-                        Else
-                            BepaalOmgeving = "prod"
-                        End If
-                        Exit Function
-                    End If
-                End If
-            End If
+' Geeft het ACTIEVE document terug als het een kiemkracht-data-bestand is,
+' anders Null. ThisComponent = het venster waarin de macro gestart is — zo
+' werkt alles op het bestand waarin je de macro oproept, ook met
+' kiemkracht-data.ods en kiemkracht-data-dev.ods tegelijk open.
+Function HuidigDataDocument() As Object
+    Dim oDoc As Object
+    oDoc = ThisComponent
+    If IsNull(oDoc) Then Exit Function
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then Exit Function
+    If oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+        If InStr(LCase(oDoc.getURL()), "kiemkracht-data") > 0 Then
+            HuidigDataDocument = oDoc
         End If
-    Loop
+    End If
+End Function
+
+' Geeft "dev" als het actieve bestand op "-dev.ods" eindigt, anders "prod".
+' Geen kiemkracht-data-bestand actief -> "dev" (veilig: raakt nooit prod).
+Function BepaalOmgeving() As String
+    Dim oDoc As Object
+    BepaalOmgeving = "dev"
+    oDoc = HuidigDataDocument()
+    If Not IsNull(oDoc) Then
+        If InStr(LCase(oDoc.getURL()), "-dev.ods") = 0 Then
+            BepaalOmgeving = "prod"
+        End If
+    End If
 End Function
 
 ' Start de juiste SSH-tunnel en geeft een JDBC-verbinding terug.
