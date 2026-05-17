@@ -9404,11 +9404,20 @@ Sub testsomcelwaarde
 End Sub
 
 Sub ZoekOpNaam()
+    Dim oDoc As Object
+    oDoc = ThisComponent
+    If IsNull(oDoc) Then Exit Sub
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+        MsgBox "ZoekOpNaam werkt alleen vanuit een rekenblad.", 16, "Zoeken"
+        Exit Sub
+    End If
+
     Dim sNaam As String
     sNaam = Trim(InputBox("Zoek op naam (leeg = filter wissen):", "Zoeken", ""))
 
     Dim oSheet As Object
-    oSheet = ThisComponent.getCurrentController().getActiveSheet()
+    oSheet = oDoc.getCurrentController().getActiveSheet()
+    If IsNull(oSheet) Then Exit Sub
 
     Dim oCursor As Object
     oCursor = oSheet.createCursor()
@@ -9416,16 +9425,21 @@ Sub ZoekOpNaam()
     Dim nLastRow As Long
     nLastRow = oCursor.getRangeAddress().EndRow
 
+    ' getRows() één keer ophalen; index nooit buiten het aantal bladrijen laten lopen
+    Dim oRows As Object
+    oRows = oSheet.getRows()
+    If nLastRow &gt; oRows.getCount() - 1 Then nLastRow = oRows.getCount() - 1
+    If nLastRow &lt; 6 Then Exit Sub
+
+    Dim sZoek As String : sZoek = LCase(sNaam)
     Dim i As Long
     For i = 6 To nLastRow
         Dim oRij As Object
-        oRij = oSheet.getRows().getByIndex(i)
+        oRij = oRows.getByIndex(i)
         If sNaam = "" Then
             oRij.IsVisible = True
         Else
-            Dim sCel As String
-            sCel = LCase(oSheet.getCellByPosition(0, i).getString())
-            oRij.IsVisible = (InStr(sCel, LCase(sNaam)) &gt; 0)
+            oRij.IsVisible = (InStr(LCase(oSheet.getCellByPosition(0, i).getString()), sZoek) &gt; 0)
         End If
     Next i
 End Sub

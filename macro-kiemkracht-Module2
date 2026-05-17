@@ -11,6 +11,8 @@ Sub BereidMailmergeVoor()
     '   abonnee-onpare       -> enkel in onpare weken
     '   weekperweek          -> altijd uitgenodigd (vrijblijvend)
     '   weekperweek + vooruit-> altijd uitgenodigd (bevestiging)
+    '   abonnee-*-toekomst   -> behandeld als weekperweek (abonnement start
+    '                           pas later; type=weekperweek in de URL)
     '   stop-tijdelijk       -> niet uitgenodigd
     '   stop-definitief      -> niet uitgenodigd
     '
