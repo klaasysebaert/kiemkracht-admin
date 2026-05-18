@@ -830,11 +830,6 @@ Sub MaakWeekbestand()
                 afMINI = afMINI + 1
         End Select
 
-        ' Aangepast pakket: pakket_inhoud alleen als ingevuld
-        If Trim(bInhoud(b)) <> "" Then
-            oSheet.getCellByPosition(cAangep, r).setString(bInhoud(b))
-        End If
-
         ' Losse groenten
         For g = 0 To nGroenten - 1
             If bGroent(b, g) > 0 Then
