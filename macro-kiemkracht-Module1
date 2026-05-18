@@ -132,7 +132,7 @@ Sub LaadAlleTabellen()
         Dim sNaam As String
         sNaam = tabellen(i)
 
-        oIndicator.setValue(i + 1)
+        oIndicator.setValue((i + 1) * 80 \ 11)
         oIndicator.setText("Laden: " & sNaam & " (" & (i + 1) & "/12)")
 
         ' Tabblad aanmaken of leegmaken
