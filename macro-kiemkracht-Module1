@@ -353,8 +353,13 @@ Sub MaakWeekbestand()
                  Right("0" & Month(dDonderdag), 2) & _
                  Right("0" & Day(dDonderdag), 2)
 
-    Dim sBestand As String
-    sBestand = SAVE_MAP & "week_" & iWeek & "_" & iJaar & ".ods"
+    ' Weekbestand-naam: de dev-omgeving krijgt een -dev-achtervoegsel zodat
+    ' een dev-weekbestand niet botst met (of overschreven wordt door) het
+    ' prod-weekbestand met dezelfde week.
+    Dim sBestand   As String
+    Dim sOmgSuffix As String
+    If BepaalOmgeving() = "dev" Then sOmgSuffix = "-dev" Else sOmgSuffix = ""
+    sBestand = SAVE_MAP & "week_" & iWeek & "_" & iJaar & sOmgSuffix & ".ods"
 
     ' JDBC-verbinding (juiste omgeving via MaakDBVerbinding)
     On Error GoTo VerbindingsFout
