@@ -921,6 +921,11 @@ Sub MaakWeekbestand()
             "=SUM(" & sK & "7:" & sK & iLaatste & ")")
     Next ic
 
+    ' Q3: totaal aantal pakketten — som van de pakkettotalen (R4:U4) in de
+    ' totaalrij, gevolgd door het woord PAKKETTEN.
+    oSheet.getCellByPosition(cDatum, 2).setFormula( _
+        "=SUM(" & KolomLetter(cKG) & "4:" & KolomLetter(cMINI) & "4)&"" PAKKETTEN""")
+
     ' Donderdagrij (code rij 4 = spreadsheet rij 5) — SUMIF op kolom C (dag_klaarmaken)
     oSheet.getCellByPosition(cDatum, 4).setString(sDatDo)
     For ic = cKG To cMINI
