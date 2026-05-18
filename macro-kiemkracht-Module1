@@ -712,7 +712,7 @@ Sub MaakWeekbestand()
         oSheet.getCellByPosition(cGroent0 + g, r).setString(groentNaam(g))
     Next g
     oSheet.getCellByPosition(cAnder,  r).setString("ander")
-    oSheet.getCellByPosition(cAangep, r).setString("aangepast pakket")
+    oSheet.getCellByPosition(cAangep, r).setString("")
     oSheet.getCellByPosition(cGeen,   r).setString("geen (synthese)")
     For w = 0 To nWeg - 1
         oSheet.getCellByPosition(cWeg0 + w, r).setString("geen")
