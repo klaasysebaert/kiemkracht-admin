@@ -669,7 +669,7 @@ Sub MaakWeekbestand()
     Dim   cAnder  As Integer
     cAnder  = cGroent0 + nGroentSlots  ' "ander" kolom (AS = 44)
     Dim   cAangep As Integer
-    cAangep = cAnder  + 1              ' aangepast pakket (AT = 45)
+    cAangep = cAnder  + 1              ' (leeg — vrij voor andere info)
     Dim   cGeen   As Integer
     cGeen   = cAangep + 1              ' synthese weglatingen (AU = 46)
     Dim   cWeg0   As Integer
