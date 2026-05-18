@@ -251,7 +251,8 @@ Sub LaadAlleTabellen()
     ' anders valt hij terug op de standaardweergave ("Blad x van y").
     oIndicator.setText("Laden: klanten_beheer...")
     Do While oRS.next()
-        If (kbRow Mod 100) = 0 Then
+        If (kbRow Mod 50) = 0 Then
+            oIndicator.setValue(80 + Int(kbRow / nKlanten * 18))
             oIndicator.setText("Laden: klanten_beheer - " & kbRow & " rijen")
         End If
         For kbIdx = 1 To nKBKol
