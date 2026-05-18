@@ -794,24 +794,20 @@ Sub MaakWeekbestand()
             oSheet.getCellByPosition(cWijzig, r).setString(bWijzig(b))
         End If
 
-        ' Vooruitbestellingen: week_start en week_bestelling
+        ' Vooruitbestellingen: week_start
         Dim vi As Integer
         For vi = 0 To nVB - 1
             If vbEmail(vi) = bEmail(b) Then
                 If vbStart(vi) > 0 Then
                     oSheet.getCellByPosition(cStart, r).setValue(vbStart(vi))
                 End If
-                oSheet.getCellByPosition(cWBest, r).setValue(vbWeek(vi))
             End If
         Next vi
 
-        ' Annulaties: week_annulatie en week_stop
+        ' Annulaties: week_stop
         Dim ai As Integer
         For ai = 0 To nAnn - 1
             If annEmail(ai) = bEmail(b) Then
-                If annWeek(ai) > 0 Then
-                    oSheet.getCellByPosition(cAnn,  r).setValue(annWeek(ai))
-                End If
                 If annStop(ai) > 0 Then
                     oSheet.getCellByPosition(cStop, r).setValue(annStop(ai))
                 End If
