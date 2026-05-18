@@ -435,7 +435,7 @@ Sub MaakWeekbestand()
         "COALESCE(k.klant_type,'') AS klant_type, " & _
         "COALESCE(k.formaat,'') AS formaat, " & _
         "COALESCE(k.telefoon,'') AS telefoon, " & _
-        "COALESCE(k.aanspreking,'') AS aanspreking, " & _
+        "COALESCE(k.id::text,'') AS klant_id, " & _
         "COALESCE(k.type,'') AS type, " & _
         "COALESCE(bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
         "COALESCE(bap.id_intern, 9999) AS id_intern_sort " & _
