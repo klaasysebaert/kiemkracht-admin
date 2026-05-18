@@ -654,9 +654,9 @@ Sub MaakWeekbestand()
     Const cDag      = 10  ' leverdag (verborgen)
     Const cWijzig   = 11  ' abonnement_wijziging
     Const cStop     = 12  ' week_stopzetten_abonnement
-    Const cAnn      = 13  ' week_annulatie
+    Const cAnn      = 13  ' (leeg — vrij voor andere info)
     Const cStart    = 14  ' week_start_abonnement
-    Const cWBest    = 15  ' week_bestelling
+    Const cWBest    = 15  ' klant_id (kolom P)
     Const cDatum    = 16  ' datum (YYMMDD)
     Const cKG       = 17  ' Klein pakket
     Const cGG       = 18  ' Groot pakket
