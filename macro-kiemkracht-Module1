@@ -1122,6 +1122,10 @@ Sub MaakWeekbestand()
     Next cIdx
     oSheet.getCellByPosition(cGeen, 2).CellBackColor = clOranje
 
+    ' Q3 (totaal pakketten): horizontaal en verticaal centreren
+    oSheet.getCellByPosition(cDatum, 2).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
+    oSheet.getCellByPosition(cDatum, 2).VertJustify = com.sun.star.table.CellVertJustify2.CENTER
+
     ' --- RIJEN 3-5: totaal/donderdag/vrijdag (#DDDDDD, vet) ---
     For rIdx = 3 To 5
         For cIdx = 0 To cWeg0 + nWeg - 1
