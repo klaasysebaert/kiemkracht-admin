@@ -506,6 +506,7 @@ Sub MaakWeekbestand()
         bTel(nBest)     = oRS.getString(13)
         bTyp(nBest)      = oRS.getString(15)
         bKlaarDag(nBest) = oRS.getString(16)
+        bKlantId(nBest)  = oRS.getString(14)
         nBest = nBest + 1
     Loop
     oRS.close() : oStmt.close()
