@@ -119,7 +119,7 @@ Sub LaadAlleTabellen()
 
     ' Voortgangsbalk in de statusbalk (onderaan het venster)
     oIndicator = oDoc.getCurrentController().getFrame().createStatusIndicator()
-    oIndicator.start("Kiemkracht - tabellen laden", 13)
+    oIndicator.start("Kiemkracht - tabellen laden", 100)
     oIndicator.setText("Verbinden met de database...")
 
     ' JDBC-verbinding openen (juiste omgeving via MaakDBVerbinding)
