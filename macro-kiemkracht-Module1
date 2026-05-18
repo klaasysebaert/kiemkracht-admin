@@ -236,7 +236,13 @@ Sub LaadAlleTabellen()
         "FROM klanten")
     Dim kbRow As Integer
     kbRow = 1
+    ' Statusbalk actief houden tijdens het schrijven van klanten_beheer,
+    ' anders valt hij terug op de standaardweergave ("Blad x van y").
+    oIndicator.setText("Laden: klanten_beheer...")
     Do While oRS.next()
+        If (kbRow Mod 100) = 0 Then
+            oIndicator.setText("Laden: klanten_beheer - " & kbRow & " rijen")
+        End If
         For kbIdx = 1 To nKBKol
             Dim kbVal As String
             kbVal = oRS.getString(kbIdx)
