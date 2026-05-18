@@ -981,7 +981,7 @@ Sub MaakWeekbestand()
     aBreedtes(12) = 993   ' week_stop
     aBreedtes(13) = 993   ' week_ann
     aBreedtes(14) = 993   ' week_start
-    aBreedtes(15) = 993   ' week_best
+    aBreedtes(15) = 1700  ' klant_id
     aBreedtes(16) = 4219  ' datum/totaal kolom
     aBreedtes(17) = 700   ' KG
     aBreedtes(18) = 700   ' GG
