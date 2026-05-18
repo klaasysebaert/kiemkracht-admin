@@ -784,6 +784,11 @@ Sub MaakWeekbestand()
         oSheet.getCellByPosition(cEmail,  r).setString(bEmail(b))
         oSheet.getCellByPosition(cOpm,    r).setString(bOpm(b))
 
+        ' klant_id (kolom P) — vaste kolom net voor de centrale datumkolom
+        If Trim(bKlantId(b)) <> "" Then
+            oSheet.getCellByPosition(cWBest, r).setValue(Val(bKlantId(b)))
+        End If
+
         ' abonnement_wijziging alleen als relevant
         If Trim(bWijzig(b)) <> "" Then
             oSheet.getCellByPosition(cWijzig, r).setString(bWijzig(b))
