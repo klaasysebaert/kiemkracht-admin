@@ -270,7 +270,7 @@ Sub LaadAlleTabellen()
     oStmt.close()
 
     oConn.close()
-    oIndicator.setValue(13)
+    oIndicator.setValue(100)
     oIndicator.setText("Bijna klaar...")
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
     oIndicator.end()
