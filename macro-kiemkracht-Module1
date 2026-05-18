@@ -389,17 +389,19 @@ Sub MaakWeekbestand()
     ' --- Stap 1: unieke groenten deze week (kolomhoofden) ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT naam, eenheid FROM groenten " & _
+        "SELECT naam, eenheid, BOOL_OR(per_stuk) FROM groenten " & _
         "WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & _
         " GROUP BY naam, eenheid" & _
         " ORDER BY MIN(volgorde), MIN(id)")
     Dim groentNaam(50) As String
     Dim groentEenh(50) As String
+    Dim groentPerStuk(50) As Boolean   ' "x "-notatie nodig (Sheets-vinkje → groenten.per_stuk)
     Dim nGroenten As Integer
     nGroenten = 0
     Do While oRS.next()
-        groentNaam(nGroenten) = oRS.getString(1)
-        groentEenh(nGroenten) = oRS.getString(2)
+        groentNaam(nGroenten)    = oRS.getString(1)
+        groentEenh(nGroenten)    = oRS.getString(2)
+        groentPerStuk(nGroenten) = oRS.getBoolean(3)
         nGroenten = nGroenten + 1
     Loop
     oRS.close() : oStmt.close()
