@@ -194,7 +194,18 @@ Sub LaadAlleTabellen()
 
     Next i
 
-    oIndicator.setValue(12)
+    ' Aantal klanten ophalen voor een vloeiende voortgangsbalk in de
+    ' klanten_beheer-fase (anders staat de balk lang stil op 80%).
+    Dim nKlanten As Integer
+    nKlanten = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery("SELECT COUNT(*) FROM klanten")
+    If oRS.next() Then nKlanten = oRS.getInt(1)
+    oRS.close()
+    oStmt.close()
+    If nKlanten < 1 Then nKlanten = 1
+
+    oIndicator.setValue(80)
     oIndicator.setText("Laden: klanten_beheer (12/12)")
 
     ' --- klanten_beheer: geselecteerde kolommen schrijven vanaf kolom F (index 5) ---
