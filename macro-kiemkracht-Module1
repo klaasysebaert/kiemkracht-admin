@@ -453,7 +453,7 @@ Sub MaakWeekbestand()
         "WHEN 'extra-groot' THEN 'extra groot pakket' " & _
         "WHEN 'mini' THEN 'mini pakket' ELSE '' END, " & _
         "'', '', '', " & _
-        "COALESCE(k.klant_type,''), k.formaat, COALESCE(k.telefoon,''), COALESCE(k.aanspreking,''), " & _
+        "COALESCE(k.klant_type,''), k.formaat, COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
         "COALESCE(k.type,''), " & _
         "COALESCE(ap.dag_klaarmaken,''), " & _
         "COALESCE(ap.id_intern, 9999) " & _
