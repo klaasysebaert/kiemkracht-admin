@@ -876,7 +876,7 @@ Sub MaakWeekbestand()
         sSamenv = bVoor(b) & " " & bFam(b) & " (" & bAfh(b) & "): " & sPakketKort
         For g = 0 To nGroenten - 1
             If bGroent(b, g) > 0 Then
-                sSamenv = sSamenv & Chr(10) & groentNaam(g) & ": " & bGroent(b, g) & " " & groentEenh(g)
+                sSamenv = sSamenv & Chr(10) & groentNaam(g) & ": " & bGroent(b, g) & IIf(groentPerStuk(g), " x ", " ") & groentEenh(g)
             End If
         Next g
         For w = 0 To nWeg - 1
