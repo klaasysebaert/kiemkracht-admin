@@ -743,8 +743,20 @@ Sub MaakWeekbestand()
     oSheet.getCellByPosition(cGG,     r).setString("GG")
     oSheet.getCellByPosition(cEGG,    r).setString("EGG")
     oSheet.getCellByPosition(cMINI,   r).setString("MINI")
+    ' Losse-groentekolommen: prijs als getal, opgemaakt als "€ 5,00 / 300g"
+    Dim oFmtsR3 As Object
+    oFmtsR3 = oNieuwDoc.getNumberFormats()
+    Dim oLocR3 As New com.sun.star.lang.Locale
+    oLocR3.Language = "nl" : oLocR3.Country = "BE"
     For g = 0 To nGroenten - 1
-        oSheet.getCellByPosition(cGroent0 + g, r).setString(groentEenh(g))
+        Dim oCelPr As Object
+        oCelPr = oSheet.getCellByPosition(cGroent0 + g, r)
+        oCelPr.setValue(groentPrijs(g))
+        Dim sFmtPr As String, nFmtPr As Long
+        sFmtPr = """€ ""0.00"" / " & groentEenh(g) & """"
+        nFmtPr = oFmtsR3.queryKey(sFmtPr, oLocR3, False)
+        If nFmtPr = -1 Then nFmtPr = oFmtsR3.addNew(sFmtPr, oLocR3)
+        oCelPr.NumberFormat = nFmtPr
     Next g
     For w = 0 To nWeg - 1
         oSheet.getCellByPosition(cWeg0 + w, r).setString(wegNaam(w))
