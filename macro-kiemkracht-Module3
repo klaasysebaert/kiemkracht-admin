@@ -232,7 +232,7 @@ Sub MaakOverzichten()
             End If
         Next b
         For a1 = 0 To nAfhL1 - 1
-            For fr1 = 1 To 5
+            For fr1 = 0 To 4
                 For b = 0 To nBlok - 1
                     If aDag2(b) = sD And aAfh2(b) = aAfhL1(a1) _
                        And aPakRang(b) = fr1 Then
