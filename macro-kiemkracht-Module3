@@ -1855,7 +1855,7 @@ Sub VulWeglatingen()
 
     Dim oDoc     As Object : oDoc = ThisComponent
     Dim oWkSheet As Object : oWkSheet  = oDoc.Sheets.getByIndex(0)
-    Dim oWegSheet As Object : oWegSheet = oDoc.Sheets.getByIndex(1)
+    Dim oWegSheet As Object : oWegSheet = oDoc.Sheets.getByName("Blad2")
 
     ' Laatste rij weekblad
     Dim oCalcCursor As Object
