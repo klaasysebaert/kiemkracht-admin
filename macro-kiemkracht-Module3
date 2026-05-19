@@ -1952,7 +1952,7 @@ Function LeesUitSheets() As Boolean
     Dim i As Integer, r As Integer, c As Integer
 
     LeesUitSheets = False
-    oBlad2 = ThisComponent.Sheets.getByIndex(1)
+    oBlad2 = ThisComponent.Sheets.getByName("Blad2")
 
     On Error GoTo HttpFout
     oHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
