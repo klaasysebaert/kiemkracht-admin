@@ -1255,7 +1255,7 @@ Sub MaakWeekbestand()
     Dim oLocA As New com.sun.star.lang.Locale
     oLocA.Language = "nl" : oLocA.Country = "BE"
     Dim nCur As Long, sCurFmt As String
-    sCurFmt = """" & Chr(8364) & " ""#.##0,00"
+    sCurFmt = "#.##0,00"" " & Chr(8364) & """"
     nCur = oFmtsA.queryKey(sCurFmt, oLocA, False)
     If nCur = -1 Then nCur = oFmtsA.addNew(sCurFmt, oLocA)
 
