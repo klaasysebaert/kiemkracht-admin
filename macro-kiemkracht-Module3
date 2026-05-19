@@ -148,7 +148,7 @@ Sub MaakOverzichten()
     End If
 
     ' Formaatrang per blok — voor de sortering binnen een afhaalpunt:
-    ' klein=1, groot=2, extra groot=3, mini=4, geen pakket=5.
+    ' geen pakket=0, klein=1, groot=2, extra groot=3, mini=4.
     Dim aPakRang(500) As Integer
     Dim pr As Integer
     For pr = 0 To nBlok - 1
@@ -157,7 +157,7 @@ Sub MaakOverzichten()
             Case "groot"       : aPakRang(pr) = 2
             Case "extra groot" : aPakRang(pr) = 3
             Case "mini"        : aPakRang(pr) = 4
-            Case Else          : aPakRang(pr) = 5
+            Case Else          : aPakRang(pr) = 0
         End Select
     Next pr
 
