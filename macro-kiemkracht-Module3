@@ -6,6 +6,20 @@ Option Explicit
 ' naast het weekbestand, vanuit het weekbestand.
 ' =============================================
 
+' Haalt de bestel-eenheid uit een rij-3-cel van een groentekolom.
+' Sinds rij 3 de prijs bevat (opgemaakt als "2,10 € / kg") staat de
+' eenheid na de "/". Oude opmaak — rij 3 = gewoon de eenheid, zonder "/" —
+' wordt ongewijzigd teruggegeven.
+Function EenheidUitRij3(sRuw As String) As String
+    Dim p As Integer
+    p = InStr(sRuw, "/")
+    If p > 0 Then
+        EenheidUitRij3 = Trim(Mid(sRuw, p + 1))
+    Else
+        EenheidUitRij3 = Trim(sRuw)
+    End If
+End Function
+
 Sub MaakOverzichten()
     On Error GoTo DebugFout
 
