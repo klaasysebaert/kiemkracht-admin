@@ -40,13 +40,24 @@ Sub MaakOverzichten()
     oDoc     = ThisComponent
     oWkSheet = oDoc.Sheets.getByIndex(0)
 
-    ' Groente-namen en eenheden uit rij 1/2
+    ' Groente-namen uit rij 1; eenheden (met "x " voor per_stuk-groenten)
+    ' uit Blad2 kolom I — daar zet MaakWeekbestand ze klaar, want rij 3 van
+    ' het hoofdblad bevat de prijs i.p.v. de eenheid. Terugval op rij 3 als
+    ' Blad2 die metadata (nog) niet heeft (ouder weekbestand).
     Dim groentNaam(23) As String
     Dim groentEenh(23) As String
     Dim g As Integer
+    Dim oBlad2Meta As Object
+    Dim bHeeftBlad2Meta As Boolean
+    bHeeftBlad2Meta = oDoc.Sheets.hasByName("Blad2")
+    If bHeeftBlad2Meta Then oBlad2Meta = oDoc.Sheets.getByName("Blad2")
+    Dim sEen As String
     For g = 0 To nGroentSlots - 1
         groentNaam(g) = oWkSheet.getCellByPosition(cGroent0 + g, 1).getString()
-        groentEenh(g) = EenheidUitRij3(oWkSheet.getCellByPosition(cGroent0 + g, 2).getString())
+        sEen = ""
+        If bHeeftBlad2Meta Then sEen = oBlad2Meta.getCellByPosition(8, g).getString()
+        If sEen = "" Then sEen = EenheidUitRij3(oWkSheet.getCellByPosition(cGroent0 + g, 2).getString())
+        groentEenh(g) = sEen
     Next g
 
     ' Weglatingen uit rij 2
