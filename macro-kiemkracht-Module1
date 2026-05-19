@@ -753,7 +753,7 @@ Sub MaakWeekbestand()
         oCelPr = oSheet.getCellByPosition(cGroent0 + g, r)
         oCelPr.setValue(groentPrijs(g))
         Dim sFmtPr As String, nFmtPr As Long
-        sFmtPr = """" & Chr(8364) & " ""0,00"" / " & groentEenh(g) & """"
+        sFmtPr = "0,00"" " & Chr(8364) & " / " & groentEenh(g) & """"
         nFmtPr = oFmtsR3.queryKey(sFmtPr, oLocR3, False)
         If nFmtPr = -1 Then nFmtPr = oFmtsR3.addNew(sFmtPr, oLocR3)
         oCelPr.NumberFormat = nFmtPr
