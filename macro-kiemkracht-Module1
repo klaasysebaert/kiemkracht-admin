@@ -1235,8 +1235,111 @@ Sub MaakWeekbestand()
     ' --- Rijen/kolommen vastzetten bij B7 ---
     oNieuwDoc.getCurrentController().freezeAtPosition(1, 6)
 
-    ' --- Tweede tabblad aanmaken ---
-    oNieuwDoc.Sheets.insertNewByName("Blad2", 1)
+    ' --- Tabblad "afrekening" ---
+    ' Spiegelt de klantrijen van het databstblad met levende formules en
+    ' berekent per klant het te betalen bedrag. Manuele correcties van de
+    ' geleverde hoeveelheden (kolom W+ op het databstblad) rekenen meteen door.
+    Dim oAfr As Object
+    If oNieuwDoc.Sheets.hasByName("afrekening") Then
+        oAfr = oNieuwDoc.Sheets.getByName("afrekening")
+    Else
+        oNieuwDoc.Sheets.insertNewByName("afrekening", 1)
+        oAfr = oNieuwDoc.Sheets.getByName("afrekening")
+    End If
+
+    Dim sData As String
+    sData = "'Week " & iWeek & " - " & iJaar & "'"   ' bladnaam voor formules
+
+    ' Valuta-opmaak
+    Dim oFmtsA As Object : oFmtsA = oNieuwDoc.getNumberFormats()
+    Dim oLocA As New com.sun.star.lang.Locale
+    oLocA.Language = "nl" : oLocA.Country = "BE"
+    Dim nCur As Long
+    nCur = oFmtsA.queryKey("""€ ""#,##0.00", oLocA, False)
+    If nCur = -1 Then nCur = oFmtsA.addNew("""€ ""#,##0.00", oLocA)
+
+    ' Pakketprijzen bovenaan — aanpasbaar
+    oAfr.getCellByPosition(0, 0).setString("AFREKENING — Week " & iWeek & " - " & iJaar)
+    oAfr.getCellByPosition(0, 1).setString("Klein pakket")
+    oAfr.getCellByPosition(0, 2).setString("Groot pakket")
+    oAfr.getCellByPosition(0, 3).setString("Extra groot pakket")
+    oAfr.getCellByPosition(0, 4).setString("Mini pakket")
+    oAfr.getCellByPosition(1, 1).setValue(prijsKlein)
+    oAfr.getCellByPosition(1, 2).setValue(prijsGroot)
+    oAfr.getCellByPosition(1, 3).setValue(prijsEGroot)
+    oAfr.getCellByPosition(1, 4).setValue(prijsMini)
+    oAfr.getCellRangeByName("B2:B5").NumberFormat = nCur
+
+    ' Koprij van de afrekeningstabel
+    oAfr.getCellByPosition(0, 5).setString("klant / afhaalpunt")
+    oAfr.getCellByPosition(1, 5).setString("pakket")
+    oAfr.getCellByPosition(2, 5).setString("losse groenten")
+    oAfr.getCellByPosition(3, 5).setString("TOTAAL")
+    oAfr.getCellByPosition(cSamenv, 5).setString("detail losse groenten")
+    For g = 0 To nGroenten - 1
+        oAfr.getCellByPosition(cGroent0 + g, 5).setFormula( _
+            "=" & sData & "." & KolomLetter(cGroent0 + g) & "2")
+    Next g
+
+    ' Spiegel: één rij per databstblad-rij (klantrijen krijgen formules)
+    Dim sLG As String
+    sLG = KolomLetter(cGroent0 + nGroenten - 1)
+    Dim ar As Integer, asr As Integer
+    For ar = 6 To iLaatste - 1
+        asr = ar + 1
+        If oSheet.getCellByPosition(cAfh, ar).getString() = "afhaalpunt/dag" Then
+            ' koprij: afhaalpuntlabel spiegelen
+            oAfr.getCellByPosition(cNaam, ar).setFormula("=" & sData & ".A" & asr)
+        ElseIf Trim(oSheet.getCellByPosition(cNaam, ar).getString()) <> "" Then
+            ' klantrij
+            oAfr.getCellByPosition(cNaam, ar).setFormula("=" & sData & ".A" & asr)
+            ' pakket-bedrag = pakkettype × pakketprijs-cel bovenaan
+            oAfr.getCellByPosition(1, ar).setFormula( _
+                "=" & sData & "." & KolomLetter(cKG)   & asr & "*$B$2+" & _
+                      sData & "." & KolomLetter(cGG)   & asr & "*$B$3+" & _
+                      sData & "." & KolomLetter(cEGG)  & asr & "*$B$4+" & _
+                      sData & "." & KolomLetter(cMINI) & asr & "*$B$5")
+            ' per groente: geleverde hoeveelheid × prijs/eenheid (rij 3)
+            For g = 0 To nGroenten - 1
+                Dim sCol As String
+                sCol = KolomLetter(cGroent0 + g)
+                oAfr.getCellByPosition(cGroent0 + g, ar).setFormula( _
+                    "=IF(" & sData & "." & sCol & asr & "="""";"""";" & _
+                    sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3)")
+            Next g
+            ' losse-groenten-totaal en eindtotaal
+            oAfr.getCellByPosition(2, ar).setFormula("=SUM(W" & asr & ":" & sLG & asr & ")")
+            oAfr.getCellByPosition(3, ar).setFormula("=B" & asr & "+C" & asr)
+            ' detail losse groenten (levende formule, loopt mee met correcties)
+            oAfr.getCellRangeByName("V" & asr).setArrayFormula( _
+                "=TEXTJOIN(CHAR(10);1;IF(" & sData & ".W" & asr & ":" & sLG & asr & "="""";"""";" & _
+                sData & ".W$2:" & sLG & "$2&"": ""&" & sData & ".W" & asr & ":" & sLG & asr & "&"" × € ""&" & _
+                "TEXT(" & sData & ".W$3:" & sLG & "$3;""0.00"")&"" = € ""&" & _
+                "TEXT(" & sData & ".W" & asr & ":" & sLG & asr & "*" & sData & ".W$3:" & sLG & "$3;""0.00"")))")
+        End If
+    Next ar
+
+    ' Algemeen totaal onderaan
+    Dim arTot As Integer
+    arTot = iLaatste + 1
+    oAfr.getCellByPosition(0, arTot).setString("ALGEMEEN TOTAAL")
+    oAfr.getCellByPosition(1, arTot).setFormula("=SUM(B7:B" & iLaatste & ")")
+    oAfr.getCellByPosition(2, arTot).setFormula("=SUM(C7:C" & iLaatste & ")")
+    oAfr.getCellByPosition(3, arTot).setFormula("=SUM(D7:D" & iLaatste & ")")
+
+    ' Opmaak afrekeningstabblad
+    oAfr.getCellRangeByName("B7:D" & (arTot + 1)).NumberFormat = nCur
+    oAfr.getCellRangeByName("W7:" & sLG & iLaatste).NumberFormat = nCur
+    oAfr.getCellRangeByName("A6:" & sLG & "6").CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oAfr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oAfr.getCellRangeByName("A" & (arTot + 1) & ":D" & (arTot + 1)).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oAfr.Columns.getByIndex(0).Width = 5000
+    oAfr.Columns.getByIndex(1).Width = 2000
+    oAfr.Columns.getByIndex(2).Width = 2600
+    oAfr.Columns.getByIndex(3).Width = 2400
+    oAfr.Columns.getByIndex(cSamenv).Width = 9000
+    oAfr.getCellRangeByName("V7:V" & iLaatste).IsTextWrapped = True
+
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
     ' --- Opslaan ---
