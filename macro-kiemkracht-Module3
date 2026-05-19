@@ -208,16 +208,42 @@ Sub MaakOverzichten()
     Dim dd          As Integer
     Dim sD          As String
     Dim bNieuwDag   As Boolean
+    ' Per dag → per afhaalpunt (volgorde van eerste verschijning) →
+    ' per formaat (klein, groot, extra groot, mini, geen). Binnen eenzelfde
+    ' formaat blijft de oorspronkelijke klantvolgorde behouden.
+    Dim aAfhL1(500) As String
+    Dim nAfhL1      As Integer
+    Dim a1          As Integer
+    Dim fr1         As Integer
+    Dim bGevA1      As Boolean
     For dd = 0 To nDagen - 1
         sD = aDagen(dd)
+        nAfhL1 = 0
         For b = 0 To nBlok - 1
             If aDag2(b) = sD Then
-                aBlok1(n1) = aBlok(b)
-                aAfh21(n1) = aAfh2(b)
-                aDag1(n1)  = sD
-                n1 = n1 + 1
+                bGevA1 = False
+                For a1 = 0 To nAfhL1 - 1
+                    If aAfhL1(a1) = aAfh2(b) Then bGevA1 = True : Exit For
+                Next a1
+                If Not bGevA1 Then
+                    aAfhL1(nAfhL1) = aAfh2(b)
+                    nAfhL1 = nAfhL1 + 1
+                End If
             End If
         Next b
+        For a1 = 0 To nAfhL1 - 1
+            For fr1 = 1 To 5
+                For b = 0 To nBlok - 1
+                    If aDag2(b) = sD And aAfh2(b) = aAfhL1(a1) _
+                       And aPakRang(b) = fr1 Then
+                        aBlok1(n1) = aBlok(b)
+                        aAfh21(n1) = aAfh2(b)
+                        aDag1(n1)  = sD
+                        n1 = n1 + 1
+                    End If
+                Next b
+            Next fr1
+        Next a1
     Next dd
 
     Const nPgHP2   = 29700
