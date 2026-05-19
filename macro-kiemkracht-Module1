@@ -1315,9 +1315,9 @@ Sub MaakWeekbestand()
             oAfr.getCellRangeByName("V" & asr).setArrayFormula( _
                 "=TEXTJOIN(CHAR(10);1;IF(" & sData & ".W" & asr & ":" & sLG & asr & "="""";"""";" & _
                 sData & ".W$2:" & sLG & "$2&"": ""&" & sData & ".W" & asr & ":" & sLG & asr & _
-                "&"" " & Chr(215) & " " & Chr(8364) & " ""&" & _
-                "TEXT(" & sData & ".W$3:" & sLG & "$3;""0,00"")&"" = " & Chr(8364) & " ""&" & _
-                "TEXT(" & sData & ".W" & asr & ":" & sLG & asr & "*" & sData & ".W$3:" & sLG & "$3;""0,00"")))")
+                "&"" " & Chr(215) & " ""&" & _
+                "TEXT(" & sData & ".W$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
+                "TEXT(" & sData & ".W" & asr & ":" & sLG & asr & "*" & sData & ".W$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
         End If
     Next ar
 
