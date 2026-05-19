@@ -2013,7 +2013,7 @@ Sub SyncMetSheets()
     Dim r As Integer, c As Integer
 
     oDoc   = ThisComponent
-    oBlad2 = oDoc.Sheets.getByIndex(1)
+    oBlad2 = oDoc.Sheets.getByName("Blad2")
 
     ' ---------- STAP 1: lees O7:Q52 uit Google Sheets ----------
     If Not LeesUitSheets() Then Exit Sub
