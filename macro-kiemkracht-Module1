@@ -389,20 +389,37 @@ Sub MaakWeekbestand()
     ' --- Stap 1: unieke groenten deze week (kolomhoofden) ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT naam, eenheid, BOOL_OR(per_stuk) FROM groenten " & _
+        "SELECT naam, eenheid, BOOL_OR(per_stuk), MIN(prijs) FROM groenten " & _
         "WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & _
         " GROUP BY naam, eenheid" & _
         " ORDER BY MIN(volgorde), MIN(id)")
     Dim groentNaam(50) As String
     Dim groentEenh(50) As String
     Dim groentPerStuk(50) As Boolean   ' "x "-notatie nodig (Sheets-vinkje → groenten.per_stuk)
+    Dim groentPrijs(50) As Double      ' prijs per eenheid (voor rij 3 + afrekening)
     Dim nGroenten As Integer
     nGroenten = 0
     Do While oRS.next()
         groentNaam(nGroenten)    = oRS.getString(1)
         groentEenh(nGroenten)    = oRS.getString(2)
         groentPerStuk(nGroenten) = oRS.getBoolean(3)
+        groentPrijs(nGroenten)   = oRS.getDouble(4)
         nGroenten = nGroenten + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Pakketprijzen (voor het afrekeningstabblad) ---
+    Dim prijsKlein As Double, prijsGroot As Double
+    Dim prijsEGroot As Double, prijsMini As Double
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery("SELECT sleutel, prijs FROM pakketten")
+    Do While oRS.next()
+        Select Case oRS.getString(1)
+            Case "klein"       : prijsKlein  = oRS.getDouble(2)
+            Case "groot"       : prijsGroot  = oRS.getDouble(2)
+            Case "extra-groot" : prijsEGroot = oRS.getDouble(2)
+            Case "mini"        : prijsMini   = oRS.getDouble(2)
+        End Select
     Loop
     oRS.close() : oStmt.close()
 
