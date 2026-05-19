@@ -209,8 +209,8 @@ Sub MaakOverzichten()
     Dim sD          As String
     Dim bNieuwDag   As Boolean
     ' Per dag → per afhaalpunt (volgorde van eerste verschijning) →
-    ' per formaat (klein, groot, extra groot, mini, geen). Binnen eenzelfde
-    ' formaat blijft de oorspronkelijke klantvolgorde behouden.
+    ' per formaat (geen pakket, klein, groot, extra groot, mini). Binnen
+    ' eenzelfde formaat blijft de oorspronkelijke klantvolgorde behouden.
     Dim aAfhL1(500) As String
     Dim nAfhL1      As Integer
     Dim a1          As Integer
