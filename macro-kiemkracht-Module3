@@ -46,7 +46,7 @@ Sub MaakOverzichten()
     Dim g As Integer
     For g = 0 To nGroentSlots - 1
         groentNaam(g) = oWkSheet.getCellByPosition(cGroent0 + g, 1).getString()
-        groentEenh(g) = oWkSheet.getCellByPosition(cGroent0 + g, 2).getString()
+        groentEenh(g) = EenheidUitRij3(oWkSheet.getCellByPosition(cGroent0 + g, 2).getString())
     Next g
 
     ' Weglatingen uit rij 2
