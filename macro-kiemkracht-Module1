@@ -1254,12 +1254,13 @@ Sub MaakWeekbestand()
     Dim oFmtsA As Object : oFmtsA = oNieuwDoc.getNumberFormats()
     Dim oLocA As New com.sun.star.lang.Locale
     oLocA.Language = "nl" : oLocA.Country = "BE"
-    Dim nCur As Long
-    nCur = oFmtsA.queryKey("""€ ""#,##0.00", oLocA, False)
-    If nCur = -1 Then nCur = oFmtsA.addNew("""€ ""#,##0.00", oLocA)
+    Dim nCur As Long, sCurFmt As String
+    sCurFmt = """" & Chr(8364) & " ""#.##0,00"
+    nCur = oFmtsA.queryKey(sCurFmt, oLocA, False)
+    If nCur = -1 Then nCur = oFmtsA.addNew(sCurFmt, oLocA)
 
     ' Pakketprijzen bovenaan — aanpasbaar
-    oAfr.getCellByPosition(0, 0).setString("AFREKENING — Week " & iWeek & " - " & iJaar)
+    oAfr.getCellByPosition(0, 0).setString("AFREKENING - Week " & iWeek & " - " & iJaar)
     oAfr.getCellByPosition(0, 1).setString("Klein pakket")
     oAfr.getCellByPosition(0, 2).setString("Groot pakket")
     oAfr.getCellByPosition(0, 3).setString("Extra groot pakket")
