@@ -1024,11 +1024,11 @@ Sub MaakWeekbestand()
     For ci = 0 To 21
         oSheet.Columns.getByIndex(ci).Width = aBreedtes(ci)
     Next ci
-    ' Losse groenten: altijd 24 slots à 1259 elk
+    ' Losse groenten: altijd 24 slots à 2,30 cm elk
     For ci = 0 To nGroentSlots - 1
-        oSheet.Columns.getByIndex(cGroent0 + ci).Width = 1259
+        oSheet.Columns.getByIndex(cGroent0 + ci).Width = 2300
     Next ci
-    oSheet.Columns.getByIndex(cAnder).Width  = 1259   ' ander
+    oSheet.Columns.getByIndex(cAnder).Width  = 2300   ' ander
     oSheet.Columns.getByIndex(cAangep).Width = 3344   ' aangepast pakket
     oSheet.Columns.getByIndex(cGeen).Width   = 5000   ' synthese weglatingen
     ' Weglatingen: 2260 elk
