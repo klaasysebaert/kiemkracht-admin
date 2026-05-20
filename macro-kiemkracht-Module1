@@ -1004,19 +1004,20 @@ Sub MaakWeekbestand()
             "=SUM(" & sK & "7:" & sK & iLaatste & ")")
     Next ic
 
-    ' Q3: twee regels in één cel (rij heeft IsTextWrapped=True):
-    '   1) "<totaal pakketten> PAKKETTEN" — som van R4:U4
-    '   2) "<aantal losse bestellingen> LOSSE BESTELLINGEN" — klanten zonder
-    '      pakket (R,S,T,U leeg) maar met een waarde in X (cWaarde > 0).
-    '      De cWaarde-formule schuift mee met manuele correcties in de
-    '      losse-groentekolommen, dus dit aantal blijft live.
+    ' Q3: totaal aantal pakketten — som van de pakkettotalen (R4:U4) in de
+    ' totaalrij, gevolgd door het woord PAKKETTEN.
     oSheet.getCellByPosition(cDatum, 2).setFormula( _
-        "=SUM(" & KolomLetter(cKG) & "4:" & KolomLetter(cMINI) & "4)&"" PAKKETTEN""&CHAR(10)&" & _
-        "COUNTIFS(" & KolomLetter(cKG)     & "7:" & KolomLetter(cKG)     & iLaatste & ";"""";" & _
-                      KolomLetter(cGG)     & "7:" & KolomLetter(cGG)     & iLaatste & ";"""";" & _
-                      KolomLetter(cEGG)    & "7:" & KolomLetter(cEGG)    & iLaatste & ";"""";" & _
-                      KolomLetter(cMINI)   & "7:" & KolomLetter(cMINI)   & iLaatste & ";"""";" & _
-                      KolomLetter(cWaarde) & "7:" & KolomLetter(cWaarde) & iLaatste & ";"">0"")&"" LOSSE BESTELLINGEN""")
+        "=SUM(" & KolomLetter(cKG) & "4:" & KolomLetter(cMINI) & "4)&"" PAKKETTEN""")
+
+    ' W3: "<aantal losse bestellingen> LOSSE BESTELLINGEN" — klanten zonder
+    ' pakket (R,S,T,U leeg) maar met een waarde in X (cWaarde > 0). Loopt
+    ' automatisch mee dankzij de live afrekening.C-formule in kolom X.
+    oSheet.getCellByPosition(cSamenv, 2).setFormula( _
+        "=COUNTIFS(" & KolomLetter(cKG)     & "7:" & KolomLetter(cKG)     & iLaatste & ";"""";" & _
+                       KolomLetter(cGG)     & "7:" & KolomLetter(cGG)     & iLaatste & ";"""";" & _
+                       KolomLetter(cEGG)    & "7:" & KolomLetter(cEGG)    & iLaatste & ";"""";" & _
+                       KolomLetter(cMINI)   & "7:" & KolomLetter(cMINI)   & iLaatste & ";"""";" & _
+                       KolomLetter(cWaarde) & "7:" & KolomLetter(cWaarde) & iLaatste & ";"">0"")&"" LOSSE BESTELLINGEN""")
 
     ' Donderdagrij (code rij 4 = spreadsheet rij 5) — SUMIF op kolom C (dag_klaarmaken)
     ' Q5: datumlabel gevolgd door het pakkettotaal van die dag (som van R5:U5).
