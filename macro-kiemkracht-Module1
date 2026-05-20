@@ -1014,6 +1014,16 @@ Sub MaakWeekbestand()
         "=COUNTIFS(" & sW45Basis & ";" & _
         "$" & KolomLetter(cKlaarDag) & "$7:$" & KolomLetter(cKlaarDag) & "$" & iLaatste & ";""vrijdag"")")
 
+    ' B4-B6 spiegelen Q4-Q6, C4-C6 spiegelen W4-W6 (gewoon doorgeef-formules,
+    ' geen aparte opmaak — die volgt de algemene rij 3-5 layout).
+    Dim rrSpiegel As Integer
+    For rrSpiegel = 3 To 5
+        oSheet.getCellByPosition(cAfh,      rrSpiegel).setFormula( _
+            "=" & KolomLetter(cDatum)  & (rrSpiegel + 1))
+        oSheet.getCellByPosition(cKlaarDag, rrSpiegel).setFormula( _
+            "=" & KolomLetter(cSamenv) & (rrSpiegel + 1))
+    Next rrSpiegel
+
     ' Centrering voor Q4-Q6 + W4-W6 (achtergrond komt verderop in de rij 3-5
     ' opmaaksectie, na de clDDDDDD-definitie).
     Dim iQRij As Integer
