@@ -962,6 +962,11 @@ Sub MaakWeekbestand()
         oSheet.getCellByPosition(ic, 3).setFormula( _
             "=SUM(" & sK & "7:" & sK & iLaatste & ")")
     Next ic
+    ' € losse — totaal
+    sK = KolomLetter(cWaarde)
+    oSheet.getCellByPosition(cWaarde, 3).setFormula( _
+        "=SUM(" & sK & "7:" & sK & iLaatste & ")")
+    oSheet.getCellByPosition(cWaarde, 3).NumberFormat = nCurW
     For ic = cGroent0 To cGroent0 + nGroentSlots - 1
         sK = KolomLetter(ic)
         oSheet.getCellByPosition(ic, 3).setFormula( _
