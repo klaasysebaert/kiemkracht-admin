@@ -1028,8 +1028,8 @@ Sub MaakWeekbestand()
     nTotRijen = r + 1  ' r is de laatste geschreven rij
 
     ' --- Kolombreedtes instellen ---
-    ' Vaste kolommen (0-21)
-    Dim aBreedtes(21) As Long
+    ' Vaste kolommen (0-22)
+    Dim aBreedtes(22) As Long
     aBreedtes(0)  = 4219  ' naam
     aBreedtes(1)  = 2800  ' afhaalpunt
     aBreedtes(2)  = 1800  ' dag klaarmaken
@@ -1052,9 +1052,10 @@ Sub MaakWeekbestand()
     aBreedtes(19) = 700   ' EGG
     aBreedtes(20) = 700   ' MINI
     aBreedtes(21) = 10000 ' samenvatting (kolom V)
+    aBreedtes(22) = 2000  ' € losse (kolom W)
 
     Dim ci As Integer
-    For ci = 0 To 21
+    For ci = 0 To 22
         oSheet.Columns.getByIndex(ci).Width = aBreedtes(ci)
     Next ci
     ' Losse groenten: altijd 24 slots à 2,30 cm elk
