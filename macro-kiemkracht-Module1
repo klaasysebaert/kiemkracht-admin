@@ -682,11 +682,12 @@ Sub MaakWeekbestand()
     Const cEGG      = 19  ' Extra groot pakket
     Const cMINI     = 20  ' Mini pakket
     Const cSamenv      = 21             ' samenvatting (kolom V)
+    Const cWaarde      = 22             ' € losse groenten (kolom W) — formule per klant
     Const nGroentSlots = 24             ' altijd 24 groente-kolommen reserveren
     Dim   cGroent0 As Integer
-    cGroent0 = 22                       ' eerste groente-kolom (W)
+    cGroent0 = 23                       ' eerste groente-kolom (X)
     Dim   cAnder  As Integer
-    cAnder  = cGroent0 + nGroentSlots  ' "ander" kolom (AS = 44)
+    cAnder  = cGroent0 + nGroentSlots  ' "ander" kolom (AV)
     Dim   cAangep As Integer
     cAangep = cAnder  + 1              ' (leeg — vrij voor andere info)
     Dim   cGeen   As Integer
