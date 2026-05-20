@@ -1343,15 +1343,17 @@ Sub MaakWeekbestand()
                     sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3)")
             Next g
             ' losse-groenten-totaal en eindtotaal
-            oAfr.getCellByPosition(2, ar).setFormula("=SUM(W" & asr & ":" & sLG & asr & ")")
+            Dim sFG As String
+            sFG = KolomLetter(cGroent0)   ' eerste groente-kolom in afrekening
+            oAfr.getCellByPosition(2, ar).setFormula("=SUM(" & sFG & asr & ":" & sLG & asr & ")")
             oAfr.getCellByPosition(3, ar).setFormula("=B" & asr & "+C" & asr)
             ' detail losse groenten (levende formule, loopt mee met correcties)
             oAfr.getCellRangeByName("V" & asr).setArrayFormula( _
-                "=TEXTJOIN(CHAR(10);1;IF(" & sData & ".W" & asr & ":" & sLG & asr & "="""";"""";" & _
-                sData & ".W$2:" & sLG & "$2&"": ""&" & sData & ".W" & asr & ":" & sLG & asr & _
+                "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
+                sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
                 "&"" " & Chr(215) & " ""&" & _
-                "TEXT(" & sData & ".W$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
-                "TEXT(" & sData & ".W" & asr & ":" & sLG & asr & "*" & sData & ".W$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
+                "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
+                "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
         End If
     Next ar
 
