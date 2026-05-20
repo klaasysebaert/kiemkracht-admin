@@ -1690,10 +1690,11 @@ Sub MaakEtikettenBijbestelling()
     Const cGG         = 18
     Const cEGG        = 19
     Const cMINI       = 20
-    Const cGroent0    = 22  ' kolom W
-    Const cGroentLast = 46  ' kolom AU
+    Const cWaarde     = 22  ' kolom W: € losse groenten — filterveld
+    Const cGroent0    = 23  ' kolom X: eerste losse groente
+    Const cGroentLast = 47  ' kolom AV: laatste losse groente
     Const cVolgNr     = 15  ' kolom P (klant_id, was vroeger BD)
-    Const cBestelMin  = 56  ' kolom BE: enkel etiket als waarde > 5
+    Const cMinBedrag  = 5   ' drempel: enkel etiket als € losse > 5
 
     Dim oDoc     As Object
     Dim oWkSheet As Object
