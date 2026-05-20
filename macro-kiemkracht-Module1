@@ -1371,7 +1371,7 @@ Sub MaakWeekbestand()
             oAfr.getCellByPosition(2, ar).setFormula("=SUM(" & sFG & asr & ":" & sLG & asr & ")")
             oAfr.getCellByPosition(3, ar).setFormula("=B" & asr & "+C" & asr)
             ' detail losse groenten (levende formule, loopt mee met correcties)
-            oAfr.getCellRangeByName("V" & asr).setArrayFormula( _
+            oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
                 "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
                 sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
                 "&"" " & Chr(215) & " ""&" & _
