@@ -31,10 +31,10 @@ Sub MaakOverzichten()
     Const cGG          = 18
     Const cEGG         = 19
     Const cMINI        = 20
-    Const cWaarde      = 22  ' € losse (kolom W, ingevuld door MaakWeekbestand)
-    Const cGroent0     = 23  ' eerste losse groente (kolom X)
+    Const cWaarde      = 23  ' € losse (kolom X, ingevuld door MaakWeekbestand)
+    Const cGroent0     = 24  ' eerste losse groente (kolom Y)
     Const nGroentSlots = 24
-    Const cWeg0        = 50
+    Const cWeg0        = 51
 
     Dim oDoc     As Object
     Dim oWkSheet As Object
