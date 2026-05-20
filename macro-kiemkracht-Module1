@@ -764,6 +764,16 @@ Sub MaakWeekbestand()
         oSheet.getCellByPosition(cWeg0 + w, r).setString(wegNaam(w))
     Next w
 
+    ' Valuta-opmaak voor cWaarde-kolom (€ losse) op de klantrijen.
+    ' Wordt eenmalig opgezet zodat de loop hieronder de NumberFormat snel kan toepassen.
+    Dim oFmtsW As Object : oFmtsW = oNieuwDoc.getNumberFormats()
+    Dim oLocW As New com.sun.star.lang.Locale
+    oLocW.Language = "nl" : oLocW.Country = "BE"
+    Dim nCurW As Long, sCurW As String
+    sCurW = "#.##0,00"" " & Chr(8364) & """"
+    nCurW = oFmtsW.queryKey(sCurW, oLocW, False)
+    If nCurW = -1 Then nCurW = oFmtsW.addNew(sCurW, oLocW)
+
     ' --- Helper functie: pakket tellen ---
     ' Tel aantallen per pakkettype voor een reeks bestellingen (van index iVan tot iTot-1)
     ' Geeft terug in array: (0)=KG (1)=GG (2)=EGG (3)=MINI
