@@ -744,6 +744,8 @@ Sub MaakWeekbestand()
 
     ' --- RIJ 2: eenheden ---
     r = 2
+    oSheet.getCellByPosition(cAfh,      r).setString("PAKKETTEN")
+    oSheet.getCellByPosition(cKlaarDag, r).setString("LOS")
     oSheet.getCellByPosition(cKG,     r).setString("KG")
     oSheet.getCellByPosition(cGG,     r).setString("GG")
     oSheet.getCellByPosition(cEGG,    r).setString("EGG")
