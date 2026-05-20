@@ -1679,7 +1679,7 @@ End Sub
 ' =============================================
 ' Kiemkracht - Etiketten bijbestellingen losse groenten
 ' Etiket: naam / "Bijbestelling" / afhaalpunt
-' Volgorde: afhaalpunt (weekbestand), pakket, volgnummer BD
+' Volgorde: afhaalpunt (weekbestand), pakket, klant_id (kolom P)
 ' =============================================
 Sub MaakEtikettenBijbestelling()
 
