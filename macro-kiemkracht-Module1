@@ -1367,7 +1367,7 @@ Sub MaakWeekbestand()
 
     ' Opmaak afrekeningstabblad
     oAfr.getCellRangeByName("B7:D" & (arTot + 1)).NumberFormat = nCur
-    oAfr.getCellRangeByName("W7:" & sLG & iLaatste).NumberFormat = nCur
+    oAfr.getCellRangeByName(KolomLetter(cGroent0) & "7:" & sLG & iLaatste).NumberFormat = nCur
     oAfr.getCellRangeByName("A6:" & sLG & "6").CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfr.getCellRangeByName("A" & (arTot + 1) & ":D" & (arTot + 1)).CharWeight = com.sun.star.awt.FontWeight.BOLD
