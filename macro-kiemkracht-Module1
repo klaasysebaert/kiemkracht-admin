@@ -987,10 +987,21 @@ Sub MaakWeekbestand()
     Dim sK As String
 
     ' Totaalrij (code rij 3 = spreadsheet rij 4)
-    oSheet.getCellByPosition(cDatum, 3).setString("Totaal")
     oSheet.getCellByPosition(cNaam, 3).setString("Totaal W" & iWeek)
     oSheet.getCellByPosition(cNaam, 4).setString(sDatDo)
     oSheet.getCellByPosition(cNaam, 5).setString(sDatVr)
+    ' Q4/Q5/Q6: som van de pakkettotalen R..U op die rij (gecentreerd).
+    oSheet.getCellByPosition(cDatum, 3).setFormula( _
+        "=SUM(" & KolomLetter(cKG) & "4:" & KolomLetter(cMINI) & "4)")
+    oSheet.getCellByPosition(cDatum, 4).setFormula( _
+        "=SUM(" & KolomLetter(cKG) & "5:" & KolomLetter(cMINI) & "5)")
+    oSheet.getCellByPosition(cDatum, 5).setFormula( _
+        "=SUM(" & KolomLetter(cKG) & "6:" & KolomLetter(cMINI) & "6)")
+    Dim iQRij As Integer
+    For iQRij = 3 To 5
+        oSheet.getCellByPosition(cDatum, iQRij).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
+        oSheet.getCellByPosition(cDatum, iQRij).VertJustify = com.sun.star.table.CellVertJustify2.CENTER
+    Next iQRij
     For ic = cKG To cMINI
         sK = KolomLetter(ic)
         oSheet.getCellByPosition(ic, 3).setFormula( _
