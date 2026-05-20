@@ -746,6 +746,9 @@ Sub MaakWeekbestand()
     r = 2
     oSheet.getCellByPosition(cAfh,      r).setString("PAKKETTEN")
     oSheet.getCellByPosition(cKlaarDag, r).setString("LOS")
+    ' B3/C3 onderaan rij 2 zodat ze visueel vlak boven B4/C4 staan
+    oSheet.getCellByPosition(cAfh,      r).VertJustify = com.sun.star.table.CellVertJustify2.BOTTOM
+    oSheet.getCellByPosition(cKlaarDag, r).VertJustify = com.sun.star.table.CellVertJustify2.BOTTOM
     oSheet.getCellByPosition(cKG,     r).setString("KG")
     oSheet.getCellByPosition(cGG,     r).setString("GG")
     oSheet.getCellByPosition(cEGG,    r).setString("EGG")
