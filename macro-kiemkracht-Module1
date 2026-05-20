@@ -1051,9 +1051,6 @@ Sub MaakWeekbestand()
     Next ic
 
     ' Vrijdagrij (code rij 5 = spreadsheet rij 6)
-    ' Q6: datumlabel gevolgd door het pakkettotaal van die dag (som van R6:U6).
-    oSheet.getCellByPosition(cDatum, 5).setFormula( _
-        "=""" & sDatVr & ": ""&SUM(" & KolomLetter(cKG) & "6:" & KolomLetter(cMINI) & "6)")
     For ic = cKG To cMINI
         sK = KolomLetter(ic)
         oSheet.getCellByPosition(ic, 5).setFormula( _
