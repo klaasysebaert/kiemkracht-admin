@@ -1377,10 +1377,14 @@ Sub MaakWeekbestand()
             oAfr.getCellByPosition(2, ar).setFormula("=SUM(" & sFG & asr & ":" & sLG & asr & ")")
             oAfr.getCellByPosition(3, ar).setFormula("=B" & asr & "+C" & asr)
             ' detail losse groenten (levende formule, loopt mee met correcties)
+            ' Format per groente: "<naam>: <aantal> × <eenheid> à <prijs> € = <totaal> €"
+            ' De eenheid komt uit Blad2 rij 26 (horizontale eenheid-rij zonder x-prefix).
+            Dim sEenRng As String
+            sEenRng = "Blad2.A$26:" & KolomLetter(nGroenten - 1) & "$26"
             oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
                 "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
                 sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
-                "&"" " & Chr(215) & " ""&" & _
+                "&"" " & Chr(215) & " ""&" & sEenRng & "&"" à ""&" & _
                 "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
                 "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
         End If
