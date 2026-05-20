@@ -1399,7 +1399,7 @@ Sub MaakWeekbestand()
     oAfr.Columns.getByIndex(2).Width = 2600
     oAfr.Columns.getByIndex(3).Width = 2400
     oAfr.Columns.getByIndex(cSamenv).Width = 9000
-    oAfr.getCellRangeByName("V7:V" & iLaatste).IsTextWrapped = True
+    oAfr.getCellRangeByName(KolomLetter(cSamenv) & "7:" & KolomLetter(cSamenv) & iLaatste).IsTextWrapped = True
 
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
