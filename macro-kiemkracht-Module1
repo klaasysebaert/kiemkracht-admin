@@ -731,7 +731,7 @@ Sub MaakWeekbestand()
     oSheet.getCellByPosition(cEGG,    r).setString("EGG")
     oSheet.getCellByPosition(cMINI,   r).setString("MINI")
     oSheet.getCellByPosition(cSamenv, r).setString("samenvatting")
-    oSheet.getCellByPosition(cWaarde, r).setString("€ losse")
+    oSheet.getCellByPosition(cWaarde, r).setString("Losse groenten (waarde)")
     For g = 0 To nGroenten - 1
         oSheet.getCellByPosition(cGroent0 + g, r).setString(groentNaam(g))
     Next g
