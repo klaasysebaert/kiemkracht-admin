@@ -1380,14 +1380,17 @@ Sub MaakWeekbestand()
             oAfr.getCellByPosition(2, ar).setFormula("=SUM(" & sFG & asr & ":" & sLG & asr & ")")
             oAfr.getCellByPosition(3, ar).setFormula("=B" & asr & "+C" & asr)
             ' detail losse groenten (levende formule, loopt mee met correcties)
-            ' Format per groente: "<naam>: <aantal> × <eenheid> à <prijs> € = <totaal> €"
-            ' De eenheid komt uit Blad2 rij 26 (horizontale eenheid-rij zonder x-prefix).
+            ' Format per groente:
+            '   per_stuk    : "<naam>: <aantal> × <eenheid> à <prijs> € = <totaal> €"
+            '   niet per_stuk: "<naam>: <aantal> <eenheid> à <prijs> € = <totaal> €"
+            ' De "× "-prefix zit al in de Blad2-cel voor per_stuk-groenten (zie
+            ' MaakWeekbestand boven), dus we plakken hem hier zonder extra ×.
             Dim sEenRng As String
-            sEenRng = "Blad2.A$26:" & KolomLetter(nGroenten - 1) & "$26"
+            sEenRng = "Blad2.A$100:" & KolomLetter(nGroenten - 1) & "$100"
             oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
                 "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
                 sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
-                "&"" " & Chr(215) & " ""&" & sEenRng & "&"" à ""&" & _
+                "&"" ""&" & sEenRng & "&"" à ""&" & _
                 "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
                 "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
         End If
