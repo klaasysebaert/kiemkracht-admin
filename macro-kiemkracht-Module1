@@ -1277,11 +1277,12 @@ Sub MaakWeekbestand()
             oC.CharHeight    = 10
             oC.IsTextWrapped = True
         Next cIdx
-        oSheet.getCellByPosition(cDatum, rIdx).CellBackColor = clDDDDDD
-        oSheet.getCellByPosition(cKG,    rIdx).CellBackColor = clDDDDDD
-        oSheet.getCellByPosition(cGG,    rIdx).CellBackColor = clDDDDDD
-        oSheet.getCellByPosition(cEGG,   rIdx).CellBackColor = clDDDDDD
-        oSheet.getCellByPosition(cMINI,  rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cDatum,  rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cKG,     rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cGG,     rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cEGG,    rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cMINI,   rIdx).CellBackColor = clDDDDDD
+        oSheet.getCellByPosition(cSamenv, rIdx).CellBackColor = clDDDDDD
         For cIdx = cGroent0 To cAnder
             oSheet.getCellByPosition(cIdx, rIdx).CellBackColor = clGeel
         Next cIdx
