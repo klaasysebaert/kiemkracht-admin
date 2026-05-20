@@ -1918,7 +1918,7 @@ Sub VulWeglatingen()
     Const cGG       = 18  ' kolom S
     Const cEGG      = 19  ' kolom T
     Const cMINI     = 20  ' kolom U
-    Const cWeg0     = 49  ' kolom AX: start weglatingen
+    Const cWeg0     = 50  ' kolom AY: start weglatingen
 
     Dim oDoc     As Object : oDoc = ThisComponent
     Dim oWkSheet As Object : oWkSheet  = oDoc.Sheets.getByIndex(0)
