@@ -1395,23 +1395,6 @@ Sub MaakWeekbestand()
     oAfr.Columns.getByIndex(cSamenv).Width = 9000
     oAfr.getCellRangeByName("V7:V" & iLaatste).IsTextWrapped = True
 
-    ' --- Werkblad "Blad2" ---
-    ' Scratch-tabblad dat VulWeglatingen/LeesUitSheets/SyncMetSheets nodig hebben.
-    If Not oNieuwDoc.Sheets.hasByName("Blad2") Then
-        oNieuwDoc.Sheets.insertNewByName("Blad2", 2)
-    End If
-
-    ' Per-groente metadata voor MaakOverzichten: de bestel-eenheid, met "x "
-    ' vooraan voor per_stuk-groenten (bv. "x 300g"). In Blad2 kolom I (index 8),
-    ' rij = groente-index. Kolommen A-F van Blad2 zijn voor VulWeglatingen; G+
-    ' is vrij. Rij 3 van het hoofdblad bevat de prijs, niet meer de eenheid.
-    Dim oBlad2Meta As Object
-    oBlad2Meta = oNieuwDoc.Sheets.getByName("Blad2")
-    For g = 0 To nGroenten - 1
-        oBlad2Meta.getCellByPosition(8, g).setString( _
-            IIf(groentPerStuk(g), "x ", "") & groentEenh(g))
-    Next g
-
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
     ' --- Opslaan ---
