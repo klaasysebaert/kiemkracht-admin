@@ -777,11 +777,16 @@ Sub MaakWeekbestand()
     nCurW = oFmtsW.queryKey(sCurW, oLocW, False)
     If nCurW = -1 Then nCurW = oFmtsW.addNew(sCurW, oLocW)
 
-    ' Blad2 alvast aanmaken en kolom I (index 8) vullen met de bestel-eenheid per
-    ' groente, met "x " voor per_stuk-groenten (bv. "x 300g"). Deze metadata
-    ' wordt zowel door MaakOverzichten als door de samenvattingsformule in
-    ' kolom V van het hoofdblad gebruikt. Kolommen A-F van Blad2 zijn voor
-    ' VulWeglatingen; G+ is vrij.
+    ' Blad2 alvast aanmaken met metadata-zones voor groente-eenheden.
+    ' Kolommen A-F van Blad2 zijn voor VulWeglatingen; G+ is vrij.
+    ' Kolom I (index 8), rij g (0-indexed) = bestel-eenheid mét "x "-prefix voor
+    '   per_stuk-groenten (bv. "x 300g"). Gebruikt door MaakOverzichten en de
+    '   samenvattingsformule in kolom W van het hoofdblad.
+    ' Rij 25 (index, dus UI rij 26), kolom 0..nGroenten-1 = bestel-eenheid
+    '   ZONDER "x "-prefix (bv. "300g"), horizontaal uitgelijnd op de
+    '   groente-index. Gebruikt door de detail-formule in afrekening kolom W,
+    '   waar het ×-teken al de "per stuk"-betekenis draagt en we de eenheid
+    '   tussen aantal en prijs willen tonen ("4 × 300g à 5,00 €").
     If Not oNieuwDoc.Sheets.hasByName("Blad2") Then
         oNieuwDoc.Sheets.insertNewByName("Blad2", 1)
     End If
@@ -790,6 +795,7 @@ Sub MaakWeekbestand()
     For g = 0 To nGroenten - 1
         oBlad2Meta.getCellByPosition(8, g).setString( _
             IIf(groentPerStuk(g), "x ", "") & groentEenh(g))
+        oBlad2Meta.getCellByPosition(g, 25).setString(groentEenh(g))
     Next g
 
     ' --- Helper functie: pakket tellen ---
