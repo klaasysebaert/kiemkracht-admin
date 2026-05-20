@@ -927,24 +927,24 @@ Sub MaakWeekbestand()
         ' met "x "-prefix voor per_stuk), per actieve weglating "Geen: <naam>"
         ' (naam uit $3 van de wegCol). Hierdoor lopen wijzigingen aan
         ' hoeveelheden of weglatingen meteen mee.
-        Dim asr As Integer
-        asr = r + 1
+        Dim iSamRij As Integer
+        iSamRij = r + 1
         Dim sFmlSv As String
-        sFmlSv = "=A" & asr & "&"" (""&B" & asr & "&""): ""&" & _
-            "IF(" & KolomLetter(cKG) & asr & ">0;""klein"";" & _
-            "IF(" & KolomLetter(cGG) & asr & ">0;""groot"";" & _
-            "IF(" & KolomLetter(cEGG) & asr & ">0;""extra groot"";" & _
-            "IF(" & KolomLetter(cMINI) & asr & ">0;""mini"";""geen pakket""))))"
+        sFmlSv = "=A" & iSamRij & "&"" (""&B" & iSamRij & "&""): ""&" & _
+            "IF(" & KolomLetter(cKG) & iSamRij & ">0;""klein"";" & _
+            "IF(" & KolomLetter(cGG) & iSamRij & ">0;""groot"";" & _
+            "IF(" & KolomLetter(cEGG) & iSamRij & ">0;""extra groot"";" & _
+            "IF(" & KolomLetter(cMINI) & iSamRij & ">0;""mini"";""geen pakket""))))"
         Dim sgCol As String
         For g = 0 To nGroenten - 1
             sgCol = KolomLetter(cGroent0 + g)
-            sFmlSv = sFmlSv & "&IF(" & sgCol & asr & "="""";"""";CHAR(10)&" & _
-                sgCol & "$2&"": ""&" & sgCol & asr & "&"" ""&'Blad2'.I" & (g + 1) & ")"
+            sFmlSv = sFmlSv & "&IF(" & sgCol & iSamRij & "="""";"""";CHAR(10)&" & _
+                sgCol & "$2&"": ""&" & sgCol & iSamRij & "&"" ""&'Blad2'.I" & (g + 1) & ")"
         Next g
         Dim swCol As String
         For w = 0 To nWeg - 1
             swCol = KolomLetter(cWeg0 + w)
-            sFmlSv = sFmlSv & "&IF(" & swCol & asr & "="""";"""";CHAR(10)&""Geen: ""&" & swCol & "$3)"
+            sFmlSv = sFmlSv & "&IF(" & swCol & iSamRij & "="""";"""";CHAR(10)&""Geen: ""&" & swCol & "$3)"
         Next w
         Dim oCelSamenv As Object
         oCelSamenv = oSheet.getCellByPosition(cSamenv, r)
