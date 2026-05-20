@@ -1462,7 +1462,7 @@ Sub MaakEtiketten()
     Const cGG      = 18
     Const cEGG     = 19
     Const cMINI    = 20
-    Const cVolgNr  = 55  ' kolom BD
+    Const cVolgNr  = 15  ' kolom P (klant_id, was vroeger BD)
 
     Dim oDoc     As Object
     Dim oWkSheet As Object
