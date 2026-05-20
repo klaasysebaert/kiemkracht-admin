@@ -988,6 +988,9 @@ Sub MaakWeekbestand()
 
     ' Totaalrij (code rij 3 = spreadsheet rij 4)
     oSheet.getCellByPosition(cDatum, 3).setString("Totaal")
+    oSheet.getCellByPosition(cNaam, 3).setString("Totaal W" & iWeek)
+    oSheet.getCellByPosition(cNaam, 4).setString(sDatDo)
+    oSheet.getCellByPosition(cNaam, 5).setString(sDatVr)
     For ic = cKG To cMINI
         sK = KolomLetter(ic)
         oSheet.getCellByPosition(ic, 3).setFormula( _
