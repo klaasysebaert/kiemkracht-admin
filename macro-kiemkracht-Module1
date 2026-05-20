@@ -939,7 +939,7 @@ Sub MaakWeekbestand()
         For g = 0 To nGroenten - 1
             sgCol = KolomLetter(cGroent0 + g)
             sFmlSv = sFmlSv & "&IF(" & sgCol & iSamRij & "="""";"""";CHAR(10)&" & _
-                sgCol & "$2&"": ""&" & sgCol & iSamRij & "&"" ""&'Blad2'.I" & (g + 1) & ")"
+                sgCol & "$2&"": ""&" & sgCol & iSamRij & "&"" ""&Blad2.I" & (g + 1) & ")"
         Next g
         Dim swCol As String
         For w = 0 To nWeg - 1
