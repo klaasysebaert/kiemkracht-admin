@@ -776,6 +776,21 @@ Sub MaakWeekbestand()
     nCurW = oFmtsW.queryKey(sCurW, oLocW, False)
     If nCurW = -1 Then nCurW = oFmtsW.addNew(sCurW, oLocW)
 
+    ' Blad2 alvast aanmaken en kolom I (index 8) vullen met de bestel-eenheid per
+    ' groente, met "x " voor per_stuk-groenten (bv. "x 300g"). Deze metadata
+    ' wordt zowel door MaakOverzichten als door de samenvattingsformule in
+    ' kolom V van het hoofdblad gebruikt. Kolommen A-F van Blad2 zijn voor
+    ' VulWeglatingen; G+ is vrij.
+    If Not oNieuwDoc.Sheets.hasByName("Blad2") Then
+        oNieuwDoc.Sheets.insertNewByName("Blad2", 1)
+    End If
+    Dim oBlad2Meta As Object
+    oBlad2Meta = oNieuwDoc.Sheets.getByName("Blad2")
+    For g = 0 To nGroenten - 1
+        oBlad2Meta.getCellByPosition(8, g).setString( _
+            IIf(groentPerStuk(g), "x ", "") & groentEenh(g))
+    Next g
+
     ' --- Helper functie: pakket tellen ---
     ' Tel aantallen per pakkettype voor een reeks bestellingen (van index iVan tot iTot-1)
     ' Geeft terug in array: (0)=KG (1)=GG (2)=EGG (3)=MINI
