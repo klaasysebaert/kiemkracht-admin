@@ -921,32 +921,36 @@ Sub MaakWeekbestand()
             oCelGeen.IsTextWrapped = True
         End If
 
-        ' Samenvatting
-        Dim sPakketKort As String
-        Select Case LCase(bPakket(b))
-            Case "klein pakket"       : sPakketKort = "klein"
-            Case "groot pakket"       : sPakketKort = "groot"
-            Case "extra groot pakket" : sPakketKort = "extra groot"
-            Case "mini pakket"        : sPakketKort = "mini"
-            Case Else                 : sPakketKort = "geen pakket"
-        End Select
-        Dim sSamenv As String
-        sSamenv = bVoor(b) & " " & bFam(b) & " (" & bAfh(b) & "): " & sPakketKort
+        ' Samenvatting als levende formule (kolom V): trekt naam+afhaalpunt+
+        ' pakketformaat live uit dezelfde rij, per groente met aantal>0 een
+        ' regel "naam: aantal eenheid" (groentenaam uit $2, eenheid uit Blad2.I
+        ' met "x "-prefix voor per_stuk), per actieve weglating "Geen: <naam>"
+        ' (naam uit $3 van de wegCol). Hierdoor lopen wijzigingen aan
+        ' hoeveelheden of weglatingen meteen mee.
+        Dim asr As Integer
+        asr = r + 1
+        Dim sFmlSv As String
+        sFmlSv = "=A" & asr & "&"" (""&B" & asr & "&""): ""&" & _
+            "IF(" & KolomLetter(cKG) & asr & ">0;""klein"";" & _
+            "IF(" & KolomLetter(cGG) & asr & ">0;""groot"";" & _
+            "IF(" & KolomLetter(cEGG) & asr & ">0;""extra groot"";" & _
+            "IF(" & KolomLetter(cMINI) & asr & ">0;""mini"";""geen pakket""))))"
+        Dim sgCol As String
         For g = 0 To nGroenten - 1
-            If bGroent(b, g) > 0 Then
-                sSamenv = sSamenv & Chr(10) & groentNaam(g) & ": " & bGroent(b, g) & IIf(groentPerStuk(g), " x ", " ") & groentEenh(g)
-            End If
+            sgCol = KolomLetter(cGroent0 + g)
+            sFmlSv = sFmlSv & "&IF(" & sgCol & asr & "="""";"""";CHAR(10)&" & _
+                sgCol & "$2&"": ""&" & sgCol & asr & "&"" ""&'Blad2'.I" & (g + 1) & ")"
         Next g
+        Dim swCol As String
         For w = 0 To nWeg - 1
-            If bWeg(b, w) Then
-                sSamenv = sSamenv & Chr(10) & "Geen: " & wegNaam(w)
-            End If
+            swCol = KolomLetter(cWeg0 + w)
+            sFmlSv = sFmlSv & "&IF(" & swCol & asr & "="""";"""";CHAR(10)&""Geen: ""&" & swCol & "$3)"
         Next w
         Dim oCelSamenv As Object
         oCelSamenv = oSheet.getCellByPosition(cSamenv, r)
-        oCelSamenv.setString(sSamenv)
+        oCelSamenv.setFormula(sFmlSv)
         oCelSamenv.IsTextWrapped = True
-        bSamenv(b) = sSamenv
+        bSamenv(b) = ""
 
         ' € losse: formule naar afrekening.C<rij> (totaal losse groenten per klant)
         Dim oCelWa As Object
