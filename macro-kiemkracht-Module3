@@ -1690,9 +1690,9 @@ Sub MaakEtikettenBijbestelling()
     Const cGG         = 18
     Const cEGG        = 19
     Const cMINI       = 20
-    Const cWaarde     = 22  ' kolom W: € losse groenten — filterveld
-    Const cGroent0    = 23  ' kolom X: eerste losse groente
-    Const cGroentLast = 47  ' kolom AV: laatste losse groente
+    Const cWaarde     = 23  ' kolom X: € losse groenten — filterveld
+    Const cGroent0    = 24  ' kolom Y: eerste losse groente
+    Const cGroentLast = 48  ' kolom AW: laatste losse groente
     Const cVolgNr     = 15  ' kolom P (klant_id, was vroeger BD)
     Const cMinBedrag  = 5   ' drempel: enkel etiket als € losse > 5
 
