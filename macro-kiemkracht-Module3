@@ -1543,7 +1543,7 @@ Sub MaakEtiketten()
 
     ' Gesorteerde uitvoerindex opbouwen: per afhaalpunt (weekbestandvolgorde),
     ' binnen afhaalpunt op pakketorde (1=Klein, 2=Groot, 3=EGG, 4=Mini),
-    ' binnen pakket op volgnummer (kolom BD, oplopend)
+    ' binnen pakket op klant_id (kolom P, oplopend)
     Dim aIdx(500)  As Integer
     Dim nIdx       As Integer
     Dim p          As Integer
