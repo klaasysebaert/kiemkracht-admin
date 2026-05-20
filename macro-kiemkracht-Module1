@@ -457,7 +457,8 @@ Sub MaakWeekbestand()
         "COALESCE(k.id::text,'') AS klant_id, " & _
         "COALESCE(k.type,'') AS type, " & _
         "COALESCE(bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
-        "COALESCE(bap.id_intern, 9999) AS id_intern_sort " & _
+        "COALESCE(bap.id_intern, 9999) AS id_intern_sort, " & _
+        "COALESCE(k.id, 999999) AS klant_id_sort " & _
         "FROM bestellingen b " & _
         "LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL AND k.email1 = b.klant_email)) " & _
         "LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt " & _
@@ -475,7 +476,8 @@ Sub MaakWeekbestand()
         "COALESCE(k.klant_type,''), k.formaat, COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
         "COALESCE(k.type,''), " & _
         "COALESCE(ap.dag_klaarmaken,''), " & _
-        "COALESCE(ap.id_intern, 9999) " & _
+        "COALESCE(ap.id_intern, 9999), " & _
+        "COALESCE(k.id, 999999) " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
         "WHERE " & sPareFilter & _
@@ -486,7 +488,7 @@ Sub MaakWeekbestand()
         " AND NOT EXISTS (" & _
         "SELECT 1 FROM annulaties ann WHERE ann.klant_email = k.email1 AND ann.jaar = " & iJaar & _
         " AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & ") " & _
-        " ORDER BY leverdag ASC, id_intern_sort ASC, familienaam ASC, voornaam ASC")
+        " ORDER BY leverdag ASC, id_intern_sort ASC, klant_id_sort ASC, familienaam ASC, voornaam ASC")
 
     ' Bestellingen in arrays
     Dim bId(500)      As Long
