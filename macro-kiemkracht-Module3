@@ -1736,8 +1736,8 @@ Sub MaakEtikettenBijbestelling()
         Next g
         If Not bHasG Then GoTo VolgendeRijBij
 
-        ' Enkel etiket als kolom BE > 5
-        If oWkSheet.getCellByPosition(cBestelMin, i).getValue() <= 5 Then GoTo VolgendeRijBij
+        ' Enkel etiket als € losse groenten (kolom W) > drempel
+        If oWkSheet.getCellByPosition(cWaarde, i).getValue() <= cMinBedrag Then GoTo VolgendeRijBij
 
         ' Pakketorde voor sortering
         If      oWkSheet.getCellByPosition(cKG,   i).getValue() > 0 Then : iPakOrd = 1
