@@ -1014,14 +1014,14 @@ Sub MaakWeekbestand()
         "=COUNTIFS(" & sW45Basis & ";" & _
         "$" & KolomLetter(cKlaarDag) & "$7:$" & KolomLetter(cKlaarDag) & "$" & iLaatste & ";""vrijdag"")")
 
-    ' Layout Q4-Q6 + W4-W6: grijze achtergrond, horizontaal + verticaal centreren.
+    ' Centrering voor Q4-Q6 + W4-W6 (achtergrond komt verderop in de rij 3-5
+    ' opmaaksectie, na de clDDDDDD-definitie).
     Dim iQRij As Integer
     For iQRij = 3 To 5
         oSheet.getCellByPosition(cDatum,  iQRij).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
         oSheet.getCellByPosition(cDatum,  iQRij).VertJustify = com.sun.star.table.CellVertJustify2.CENTER
-        oSheet.getCellByPosition(cSamenv, iQRij).CellBackColor = clDDDDDD
-        oSheet.getCellByPosition(cSamenv, iQRij).HoriJustify   = com.sun.star.table.CellHoriJustify.CENTER
-        oSheet.getCellByPosition(cSamenv, iQRij).VertJustify   = com.sun.star.table.CellVertJustify2.CENTER
+        oSheet.getCellByPosition(cSamenv, iQRij).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
+        oSheet.getCellByPosition(cSamenv, iQRij).VertJustify = com.sun.star.table.CellVertJustify2.CENTER
     Next iQRij
     For ic = cKG To cMINI
         sK = KolomLetter(ic)
