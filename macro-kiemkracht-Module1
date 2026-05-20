@@ -1034,9 +1034,6 @@ Sub MaakWeekbestand()
                        KolomLetter(cWaarde) & "7:" & KolomLetter(cWaarde) & iLaatste & ";"">0"")&"" LOSSE BESTELLINGEN""")
 
     ' Donderdagrij (code rij 4 = spreadsheet rij 5) — SUMIF op kolom C (dag_klaarmaken)
-    ' Q5: datumlabel gevolgd door het pakkettotaal van die dag (som van R5:U5).
-    oSheet.getCellByPosition(cDatum, 4).setFormula( _
-        "=""" & sDatDo & ": ""&SUM(" & KolomLetter(cKG) & "5:" & KolomLetter(cMINI) & "5)")
     For ic = cKG To cMINI
         sK = KolomLetter(ic)
         oSheet.getCellByPosition(ic, 4).setFormula( _
