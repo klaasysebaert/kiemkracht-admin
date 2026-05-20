@@ -931,6 +931,12 @@ Sub MaakWeekbestand()
         oCelSamenv.IsTextWrapped = True
         bSamenv(b) = sSamenv
 
+        ' € losse: formule naar afrekening.C<rij> (totaal losse groenten per klant)
+        Dim oCelWa As Object
+        oCelWa = oSheet.getCellByPosition(cWaarde, r)
+        oCelWa.setFormula("=afrekening.C" & (r + 1))
+        oCelWa.NumberFormat = nCurW
+
         r = r + 1
     Next b
 
