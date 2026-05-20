@@ -1281,6 +1281,11 @@ Sub MaakWeekbestand()
     oSheet.getCellByPosition(cSamenv, 2).HoriJustify   = com.sun.star.table.CellHoriJustify.CENTER
     oSheet.getCellByPosition(cSamenv, 2).VertJustify   = com.sun.star.table.CellVertJustify2.CENTER
 
+    ' B3/C3 ("PAKKETTEN" / "LOS"): tekst onderaan rij 2 zodat ze visueel vlak
+    ' boven B4/C4 staan (override van de algemene rij 2 VertJustify=TOP).
+    oSheet.getCellByPosition(cAfh,      2).VertJustify = com.sun.star.table.CellVertJustify2.BOTTOM
+    oSheet.getCellByPosition(cKlaarDag, 2).VertJustify = com.sun.star.table.CellVertJustify2.BOTTOM
+
     ' --- RIJEN 3-5: totaal/donderdag/vrijdag (#DDDDDD, vet) ---
     For rIdx = 3 To 5
         For cIdx = 0 To cWeg0 + nWeg - 1
