@@ -987,6 +987,11 @@ Sub MaakWeekbestand()
         oSheet.getCellByPosition(ic, 4).setFormula( _
             "=SUMIF($C$7:$C$" & iLaatste & ";""donderdag"";" & sK & "7:" & sK & iLaatste & ")")
     Next ic
+    ' € losse — donderdag
+    sK = KolomLetter(cWaarde)
+    oSheet.getCellByPosition(cWaarde, 4).setFormula( _
+        "=SUMIF($C$7:$C$" & iLaatste & ";""donderdag"";" & sK & "7:" & sK & iLaatste & ")")
+    oSheet.getCellByPosition(cWaarde, 4).NumberFormat = nCurW
     For ic = cGroent0 To cGroent0 + nGroentSlots - 1
         sK = KolomLetter(ic)
         oSheet.getCellByPosition(ic, 4).setFormula( _
@@ -1002,6 +1007,11 @@ Sub MaakWeekbestand()
         oSheet.getCellByPosition(ic, 5).setFormula( _
             "=SUMIF($C$7:$C$" & iLaatste & ";""vrijdag"";" & sK & "7:" & sK & iLaatste & ")")
     Next ic
+    ' € losse — vrijdag
+    sK = KolomLetter(cWaarde)
+    oSheet.getCellByPosition(cWaarde, 5).setFormula( _
+        "=SUMIF($C$7:$C$" & iLaatste & ";""vrijdag"";" & sK & "7:" & sK & iLaatste & ")")
+    oSheet.getCellByPosition(cWaarde, 5).NumberFormat = nCurW
     For ic = cGroent0 To cGroent0 + nGroentSlots - 1
         sK = KolomLetter(ic)
         oSheet.getCellByPosition(ic, 5).setFormula( _
