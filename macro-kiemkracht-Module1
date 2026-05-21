@@ -1710,6 +1710,8 @@ Sub SchrijfWijzigingenTerug()
     Dim aKIdx(2000)      As Integer
     Dim nGewijzigd As Integer : nGewijzigd = 0
     Dim nTotaal    As Integer : nTotaal    = 0
+    Dim sProblemen As String  : sProblemen = ""
+    Dim nProblemen As Integer : nProblemen = 0
     Dim r As Integer : r = 1
 
     Do While oKB.getCellByPosition(2, r).getValue() <> 0
@@ -1734,8 +1736,34 @@ Sub SchrijfWijzigingenTerug()
         aKIdx(r)      = kIdx
         If bWijz Then nGewijzigd = nGewijzigd + 1
         nTotaal = nTotaal + 1
+
+        ' Validatie: een gewijzigde abonnee mag geen leeg formaat hebben — anders
+        ' krijgt de klant in het weekbestand geen pakket en toont de landings-
+        ' pagina-melding 'klein' bij gebrek aan beter. Liever menselijk laten
+        ' kiezen dan stilletjes default zetten.
+        If bWijz Then
+            Dim sValType_p As String : sValType_p = LCase(Trim(oKB.getCellByPosition(KBKolom(5), r).getString()))
+            Dim sValFmt_p  As String : sValFmt_p  = Trim(oKB.getCellByPosition(KBKolom(6), r).getString())
+            If (sValType_p = "abonnee" Or Left(sValType_p, 8) = "abonnee-") And sValFmt_p = "" Then
+                Dim sValNm_p As String
+                sValNm_p = Trim(oKB.getCellByPosition(KBKolom(0), r).getString()) & " " & _
+                           Trim(oKB.getCellByPosition(KBKolom(1), r).getString())
+                sProblemen = sProblemen & Chr(10) & "  rij " & (r + 1) & ": " & sValNm_p & _
+                             " (id " & nID & ", type " & sValType_p & ")"
+                nProblemen = nProblemen + 1
+            End If
+        End If
+
         r = r + 1
     Loop
+
+    ' Blokkeer als er gewijzigde abonnees zijn zonder formaat
+    If nProblemen > 0 Then
+        MsgBox nProblemen & " gewijzigde abonnee(s) zonder formaat:" & Chr(10) & sProblemen & Chr(10) & Chr(10) & _
+               "Vul de kolom 'formaat' aan met 'klein', 'groot', 'extra-groot' of 'mini' en start de macro opnieuw.", _
+               16, "Validatiefout"
+        Exit Sub
+    End If
 
     ' === Popup 2: exacte wijzigingstelling ===
     nAntw = MsgBox( _
