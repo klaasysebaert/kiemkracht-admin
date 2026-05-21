@@ -1939,6 +1939,18 @@ Sub VoegNieuweKlantToe()
         MsgBox "Type is verplicht (G20): bv. 'abonnee', 'weekperweek', 'stop-definitief'.", 16, "Validatiefout"
         Exit Sub
     End If
+    ' Formaat verplicht voor abonnees: anders krijgt de klant in het weekbestand
+    ' geen pakket toegewezen ('CASE k.formaat WHEN ... ELSE ""' in MaakWeekbestand)
+    ' en toont haar landingspagina-melding 'klein' bij gebrek aan beter (fallback
+    ' op de frontend). Liever menselijk laten kiezen dan stilletjes default zetten.
+    Dim sTypeLC As String : sTypeLC = LCase(sType)
+    Dim bIsAbonnee As Boolean
+    bIsAbonnee = (sTypeLC = "abonnee" Or Left(sTypeLC, 8) = "abonnee-")
+    If bIsAbonnee And sFormaat = "" Then
+        MsgBox "Formaat is verplicht voor een abonnee (G21):" & Chr(10) & _
+               "kies 'klein', 'groot', 'extra-groot' of 'mini'.", 16, "Validatiefout"
+        Exit Sub
+    End If
     If sAanspreking = "" Then sAanspreking = "jouw"
     If sKlantType   = "" Then sKlantType   = "particulier"
 
