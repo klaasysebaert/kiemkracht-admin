@@ -2601,6 +2601,9 @@ Sub VerwerkStopStart()
     If nStart > 0 Then
         sKlaar = sKlaar & Chr(10) & nStart & " klant(en) op een toekomst-abonneetype gezet."
     End If
+    If bStuurMails Then
+        sKlaar = sKlaar & Chr(10) & Chr(10) & "Bevestigingsmails: " & nMailOk & " ok, " & nMailFout & " fout."
+    End If
     MsgBox sKlaar, 64, "Klaar"
     Exit Sub
 
