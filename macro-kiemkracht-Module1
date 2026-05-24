@@ -449,7 +449,26 @@ Sub MaakWeekbestand()
         sPareFilter = "k.type IN ('abonnee', 'abonnee-onpare-week')"
     End If
     oStmt = oConn.createStatement()
+    ' CTE vb_week: vooruitbestellingen voor deze week met naam→sleutel-mapping
+    ' van het formaat-veld (DB slaat de pakketnaam op, bv. 'Groot pakket').
+    ' Wordt in TAK 2 gebruikt als formaat-override op klant.formaat, en in
+    ' TAK 3 (NIEUW) om weekperweek-/toekomst-klanten met een vooruitbestelling
+    ' voor deze week alsnog op te nemen in het weekbestand zonder dat de
+    ' klant via de bevestigingsmail expliciet hoeft te klikken.
     oRS = oStmt.executeQuery( _
+        "WITH vb_week AS (" & _
+        "  SELECT klant_id, LOWER(klant_email) AS email_l, " & _
+        "    CASE LOWER(TRIM(REPLACE(formaat, ' pakket', ''))) " & _
+        "      WHEN 'klein'       THEN 'klein' " & _
+        "      WHEN 'groot'       THEN 'groot' " & _
+        "      WHEN 'extra groot' THEN 'extra-groot' " & _
+        "      WHEN 'extra-groot' THEN 'extra-groot' " & _
+        "      WHEN 'mini'        THEN 'mini' " & _
+        "    END AS sleutel " & _
+        "  FROM vooruitbestellingen " & _
+        "  WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek & _
+        "    AND formaat IS NOT NULL" & _
+        ") " & _
         "SELECT b.id, b.voornaam, b.familienaam, b.klant_email, " & _
         "b.afhaalpunt, b.leverdag, b.pakket, b.pakket_inhoud, " & _
         "b.abonnement_wijziging, b.vragen_opmerkingen, " & _
@@ -470,18 +489,20 @@ Sub MaakWeekbestand()
         " UNION ALL " & _
         "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
         "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
-        "CASE k.formaat WHEN 'klein' THEN 'klein pakket' " & _
-        "WHEN 'groot' THEN 'groot pakket' " & _
-        "WHEN 'extra-groot' THEN 'extra groot pakket' " & _
-        "WHEN 'mini' THEN 'mini pakket' ELSE '' END, " & _
+        "CASE COALESCE(vb.sleutel, k.formaat) " & _
+        "  WHEN 'klein'       THEN 'klein pakket' " & _
+        "  WHEN 'groot'       THEN 'groot pakket' " & _
+        "  WHEN 'extra-groot' THEN 'extra groot pakket' " & _
+        "  WHEN 'mini'        THEN 'mini pakket' ELSE '' END, " & _
         "'', '', '', " & _
-        "COALESCE(k.klant_type,''), k.formaat, COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
+        "COALESCE(k.klant_type,''), COALESCE(vb.sleutel, k.formaat), COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
         "COALESCE(k.type,''), " & _
         "COALESCE(ap.dag_klaarmaken,''), " & _
         "COALESCE(ap.id_intern, 9999), " & _
         "COALESCE(k.id, 999999) " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+        "LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
         "WHERE " & sPareFilter & _
         " AND k.email1 NOT IN (" & _
         "SELECT klant_email FROM bestellingen WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & ") " & _
@@ -490,6 +511,30 @@ Sub MaakWeekbestand()
         " AND NOT EXISTS (" & _
         "SELECT 1 FROM annulaties ann WHERE ann.klant_email = k.email1 AND ann.jaar = " & iJaar & _
         " AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & ") " & _
+        " UNION ALL " & _
+        "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
+        "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
+        "CASE vb.sleutel " & _
+        "  WHEN 'klein'       THEN 'klein pakket' " & _
+        "  WHEN 'groot'       THEN 'groot pakket' " & _
+        "  WHEN 'extra-groot' THEN 'extra groot pakket' " & _
+        "  WHEN 'mini'        THEN 'mini pakket' ELSE '' END, " & _
+        "'', '', '', " & _
+        "COALESCE(k.klant_type,''), vb.sleutel, COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
+        "COALESCE(k.type,''), " & _
+        "COALESCE(ap.dag_klaarmaken,''), " & _
+        "COALESCE(ap.id_intern, 9999), " & _
+        "COALESCE(k.id, 999999) " & _
+        "FROM klanten k " & _
+        "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+        "INNER JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
+        "WHERE k.type IN ('weekperweek','weekperweek-pare-week','weekperweek-onpare-week'," & _
+        "                  'abonnee-toekomst','abonnee-pare-week-toekomst','abonnee-onpare-week-toekomst') " & _
+        " AND k.email1 NOT IN (" & _
+        "SELECT klant_email FROM bestellingen WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & ") " & _
+        " AND k.email1 NOT IN (" & _
+        "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
+        " AND vb.sleutel IS NOT NULL " & _
         " ORDER BY leverdag ASC, id_intern_sort ASC, klant_id_sort ASC, familienaam ASC, voornaam ASC")
 
     ' Bestellingen in arrays
