@@ -2723,12 +2723,20 @@ Sub VerwerkStopStart()
     If bStuurMails Then
         Dim m As Integer
         For m = 0 To nMail - 1
-            If VerstuurAnnulatieMail(mEmail(m), mVoor(m), mWeek(m), mJaar(m), _
-                                     mDatum(m), mWeekStop(m), mKlantId(m)) Then
-                nMailOk = nMailOk + 1
-            Else
-                nMailFout = nMailFout + 1
-            End If
+            Dim bOk As Boolean : bOk = False
+            Select Case mType(m)
+                Case "annulatie", "stopzetting"
+                    Dim iWeekStop As Integer
+                    If mType(m) = "stopzetting" Then iWeekStop = mWeek(m) Else iWeekStop = 0
+                    bOk = VerstuurAnnulatieMail(mEmail(m), mVoor(m), mWeek(m), mJaar(m), _
+                                                mDatum(m), iWeekStop, mKlantId(m))
+                Case "vooruitbestelling", "abonnementsstart"
+                    Dim iWeekStart As Integer
+                    If mType(m) = "abonnementsstart" Then iWeekStart = mWeek(m) Else iWeekStart = 0
+                    bOk = VerstuurVooruitbestellingMail(mEmail(m), mVoor(m), mWeek(m), mJaar(m), _
+                                                        mDatum(m), iWeekStart, mKlantId(m), mFormaat(m))
+            End Select
+            If bOk Then nMailOk = nMailOk + 1 Else nMailFout = nMailFout + 1
         Next m
     End If
 
