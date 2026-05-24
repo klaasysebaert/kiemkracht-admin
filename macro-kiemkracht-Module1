@@ -2354,6 +2354,16 @@ Sub VerwerkStopStart()
     Dim nItem As Integer : nItem = 0
     Dim nAnn As Integer, nStopz As Integer, nVb As Integer, nStart As Integer, nDup As Integer
 
+    ' Mail-eligible records: parallel aan de annulatie- en stopzetting-INSERTs.
+    ' Worden later (optioneel, na bevestigingsdialoog) als HTTP-POST verstuurd.
+    Dim mEmail(MAX_ITEM)    As String
+    Dim mVoor(MAX_ITEM)     As String
+    Dim mWeek(MAX_ITEM)     As Integer
+    Dim mWeekStop(MAX_ITEM) As Integer   ' 0 = gewone annulatie, >0 = stopzetting
+    Dim mDatum(MAX_ITEM)    As String    ' YYYY-MM-DD
+    Dim mJaar(MAX_ITEM)     As Integer
+    Dim nMail As Integer : nMail = 0
+
     Dim i As Integer, k As Integer, kIdx As Integer
     Dim aW() As String, wi As Integer, w As Integer
     Dim dDo As Date, iJaar As Integer
