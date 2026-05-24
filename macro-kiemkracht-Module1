@@ -2415,6 +2415,7 @@ Sub VerwerkStopStart()
                     If klMail(kIdx) <> "" Then
                         mEmail(nMail)    = klMail(kIdx)
                         mVoor(nMail)     = klVn(kIdx)
+                        mKlantId(nMail)  = riKlant(i)
                         mWeek(nMail)     = w
                         mWeekStop(nMail) = 0
                         mDatum(nMail)    = sDatum
