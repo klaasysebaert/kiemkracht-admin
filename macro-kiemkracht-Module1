@@ -2629,7 +2629,8 @@ End Sub
 ' =============================================
 Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, _
                                 iWeek As Integer, iJaar As Integer, _
-                                sDatum As String, iWeekStop As Integer) As Boolean
+                                sDatum As String, iWeekStop As Integer, _
+                                iKlantId As Long) As Boolean
     Dim sUrl As String
     If BepaalOmgeving() = "dev" Then
         sUrl = "https://bestel.dev.kiemkracht.be/postgres-proxy.php?actie=annulatie_bevestiging_mail"
@@ -2641,6 +2642,7 @@ Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, _
     sJson = "{""Sleutel"":""Kiemkracht2026BestelFormulierSleutel""," & _
             """KlantEmail"":""" & JsonEsc(sEmail) & """," & _
             """Voornaam"":""" & JsonEsc(sVoornaam) & """," & _
+            """KlantID"":" & iKlantId & "," & _
             """WeekAnnulatie"":" & iWeek & "," & _
             """Datum"":""" & sDatum & """," & _
             """Jaar"":" & iJaar
