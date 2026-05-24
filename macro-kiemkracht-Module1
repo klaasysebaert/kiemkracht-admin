@@ -2540,6 +2540,24 @@ Sub VerwerkStopStart()
         Exit Sub
     End If
 
+    ' Tweede vraag: bevestigingsmails versturen? Enkel als er kandidaten zijn.
+    Dim bStuurMails As Boolean : bStuurMails = False
+    If nMail > 0 Then
+        Dim sUrl As String
+        If BepaalOmgeving() = "dev" Then
+            sUrl = "https://bestel.dev.kiemkracht.be"
+        Else
+            sUrl = "https://bestel.kiemkracht.be"
+        End If
+        Dim sMailVraag As String
+        sMailVraag = "Wil je ook " & nMail & " bevestigingsmail(s) versturen?" & Chr(10) & _
+                     "(annulaties + stopzettingen — klanten zonder email1 zijn overgeslagen)" & Chr(10) & Chr(10) & _
+                     "Doelomgeving: " & sUrl & Chr(10) & Chr(10) & _
+                     "Ja = inserts + mails" & Chr(10) & _
+                     "Nee = enkel inserts, geen mails"
+        If MsgBox(sMailVraag, 36, "VerwerkStopStart") = 6 Then bStuurMails = True
+    End If
+
     ' === Fase 5: uitvoeren ===
     On Error GoTo UitvoerFout
     oStmt = oConn.createStatement()
@@ -2550,6 +2568,21 @@ Sub VerwerkStopStart()
     oStmt.close()
     oConn.close()
     On Error GoTo 0
+
+    ' === Fase 5b: mails versturen (na succesvolle inserts) ===
+    Dim nMailOk As Integer : nMailOk = 0
+    Dim nMailFout As Integer : nMailFout = 0
+    If bStuurMails Then
+        Dim m As Integer
+        For m = 0 To nMail - 1
+            If VerstuurAnnulatieMail(mEmail(m), mVoor(m), mWeek(m), mJaar(m), _
+                                     mDatum(m), mWeekStop(m)) Then
+                nMailOk = nMailOk + 1
+            Else
+                nMailFout = nMailFout + 1
+            End If
+        Next m
+    End If
 
     ' Verwerkte invoercellen leegmaken
     For i = 0 To nRij - 1
