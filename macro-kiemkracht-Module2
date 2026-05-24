@@ -293,18 +293,19 @@ Sub BereidMailmergeVoor()
         Dim sMailtype  As String
         Dim sPakketURL As String
 
-        If sType = "weekperweek" Or sType = "weekperweek-pare-week" Or sType = "weekperweek-onpare-week" _
+        If bVooruitBesteld Then
+            ' Elke vooruitbestelling (zowel weekperweek als abonnee in off-
+            ' pariteit) wordt als 'bevestiging'-mail verstuurd met pakket+
+            ' formaat in de URL — klant heeft expliciet voor deze week gekozen.
+            sMailtype  = "bevestiging"
+            sPakketURL = sFormaat
+        ElseIf sType = "weekperweek" Or sType = "weekperweek-pare-week" Or sType = "weekperweek-onpare-week" _
            Or sType = "abonnee-toekomst" Or sType = "abonnee-pare-week-toekomst" _
            Or sType = "abonnee-onpare-week-toekomst" Then
-            If bVooruitBesteld Then
-                sMailtype  = "bevestiging"
-                sPakketURL = sFormaat   ' pakket WEL in URL
-            Else
-                sMailtype  = "uitnodiging-los"
-                sPakketURL = ""         ' pakket NIET in URL
-            End If
+            sMailtype  = "uitnodiging-los"
+            sPakketURL = ""             ' pakket NIET in URL
         Else
-            ' Abonnee-types: controleer of er een annulatie is voor deze week
+            ' Abonnee-types zonder vooruitbestelling: controleer annulatie
             Dim bGeannuleerd As Boolean
             bGeannuleerd = False
             Dim a As Integer
