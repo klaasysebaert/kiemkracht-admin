@@ -2524,7 +2524,8 @@ Sub VerwerkStopStart()
                         mVoor(nMail)     = klVn(kIdx)
                         mKlantId(nMail)  = riKlant(i)
                         mWeek(nMail)     = w
-                        mWeekStop(nMail) = 0
+                        mType(nMail)     = "annulatie"
+                        mFormaat(nMail)  = ""
                         mDatum(nMail)    = sDatum
                         mJaar(nMail)     = iJaar
                         nMail = nMail + 1
