@@ -2353,8 +2353,8 @@ Sub VerwerkStopStart()
                 MsgBox "Rij " & (r + 1) & ", kolom Q (annulaties): " & sFout, 16, "Fout"
                 Exit Sub
             End If
-            Dim sVbCsv    As String : sVbCsv    = ParseerWeken(sVb, False, sFout)
-            If sFout <> "" Then
+            Dim sVbCsv As String, sVbFmtCsv As String
+            If Not ParseerWekenMetFormaat(sVb, sVbCsv, sVbFmtCsv, sFout) Then
                 MsgBox "Rij " & (r + 1) & ", kolom S (vooruitbestellingen): " & sFout, 16, "Fout"
                 Exit Sub
             End If
