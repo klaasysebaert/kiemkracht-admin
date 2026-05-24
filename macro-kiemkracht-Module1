@@ -91,7 +91,7 @@ Sub LaadAlleTabellen()
     Dim row          As Integer
 
     ' Tabellen om in te laden
-    Dim tabellen(10)  As String
+    Dim tabellen(11)  As String
     tabellen(0)  = "afhaalpunten"
     tabellen(1)  = "annulaties"
     tabellen(2)  = "bestelling_weglatingen"
@@ -103,6 +103,7 @@ Sub LaadAlleTabellen()
     tabellen(8)  = "pakketten"
     tabellen(9)  = "vooruitbestellingen"
     tabellen(10) = "bestelling_overzicht"
+    tabellen(11) = "verzonden_mails"
 
     ' Actief kiemkracht-data-bestand bepalen (prod of dev volgt dit bestand)
     oDoc = HuidigDataDocument()
