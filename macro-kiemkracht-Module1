@@ -2699,7 +2699,7 @@ Sub VerwerkStopStart()
         Dim sMailWoord As String
         If nMail = 1 Then sMailWoord = "1 bevestigingsmail" Else sMailWoord = nMail & " bevestigingsmails"
         sMailVraag = "Wil je ook " & sMailWoord & " versturen?" & Chr(10) & _
-                     "(annulaties + stopzettingen — klanten zonder email1 zijn overgeslagen)" & Chr(10) & Chr(10) & _
+                     "(annulaties + stopzettingen + vooruitbestellingen + abonnementsstarts — klanten zonder email1 zijn overgeslagen)" & Chr(10) & Chr(10) & _
                      "Doelomgeving: " & sUrl & Chr(10) & Chr(10) & _
                      "Ja = inserts + mails" & Chr(10) & _
                      "Nee = enkel inserts, geen mails"
