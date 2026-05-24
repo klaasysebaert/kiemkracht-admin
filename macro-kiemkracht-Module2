@@ -474,7 +474,8 @@ Sub BereidKoffieMailmergeVoor()
     oRS = oStmt.executeQuery( _
         "SELECT k.voornaam, k.familienaam, k.email1, k.type, " & _
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
-        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,'') " & _
+        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
+        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,'') " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "WHERE k.type NOT IN ('stop-tijdelijk', 'stop-definitief') " & _
@@ -490,6 +491,8 @@ Sub BereidKoffieMailmergeVoor()
     Dim kEmail2(1000) As String
     Dim kEmail3(1000) As String
     Dim kEmail4(1000) As String
+    Dim kVoor2(1000)  As String
+    Dim kFam2(1000)   As String
     Dim nKlanten      As Integer
     nKlanten = 0
 
@@ -503,6 +506,8 @@ Sub BereidKoffieMailmergeVoor()
         kEmail2(nKlanten) = oRS.getString(7)
         kEmail3(nKlanten) = oRS.getString(8)
         kEmail4(nKlanten) = oRS.getString(9)
+        kVoor2(nKlanten)  = oRS.getString(10)
+        kFam2(nKlanten)   = oRS.getString(11)
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
