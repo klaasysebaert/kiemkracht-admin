@@ -2358,6 +2358,7 @@ Sub VerwerkStopStart()
     ' Worden later (optioneel, na bevestigingsdialoog) als HTTP-POST verstuurd.
     Dim mEmail(MAX_ITEM)    As String
     Dim mVoor(MAX_ITEM)     As String
+    Dim mKlantId(MAX_ITEM)  As Long
     Dim mWeek(MAX_ITEM)     As Integer
     Dim mWeekStop(MAX_ITEM) As Integer   ' 0 = gewone annulatie, >0 = stopzetting
     Dim mDatum(MAX_ITEM)    As String    ' YYYY-MM-DD
