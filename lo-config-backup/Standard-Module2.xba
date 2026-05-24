@@ -80,6 +80,11 @@ Sub StartBereidKoffieMailmergeVoor()
     BereidKoffieMailmergeVoor()
 End Sub
 
+Sub StartVerwerkStopStart()
+    ReloadKiemkracht()
+    VerwerkStopStart()
+End Sub
+
 Sub StartMaakOverzichten()
     ReloadKiemkracht()
     MaakOverzichten()

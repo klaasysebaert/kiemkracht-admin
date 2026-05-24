@@ -2460,13 +2460,14 @@ Sub VerwerkStopStart()
     Dim nItem As Integer : nItem = 0
     Dim nAnn As Integer, nStopz As Integer, nVb As Integer, nStart As Integer, nDup As Integer
 
-    ' Mail-eligible records: parallel aan de annulatie- en stopzetting-INSERTs.
+    ' Mail-eligible records: parallel aan de INSERTs voor Q/R/S/T-kolommen.
     ' Worden later (optioneel, na bevestigingsdialoog) als HTTP-POST verstuurd.
     Dim mEmail(MAX_ITEM)    As String
     Dim mVoor(MAX_ITEM)     As String
     Dim mKlantId(MAX_ITEM)  As Long
     Dim mWeek(MAX_ITEM)     As Integer
-    Dim mWeekStop(MAX_ITEM) As Integer   ' 0 = gewone annulatie, >0 = stopzetting
+    Dim mType(MAX_ITEM)     As String    ' "annulatie" / "stopzetting" / "vooruitbestelling" / "abonnementsstart"
+    Dim mFormaat(MAX_ITEM)  As String    ' enkel relevant voor vooruitbestelling/abonnementsstart
     Dim mDatum(MAX_ITEM)    As String    ' YYYY-MM-DD
     Dim mJaar(MAX_ITEM)     As Integer
     Dim nMail As Integer : nMail = 0
