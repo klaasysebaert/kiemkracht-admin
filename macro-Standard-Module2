@@ -65,6 +65,11 @@ Sub StartBereidMailmergeVoor()
     BereidMailmergeVoor()
 End Sub
 
+Sub StartBereidKoffieMailmergeVoor()
+    ReloadKiemkracht()
+    BereidKoffieMailmergeVoor()
+End Sub
+
 Sub StartMaakOverzichten()
     ReloadKiemkracht()
     MaakOverzichten()
