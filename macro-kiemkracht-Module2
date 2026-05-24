@@ -376,7 +376,9 @@ Sub BereidMailmergeVoor()
         sURLEncoded = BESTEL_URL & "?d=" & Base64UrlEncode(sQuerystring)
         oSheet.getCellByPosition(10, r).setString(sURLEncoded)
 
-        ' --- Extra e-mailadressen (kolommen N, Q, T) ---
+        ' --- Partner-naam (kolommen L, M) + extra e-mailadressen (kolommen N, Q, T) ---
+        If kVoor2(k)  <> "" Then oSheet.getCellByPosition(11, r).setString(kVoor2(k))
+        If kFam2(k)   <> "" Then oSheet.getCellByPosition(12, r).setString(kFam2(k))
         If kEmail2(k) <> "" Then oSheet.getCellByPosition(13, r).setString(kEmail2(k))
         If kEmail3(k) <> "" Then oSheet.getCellByPosition(16, r).setString(kEmail3(k))
         If kEmail4(k) <> "" Then oSheet.getCellByPosition(19, r).setString(kEmail4(k))
