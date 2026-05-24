@@ -2409,6 +2409,17 @@ Sub VerwerkStopStart()
                     nItem = nItem + 1
                     sBestAnn = sBestAnn & sSleutel & "|"
                     nAnn = nAnn + 1
+
+                    ' Mail-eligible (alleen als klant een email1 heeft)
+                    If klMail(kIdx) <> "" Then
+                        mEmail(nMail)    = klMail(kIdx)
+                        mVoor(nMail)     = klVn(kIdx)
+                        mWeek(nMail)     = w
+                        mWeekStop(nMail) = 0
+                        mDatum(nMail)    = sDatum
+                        mJaar(nMail)     = iJaar
+                        nMail = nMail + 1
+                    End If
                 End If
             Next wi
         End If
@@ -2431,6 +2442,17 @@ Sub VerwerkStopStart()
                 nItem = nItem + 1
                 sBestAnn = sBestAnn & sSleutel & "|"
                 nStopz = nStopz + 1
+
+                ' Mail-eligible (alleen als klant een email1 heeft)
+                If klMail(kIdx) <> "" Then
+                    mEmail(nMail)    = klMail(kIdx)
+                    mVoor(nMail)     = klVn(kIdx)
+                    mWeek(nMail)     = w
+                    mWeekStop(nMail) = w   ' = stopzetting (templ. kiest stopzet-tekst)
+                    mDatum(nMail)    = sDatum
+                    mJaar(nMail)     = iJaar
+                    nMail = nMail + 1
+                End If
             End If
         End If
 
