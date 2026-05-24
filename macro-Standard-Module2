@@ -1,6 +1,28 @@
+' Leest een .bas-bestand expliciet als UTF-8 via UNO TextInputStream.
+' Native LO Basic 'Line Input' gebruikt de platform default encoding
+' (Windows-1252 op NL Windows) — UTF-8 multi-byte tekens (—, €, accenten)
+' worden dan mojibake na hot-reload via replaceByName. Deze helper omzeilt
+' dat. Returnt "" als het bestand niet bestaat.
+Function LeesBasUtf8(sPath As String) As String
+    Dim oSFA As Object, oInput As Object, oTextStream As Object
+    Dim sUrl As String, sCode As String
+    sUrl = ConvertToURL(sPath)
+    oSFA = createUnoService("com.sun.star.ucb.SimpleFileAccess")
+    If Not oSFA.exists(sUrl) Then Exit Function
+    oInput = oSFA.openFileRead(sUrl)
+    oTextStream = createUnoService("com.sun.star.io.TextInputStream")
+    oTextStream.setInputStream(oInput)
+    oTextStream.setEncoding("UTF-8")
+    sCode = ""
+    Do While Not oTextStream.isEOF()
+        sCode = sCode & oTextStream.readLine() & Chr(10)
+    Loop
+    oTextStream.closeInput()
+    LeesBasUtf8 = sCode
+End Function
+
 Sub ReloadKiemkracht()
-    Dim sPath As String, sCode As String, sLine As String
-    Dim iFile As Integer
+    Dim sPath As String, sCode As String
     If Not GlobalScope.BasicLibraries.isLibraryLoaded("Kiemkracht") Then
         GlobalScope.BasicLibraries.loadLibrary("Kiemkracht")
     End If
@@ -10,33 +32,19 @@ Sub ReloadKiemkracht()
             MsgBox "Bestand niet gevonden: " & sPath, 16, "Fout"
             Exit Sub
         End If
-        sCode = ""
-        iFile = FreeFile()
-        Open sPath For Input As #iFile
-        Do While Not EOF(iFile)
-            Line Input #iFile, sLine
-            sCode = sCode & sLine & Chr(10)
-        Loop
-        Close #iFile
+        sCode = LeesBasUtf8(sPath)
         GlobalScope.BasicLibraries.getByName("Kiemkracht").replaceByName(sModule, sCode)
     Next
 End Sub
 
 Sub ReloadStandard()
-    Dim sPath As String, sCode As String, sLine As String
-    Dim iFile As Integer
+    Dim sPath As String, sCode As String
     sPath = Environ("APPDATA") & "\LibreOffice\4\user\basic\Standard\Module1.bas"
     If Not FileExists(sPath) Then
         MsgBox "Bestand niet gevonden: " & sPath, 16, "Fout"
         Exit Sub
     End If
-    sCode = "" : iFile = FreeFile()
-    Open sPath For Input As #iFile
-    Do While Not EOF(iFile)
-        Line Input #iFile, sLine
-        sCode = sCode & sLine & Chr(10)
-    Loop
-    Close #iFile
+    sCode = LeesBasUtf8(sPath)
     GlobalScope.BasicLibraries.getByName("Standard").replaceByName("Module1", sCode)
 End Sub
 
