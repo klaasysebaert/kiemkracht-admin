@@ -2555,8 +2555,10 @@ Sub VerwerkStopStart()
             sUrl = "https://bestel.kiemkracht.be"
         End If
         Dim sMailVraag As String
-        sMailVraag = "Wil je ook " & nMail & " bevestigingsmail(s) versturen?" & Chr(10) & _
-                     "(annulaties + stopzettingen — klanten zonder email1 zijn overgeslagen)" & Chr(10) & Chr(10) & _
+        Dim sMailWoord As String
+        If nMail = 1 Then sMailWoord = "1 bevestigingsmail" Else sMailWoord = nMail & " bevestigingsmails"
+        sMailVraag = "Wil je ook " & sMailWoord & " versturen?" & Chr(10) & _
+                     "(annulaties + stopzettingen - klanten zonder email1 zijn overgeslagen)" & Chr(10) & Chr(10) & _
                      "Doelomgeving: " & sUrl & Chr(10) & Chr(10) & _
                      "Ja = inserts + mails" & Chr(10) & _
                      "Nee = enkel inserts, geen mails"
