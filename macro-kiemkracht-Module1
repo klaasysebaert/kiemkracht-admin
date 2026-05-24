@@ -443,10 +443,20 @@ Sub MaakWeekbestand()
 
     ' --- Stap 3: bestellingen + abonnees zonder bestelling deze week ---
     Dim sPareFilter As String
+    Dim sTak3Types  As String
+    ' TAK 3 = klanten met vooruitbestelling die NIET via sPareFilter in TAK 2
+    ' worden opgepikt. Voor pare weken: abonnee-onpare-week toevoegen (zij
+    ' krijgen normaal geen pakket maar hebben vooruitbesteld). Idem omgekeerd.
     If (iWeek Mod 2) = 0 Then
         sPareFilter = "k.type IN ('abonnee', 'abonnee-pare-week')"
+        sTak3Types  = "'weekperweek','weekperweek-pare-week','weekperweek-onpare-week'," & _
+                      "'abonnee-toekomst','abonnee-pare-week-toekomst','abonnee-onpare-week-toekomst'," & _
+                      "'abonnee-onpare-week'"
     Else
         sPareFilter = "k.type IN ('abonnee', 'abonnee-onpare-week')"
+        sTak3Types  = "'weekperweek','weekperweek-pare-week','weekperweek-onpare-week'," & _
+                      "'abonnee-toekomst','abonnee-pare-week-toekomst','abonnee-onpare-week-toekomst'," & _
+                      "'abonnee-pare-week'"
     End If
     oStmt = oConn.createStatement()
     ' CTE vb_week: vooruitbestellingen voor deze week met naam→sleutel-mapping
