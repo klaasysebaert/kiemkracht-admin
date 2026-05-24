@@ -2559,7 +2559,8 @@ Sub VerwerkStopStart()
                     mVoor(nMail)     = klVn(kIdx)
                     mKlantId(nMail)  = riKlant(i)
                     mWeek(nMail)     = w
-                    mWeekStop(nMail) = w   ' = stopzetting (templ. kiest stopzet-tekst)
+                    mType(nMail)     = "stopzetting"
+                    mFormaat(nMail)  = ""
                     mDatum(nMail)    = sDatum
                     mJaar(nMail)     = iJaar
                     nMail = nMail + 1
