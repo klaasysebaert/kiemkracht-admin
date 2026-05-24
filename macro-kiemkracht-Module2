@@ -242,11 +242,33 @@ Sub BereidMailmergeVoor()
         sLevdag  = kLevdag(k)
         sNaam    = kVoor(k) & " " & kFam(k)
 
+        ' --- Controleer eerst vooruitbestellingen ---
+        ' Een vooruitbestelling overschrijft het pariteit-filter: een
+        ' abonnee-pare-week die toch een pakket vooruitbestelt voor een
+        ' onpare week (via formulier of macro) moet ook een bevestiging-
+        ' mail krijgen — anders wordt ze hieronder weggefilterd.
+        Dim bVooruitBesteld As Boolean
+        bVooruitBesteld = False
+        Dim v As Integer
+        For v = 0 To nVB - 1
+            If LCase(vbEmail(v)) = LCase(kEmail(k)) Then
+                bVooruitBesteld = True
+                ' Gebruik het formaat uit de vooruitbestelling als het gevuld is
+                If vbFormaat(v) <> "" Then
+                    sFormaat = vbFormaat(v)
+                End If
+                Exit For
+            End If
+        Next v
+
         ' --- Bepaal of deze klant een mail krijgt deze week ---
         Dim bMail As Boolean
         bMail = False
 
-        If sType = "abonnee" Then
+        If bVooruitBesteld Then
+            ' Override pariteit-filter — expliciete vooruitbestelling = altijd mail
+            bMail = True
+        ElseIf sType = "abonnee" Then
             bMail = True
         ElseIf sType = "abonnee-pare-week" And sPareOnpare = "pare" Then
             bMail = True
@@ -270,21 +292,6 @@ Sub BereidMailmergeVoor()
         ' --- Bepaal mailtype en pakket voor URL ---
         Dim sMailtype  As String
         Dim sPakketURL As String
-        Dim bVooruitBesteld As Boolean
-        bVooruitBesteld = False
-
-        ' Controleer vooruitbestellingen
-        Dim v As Integer
-        For v = 0 To nVB - 1
-            If LCase(vbEmail(v)) = LCase(kEmail(k)) Then
-                bVooruitBesteld = True
-                ' Gebruik het formaat uit de vooruitbestelling als het gevuld is
-                If vbFormaat(v) <> "" Then
-                    sFormaat = vbFormaat(v)
-                End If
-                Exit For
-            End If
-        Next v
 
         If sType = "weekperweek" Or sType = "weekperweek-pare-week" Or sType = "weekperweek-onpare-week" _
            Or sType = "abonnee-toekomst" Or sType = "abonnee-pare-week-toekomst" _
