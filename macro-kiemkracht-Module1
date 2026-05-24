@@ -538,8 +538,7 @@ Sub MaakWeekbestand()
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
         "INNER JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
-        "WHERE k.type IN ('weekperweek','weekperweek-pare-week','weekperweek-onpare-week'," & _
-        "                  'abonnee-toekomst','abonnee-pare-week-toekomst','abonnee-onpare-week-toekomst') " & _
+        "WHERE k.type IN (" & sTak3Types & ") " & _
         " AND k.email1 NOT IN (" & _
         "SELECT klant_email FROM bestellingen WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & ") " & _
         " AND k.email1 NOT IN (" & _
