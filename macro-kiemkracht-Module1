@@ -2579,7 +2579,7 @@ Sub VerwerkStopStart()
         Dim m As Integer
         For m = 0 To nMail - 1
             If VerstuurAnnulatieMail(mEmail(m), mVoor(m), mWeek(m), mJaar(m), _
-                                     mDatum(m), mWeekStop(m)) Then
+                                     mDatum(m), mWeekStop(m), mKlantId(m)) Then
                 nMailOk = nMailOk + 1
             Else
                 nMailFout = nMailFout + 1
