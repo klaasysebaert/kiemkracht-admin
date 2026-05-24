@@ -2089,6 +2089,105 @@ End Function
 '   bEnkel = True  -> slechts één week toegelaten (stop/start)
 ' Lege invoer -> "". Bij een fout -> "" en sFout ingevuld.
 ' =============================================
+' Parseert week-met-optioneel-formaat invoer voor vooruitbestellingen.
+' Syntax: "W22-W24:groot, W26:klein, W28" (W is optioneel, hoofdletter
+' ongevoelig, spaties genegeerd). Formaat per week optioneel — zonder
+' ":formaat" blijft de overeenkomstige slot in sFormatenCsv leeg, waarna
+' de caller terugvalt op klant.formaat.
+'
+' ByRef-resultaten zijn parallelle CSV's:
+'   sWekenCsv     = "22,23,24,26,28"
+'   sFormatenCsv  = "groot,groot,groot,klein,"        (leeg = default)
+'
+' Returnt True bij succes, False bij fout (sFout krijgt dan een
+' leesbare boodschap).
+Function ParseerWekenMetFormaat(sInvoer As String, _
+                                 ByRef sWekenCsv As String, _
+                                 ByRef sFormatenCsv As String, _
+                                 ByRef sFout As String) As Boolean
+    sFout = ""
+    sWekenCsv = ""
+    sFormatenCsv = ""
+    Dim s As String : s = Trim(sInvoer)
+    If s = "" Then
+        ParseerWekenMetFormaat = True
+        Exit Function
+    End If
+    s = Replace(s, " ", "")
+
+    Dim aDelen() As String : aDelen = Split(s, ",")
+    Dim i As Integer
+    For i = 0 To UBound(aDelen)
+        Dim sDeel As String : sDeel = aDelen(i)
+        If sDeel <> "" Then
+            ' Splits op ":" — formaat optioneel
+            Dim sWeekDeel As String, sFormaat As String
+            Dim iColon As Integer : iColon = InStr(sDeel, ":")
+            If iColon > 0 Then
+                sWeekDeel = Left(sDeel, iColon - 1)
+                sFormaat  = LCase(Mid(sDeel, iColon + 1))
+                If sFormaat <> "klein" And sFormaat <> "groot" _
+                   And sFormaat <> "extra-groot" And sFormaat <> "mini" Then
+                    sFout = "ongeldig formaat '" & sFormaat & _
+                            "' (klein/groot/extra-groot/mini)"
+                    ParseerWekenMetFormaat = False : Exit Function
+                End If
+            Else
+                sWeekDeel = sDeel
+                sFormaat  = ""
+            End If
+
+            sWeekDeel = Replace(sWeekDeel, "W", "")
+            sWeekDeel = Replace(sWeekDeel, "w", "")
+
+            If InStr(sWeekDeel, "-") > 0 Then
+                Dim aR() As String : aR = Split(sWeekDeel, "-")
+                If UBound(aR) <> 1 Or Not IsNumeric(aR(0)) Or Not IsNumeric(aR(1)) Then
+                    sFout = "ongeldig bereik '" & sWeekDeel & "'"
+                    ParseerWekenMetFormaat = False : Exit Function
+                End If
+                Dim wVan As Integer : wVan = CInt(aR(0))
+                Dim wTot As Integer : wTot = CInt(aR(1))
+                If wVan < 1 Or wVan > 53 Or wTot < 1 Or wTot > 53 Then
+                    sFout = "weeknummer buiten 1-53 in '" & sWeekDeel & "'"
+                    ParseerWekenMetFormaat = False : Exit Function
+                End If
+                If wTot < wVan Then
+                    sFout = "bereik '" & sWeekDeel & "' loopt over een jaargrens — splits het op"
+                    ParseerWekenMetFormaat = False : Exit Function
+                End If
+                Dim w As Integer
+                For w = wVan To wTot
+                    If sWekenCsv <> "" Then
+                        sWekenCsv    = sWekenCsv    & ","
+                        sFormatenCsv = sFormatenCsv & ","
+                    End If
+                    sWekenCsv    = sWekenCsv    & CStr(w)
+                    sFormatenCsv = sFormatenCsv & sFormaat
+                Next w
+            Else
+                If Not IsNumeric(sWeekDeel) Then
+                    sFout = "ongeldig weeknummer '" & sWeekDeel & "'"
+                    ParseerWekenMetFormaat = False : Exit Function
+                End If
+                Dim wE As Integer : wE = CInt(sWeekDeel)
+                If wE < 1 Or wE > 53 Then
+                    sFout = "weeknummer buiten 1-53: '" & sWeekDeel & "'"
+                    ParseerWekenMetFormaat = False : Exit Function
+                End If
+                If sWekenCsv <> "" Then
+                    sWekenCsv    = sWekenCsv    & ","
+                    sFormatenCsv = sFormatenCsv & ","
+                End If
+                sWekenCsv    = sWekenCsv    & CStr(wE)
+                sFormatenCsv = sFormatenCsv & sFormaat
+            End If
+        End If
+    Next i
+
+    ParseerWekenMetFormaat = True
+End Function
+
 Function ParseerWeken(sInvoer As String, bEnkel As Boolean, ByRef sFout As String) As String
     sFout = ""
     Dim s As String : s = Trim(sInvoer)
