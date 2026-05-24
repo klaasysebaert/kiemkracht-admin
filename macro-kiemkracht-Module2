@@ -93,7 +93,8 @@ Sub BereidMailmergeVoor()
         "SELECT k.voornaam, k.familienaam, k.email1, k.type, k.formaat, " & _
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
         "COALESCE(a.dag_afhaling, '') AS leverdag, " & _
-        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,'') " & _
+        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
+        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,'') " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "WHERE k.type NOT IN ('stop-tijdelijk', 'stop-definitief') " & _
@@ -111,6 +112,8 @@ Sub BereidMailmergeVoor()
     Dim kEmail2(1000) As String
     Dim kEmail3(1000) As String
     Dim kEmail4(1000) As String
+    Dim kVoor2(1000)  As String
+    Dim kFam2(1000)   As String
     Dim nKlanten     As Integer
     nKlanten = 0
 
@@ -126,6 +129,8 @@ Sub BereidMailmergeVoor()
         kEmail2(nKlanten)  = oRS.getString(9)
         kEmail3(nKlanten)  = oRS.getString(10)
         kEmail4(nKlanten)  = oRS.getString(11)
+        kVoor2(nKlanten)   = oRS.getString(12)
+        kFam2(nKlanten)    = oRS.getString(13)
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
