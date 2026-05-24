@@ -416,6 +416,199 @@ VerbindingsFout:
 
 End Sub
 
+Sub BereidKoffieMailmergeVoor()
+
+    ' =============================================
+    ' Kiemkracht - Koffie-mailmerge voorbereiden
+    ' Maakt sheet "Koffiemailmerge" klaar in kiemkracht-data.ods
+    ' met gepersonaliseerde koffie-URL per klant.
+    '
+    ' Doelgroep: ALLE actieve klanten (alle types behalve stop-*),
+    '            zonder week-filter — pare-week-klanten krijgen ook
+    '            een uitnodiging in onpare weken en omgekeerd.
+    '            Klanten zonder email1 worden overgeslagen.
+    '
+    ' Doel-URL: koffie.kiemkracht.be (prod) of koffie.dev.kiemkracht.be (dev).
+    ' Payload: voornaam, naam, email, klant_id, afhaalpunt — base64 in ?d=.
+    ' =============================================
+
+    ' Doel-URL volgt de omgeving (dev-bestand -> dev-formulier)
+    Dim KOFFIE_URL As String
+    If BepaalOmgeving() = "dev" Then
+        KOFFIE_URL = "https://koffie.dev.kiemkracht.be/"
+    Else
+        KOFFIE_URL = "https://koffie.kiemkracht.be/"
+    End If
+
+    ' Bevestiging aan gebruiker
+    Dim sAntwoord As Integer
+    sAntwoord = MsgBox( _
+        "Koffie-mailmerge voorbereiden voor ALLE actieve klanten." & Chr(10) & _
+        "(inclusief pare-week klanten in onpare weken en omgekeerd)" & Chr(10) & Chr(10) & _
+        "Doelomgeving: " & KOFFIE_URL & Chr(10) & Chr(10) & _
+        "Doorgaan?", _
+        36, "BereidKoffieMailmergeVoor")
+    If sAntwoord <> 6 Then  ' 6 = Ja
+        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        Exit Sub
+    End If
+
+    ' --- JDBC-verbinding (juiste omgeving via MaakDBVerbinding) ---
+    On Error GoTo VerbindingsFout
+    Dim oConn As Object
+    oConn = MaakDBVerbinding()
+    On Error GoTo 0
+
+    Dim oStmt As Object
+    Dim oRS   As Object
+
+    ' --- Stap 1: alle actieve klanten + afhaalpunt ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT k.voornaam, k.familienaam, k.email1, k.type, " & _
+        "COALESCE(a.naam, '') AS afhaalnaam, " & _
+        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,'') " & _
+        "FROM klanten k " & _
+        "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
+        "WHERE k.type NOT IN ('stop-tijdelijk', 'stop-definitief') " & _
+        "AND COALESCE(k.email1, '') <> '' " & _
+        "ORDER BY k.familienaam, k.voornaam")
+
+    Dim kVoor(1000)   As String
+    Dim kFam(1000)    As String
+    Dim kEmail(1000)  As String
+    Dim kType(1000)   As String
+    Dim kAfhaal(1000) As String
+    Dim kID(1000)     As String
+    Dim kEmail2(1000) As String
+    Dim kEmail3(1000) As String
+    Dim kEmail4(1000) As String
+    Dim nKlanten      As Integer
+    nKlanten = 0
+
+    Do While oRS.next()
+        kVoor(nKlanten)   = oRS.getString(1)
+        kFam(nKlanten)    = oRS.getString(2)
+        kEmail(nKlanten)  = oRS.getString(3)
+        kType(nKlanten)   = oRS.getString(4)
+        kAfhaal(nKlanten) = oRS.getString(5)
+        kID(nKlanten)     = oRS.getString(6)
+        kEmail2(nKlanten) = oRS.getString(7)
+        kEmail3(nKlanten) = oRS.getString(8)
+        kEmail4(nKlanten) = oRS.getString(9)
+        nKlanten = nKlanten + 1
+    Loop
+    oRS.close() : oStmt.close()
+    oConn.close()
+
+    ' --- Stap 2: sheet "Koffiemailmerge" aanmaken of leegmaken ---
+    Dim oDoc    As Object
+    Dim oSheets As Object
+    Dim oSheet  As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        Exit Sub
+    End If
+    oSheets = oDoc.Sheets
+
+    If oSheets.hasByName("Koffiemailmerge") Then
+        oSheet = oSheets.getByName("Koffiemailmerge")
+        oSheet.clearContents(7)
+    Else
+        oSheets.insertNewByName("Koffiemailmerge", 0)  ' eerste positie
+        oSheet = oSheets.getByName("Koffiemailmerge")
+    End If
+
+    ' --- Stap 3: kolomhoofden schrijven ---
+    Dim hoofden(14) As String
+    hoofden(0)  = "Voornaam"
+    hoofden(1)  = "Familienaam"
+    hoofden(2)  = "Email"
+    hoofden(3)  = "Type"
+    hoofden(4)  = "Afhaal"
+    hoofden(5)  = "KoffieURL_encoded"
+    hoofden(6)  = "Voornaam2"
+    hoofden(7)  = "Familienaam2"
+    hoofden(8)  = "Email2"
+    hoofden(9)  = "Voornaam3"
+    hoofden(10) = "Familienaam3"
+    hoofden(11) = "Email3"
+    hoofden(12) = "Voornaam4"
+    hoofden(13) = "Familienaam4"
+    hoofden(14) = "Email4"
+
+    Dim c As Integer
+    For c = 0 To 14
+        Dim oCell As Object
+        oCell = oSheet.getCellByPosition(c, 0)
+        oCell.setString(hoofden(c))
+        oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oCell.CellBackColor = RGB(204, 204, 204)
+    Next c
+
+    ' --- Stap 4: klanten verwerken en rijen schrijven ---
+    Dim r As Integer
+    r = 1  ' rij 1 = eerste datarij (rij 0 = hoofden)
+
+    Dim k As Integer
+    For k = 0 To nKlanten - 1
+
+        ' Querystring bouwen — zelfde formaat als koffie-form verwacht (?d=)
+        Dim sQuerystring As String
+        sQuerystring = "voornaam="    & UrlEncodeValue(kVoor(k))   & _
+                       "&naam="       & UrlEncodeValue(kFam(k))    & _
+                       "&email="      & UrlEncodeValue(kEmail(k))  & _
+                       "&klant_id="   & kID(k)                     & _
+                       "&afhaalpunt=" & UrlEncodeValue(kAfhaal(k))
+
+        Dim sURLEncoded As String
+        sURLEncoded = KOFFIE_URL & "?d=" & Base64UrlEncode(sQuerystring)
+
+        oSheet.getCellByPosition(0, r).setString(kVoor(k))
+        oSheet.getCellByPosition(1, r).setString(kFam(k))
+        oSheet.getCellByPosition(2, r).setString(kEmail(k))
+        oSheet.getCellByPosition(3, r).setString(kType(k))
+        oSheet.getCellByPosition(4, r).setString(kAfhaal(k))
+        oSheet.getCellByPosition(5, r).setString(sURLEncoded)
+
+        ' Extra e-mailadressen (kolommen I, L, O — zelfde patroon als Mailmerge)
+        If kEmail2(k) <> "" Then oSheet.getCellByPosition(8, r).setString(kEmail2(k))
+        If kEmail3(k) <> "" Then oSheet.getCellByPosition(11, r).setString(kEmail3(k))
+        If kEmail4(k) <> "" Then oSheet.getCellByPosition(14, r).setString(kEmail4(k))
+
+        r = r + 1
+    Next k
+
+    ' --- Stap 5: kolombreedte automatisch aanpassen ---
+    Dim oKolommen As Object
+    oKolommen = oSheet.getColumns()
+    Dim cIdx As Integer
+    For cIdx = 0 To 14
+        oKolommen.getByIndex(cIdx).OptimalWidth = True
+    Next cIdx
+    oKolommen.getByIndex(5).Width = 12000  ' ~12 cm voor URL-kolom
+
+    ' --- Klaar ---
+    Dim nRijen As Integer
+    nRijen = r - 1
+    MsgBox "Koffie-mailmerge klaar!" & Chr(10) & Chr(10) & _
+           nRijen & " actieve klanten opgenomen in sheet 'Koffiemailmerge'." & Chr(10) & _
+           "Doelomgeving: " & KOFFIE_URL, _
+           64, "BereidKoffieMailmergeVoor"
+
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    Exit Sub
+
+VerbindingsFout:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
+           "Controleer of de SSH-tunnel actief is.", 16, "Fout"
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+
+End Sub
+
 ' =============================================
 ' Hulpfunctie: vervang spaties door + voor URL
 ' =============================================
