@@ -129,12 +129,13 @@ Sub LaadAlleTabellen()
     On Error GoTo 0
 
     ' Loop over elke tabel
-    For i = 0 To 10
+    Dim nTabellen As Integer : nTabellen = UBound(tabellen) + 1
+    For i = 0 To UBound(tabellen)
         Dim sNaam As String
         sNaam = tabellen(i)
 
-        oIndicator.setValue((i + 1) * 80 \ 11)
-        oIndicator.setText("Laden: " & sNaam & " (" & (i + 1) & "/12)")
+        oIndicator.setValue((i + 1) * 80 \ nTabellen)
+        oIndicator.setText("Laden: " & sNaam & " (" & (i + 1) & "/" & nTabellen & ")")
 
         ' Tabblad aanmaken of leegmaken
         If oSheets.hasByName(sNaam) Then
