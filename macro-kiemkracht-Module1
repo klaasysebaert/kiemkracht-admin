@@ -2819,6 +2819,46 @@ HttpFout:
     VerstuurAnnulatieMail = False
 End Function
 
+' Analoog aan VerstuurAnnulatieMail maar voor vooruitbestelling / abonnementsstart.
+' iWeekStart = 0  -> losse vooruitbestelling
+' iWeekStart > 0  -> abonnementsstart (proxy kiest dan abonnementsstart-template)
+Function VerstuurVooruitbestellingMail(sEmail As String, sVoornaam As String, _
+                                        iWeek As Integer, iJaar As Integer, _
+                                        sDatum As String, iWeekStart As Integer, _
+                                        iKlantId As Long, sFormaat As String) As Boolean
+    Dim sUrl As String
+    If BepaalOmgeving() = "dev" Then
+        sUrl = "https://bestel.dev.kiemkracht.be/postgres-proxy.php?actie=vooruitbestelling_bevestiging_mail"
+    Else
+        sUrl = "https://bestel.kiemkracht.be/postgres-proxy.php?actie=vooruitbestelling_bevestiging_mail"
+    End If
+
+    Dim sJson As String
+    sJson = "{""Sleutel"":""Kiemkracht2026BestelFormulierSleutel""," & _
+            """KlantEmail"":""" & JsonEsc(sEmail) & """," & _
+            """Voornaam"":""" & JsonEsc(sVoornaam) & """," & _
+            """KlantID"":" & iKlantId & "," & _
+            """WeekBestelling"":" & iWeek & "," & _
+            """Datum"":""" & sDatum & """," & _
+            """Jaar"":" & iJaar & "," & _
+            """Formaat"":""" & JsonEsc(sFormaat) & """"
+    If iWeekStart > 0 Then
+        sJson = sJson & ",""WeekStartAbonnement"":" & iWeekStart
+    End If
+    sJson = sJson & "}"
+
+    On Error GoTo HttpFout
+    Dim http As Object
+    http = createObject("MSXML2.ServerXMLHTTP.6.0")
+    http.open("POST", sUrl, False)
+    http.setRequestHeader("Content-Type", "application/json")
+    http.send(sJson)
+    VerstuurVooruitbestellingMail = (http.status = 200)
+    Exit Function
+HttpFout:
+    VerstuurVooruitbestellingMail = False
+End Function
+
 ' JSON-escape: backslash en double-quote ontsnappen.
 Function JsonEsc(s As String) As String
     Dim r As String : r = s
