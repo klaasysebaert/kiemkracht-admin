@@ -2263,7 +2263,10 @@ End Function
 '   - één kolom in A-P heeft de kop "klant_id"
 '   - kolom Q = annulaties           (tekst, bv. "W22-W24, W26")
 '   - kolom R = stopzetting          (één week,  bv. "W30")
-'   - kolom S = vooruitbestellingen  (tekst, bv. "W22-W24, W26")
+'   - kolom S = vooruitbestellingen  (tekst, bv. "W22-W24:groot, W26:klein, W28")
+'               Formaat per week optioneel (na ":"); zonder formaat valt
+'               het terug op klant.formaat. Geldige formaten: klein /
+'               groot / extra-groot / mini.
 '   - kolom T = start abonnement     (één week,  bv. "W38")
 '   - kolom U = abonnementstype      (verplicht bij een start: abonnee /
 '               abonnee-pare-week / abonnee-onpare-week)
