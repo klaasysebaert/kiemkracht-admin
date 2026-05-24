@@ -2568,6 +2568,7 @@ Sub VerwerkStopStart()
         ' --- vooruitbestellingen (kolom S) ---
         If riVb(i) <> "" Then
             aW = Split(riVb(i), ",")
+            Dim aWFmt() As String : aWFmt = Split(riVbFmt(i), ",")
             For wi = 0 To UBound(aW)
                 w = CInt(aW(wi))
                 dDo = WeekNaarDonderdag(w)
@@ -2577,10 +2578,17 @@ Sub VerwerkStopStart()
                 If InStr(sBestVb, "|" & sSleutel & "|") > 0 Then
                     nDup = nDup + 1
                 Else
+                    ' Formaat: per-week-keuze (kolom S na ":") of klant.formaat als fallback
+                    Dim sFmtVoorWeek As String
+                    sFmtVoorWeek = ""
+                    If wi <= UBound(aWFmt) Then sFmtVoorWeek = aWFmt(wi)
+                    If sFmtVoorWeek = "" Then sFmtVoorWeek = klFormaat(kIdx)
+                    Dim sFmtVoorWeekQ As String : sFmtVoorWeekQ = SqlStr(sFmtVoorWeek)
+
                     aSql(nItem) = "INSERT INTO vooruitbestellingen " & _
                         "(voornaam, familienaam, klant_email, klant_id, formaat, datum, " & _
                         "week_bestelling, week_start_abonnement, jaar) VALUES (" & _
-                        sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", " & sFmtQ & ", '" & _
+                        sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", " & sFmtVoorWeekQ & ", '" & _
                         sDatum & "', " & w & ", NULL, " & iJaar & ")"
                     nItem = nItem + 1
                     sBestVb = sBestVb & sSleutel & "|"
