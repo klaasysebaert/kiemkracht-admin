@@ -2596,6 +2596,19 @@ Sub VerwerkStopStart()
                     nItem = nItem + 1
                     sBestVb = sBestVb & sSleutel & "|"
                     nVb = nVb + 1
+
+                    ' Mail-eligible (alleen als klant een email1 heeft)
+                    If klMail(kIdx) <> "" Then
+                        mEmail(nMail)    = klMail(kIdx)
+                        mVoor(nMail)     = klVn(kIdx)
+                        mKlantId(nMail)  = riKlant(i)
+                        mWeek(nMail)     = w
+                        mType(nMail)     = "vooruitbestelling"
+                        mFormaat(nMail)  = sFmtVoorWeek
+                        mDatum(nMail)    = sDatum
+                        mJaar(nMail)     = iJaar
+                        nMail = nMail + 1
+                    End If
                 End If
             Next wi
         End If
