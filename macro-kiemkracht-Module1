@@ -2619,3 +2619,52 @@ VerbindingsFoutSS:
     Shell "cmd.exe /c taskkill /F /IM ssh.exe"
 
 End Sub
+
+' =============================================
+' Verstuur bevestigingsmail voor een annulatie of stopzetting via de
+' postgres-proxy. Sync HTTP-POST naar /actie=annulatie_bevestiging_mail.
+' Returnt True bij HTTP 200, anders False.
+' iWeekStop = 0  -> gewone annulatie
+' iWeekStop > 0  -> stopzetting (proxy kiest dan stopzet-template)
+' =============================================
+Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, _
+                                iWeek As Integer, iJaar As Integer, _
+                                sDatum As String, iWeekStop As Integer) As Boolean
+    Dim sUrl As String
+    If BepaalOmgeving() = "dev" Then
+        sUrl = "https://bestel.dev.kiemkracht.be/postgres-proxy.php?actie=annulatie_bevestiging_mail"
+    Else
+        sUrl = "https://bestel.kiemkracht.be/postgres-proxy.php?actie=annulatie_bevestiging_mail"
+    End If
+
+    Dim sJson As String
+    sJson = "{""Sleutel"":""Kiemkracht2026BestelFormulierSleutel""," & _
+            """KlantEmail"":""" & JsonEsc(sEmail) & """," & _
+            """Voornaam"":""" & JsonEsc(sVoornaam) & """," & _
+            """WeekAnnulatie"":" & iWeek & "," & _
+            """Datum"":""" & sDatum & """," & _
+            """Jaar"":" & iJaar
+    If iWeekStop > 0 Then
+        sJson = sJson & ",""WeekStopzettenAbonnement"":" & iWeekStop
+    End If
+    sJson = sJson & "}"
+
+    On Error GoTo HttpFout
+    Dim http As Object
+    http = createObject("MSXML2.ServerXMLHTTP.6.0")
+    http.open("POST", sUrl, False)
+    http.setRequestHeader("Content-Type", "application/json")
+    http.send(sJson)
+    VerstuurAnnulatieMail = (http.status = 200)
+    Exit Function
+HttpFout:
+    VerstuurAnnulatieMail = False
+End Function
+
+' JSON-escape: backslash en double-quote ontsnappen.
+Function JsonEsc(s As String) As String
+    Dim r As String : r = s
+    r = Replace(r, "\", "\\")
+    r = Replace(r, """", "\""")
+    JsonEsc = r
+End Function
