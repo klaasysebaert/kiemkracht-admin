@@ -3253,6 +3253,7 @@ Sub KoffieWeekbestand()
     aSaveProps(0).Value = "calc8"
     oNieuwDoc.storeToURL(sUrl, aSaveProps())
 
+    SluitSSHTunnels()
     MsgBox "Koffie-weekbestand opgeslagen:" & Chr(10) & sBestand & Chr(10) & _
            Chr(10) & nBest & " bestelling(en) verwerkt.", 64, "KoffieWeekbestand"
     Exit Sub
@@ -3260,4 +3261,5 @@ Sub KoffieWeekbestand()
 VerbindingsFout:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is.", 16, "Fout"
+    SluitSSHTunnels()
 End Sub
