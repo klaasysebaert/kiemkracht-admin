@@ -3191,7 +3191,7 @@ Sub KoffieWeekbestand()
 
     ' Klantkolom-titels (rij 3)
     r = 3
-    oSheet.getCellByPosition(cNaam,  r).setString("naam + voornaam")
+    oSheet.getCellByPosition(cNaam,  r).setString("voornaam + naam")
     oSheet.getCellByPosition(cAfh,   r).setString("afhaalpunt")
     oSheet.getCellByPosition(cKlDag, r).setString("dag klaarmaken")
     oSheet.getCellByPosition(cTyp,   r).setString("type")
