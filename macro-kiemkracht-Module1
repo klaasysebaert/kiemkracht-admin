@@ -2926,3 +2926,273 @@ Function JsonEsc(s As String) As String
     r = Replace(r, """", "\""")
     JsonEsc = r
 End Function
+
+' =============================================
+' KOFFIE WEEKBESTAND
+' Snapshot van alle koffie-bestellingen (geen abonnement of vooruitbestelling-
+' logica). Vraagt twee DB-verbindingen: koffie-DB voor de bestellingen,
+' groenten-DB voor klant.type en afhaalpunt.dag_klaarmaken.
+' =============================================
+Sub KoffieWeekbestand()
+    Dim oCallerDoc As Object
+    oCallerDoc = HuidigDataDocument()
+    If IsNull(oCallerDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        Exit Sub
+    End If
+
+    Const SAVE_MAP As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
+
+    Dim dVandaag As Date : dVandaag = Now()
+    Dim iWeek As Integer : iWeek = DatePart("ww", dVandaag, 2, 2)
+    Dim iJaar As Integer : iJaar = Year(dVandaag)
+
+    Dim sBestand   As String
+    Dim sOmgSuffix As String
+    If BepaalOmgeving() = "dev" Then sOmgSuffix = "-dev" Else sOmgSuffix = ""
+    sBestand = SAVE_MAP & "koffie_week_" & iWeek & "_" & iJaar & sOmgSuffix & ".ods"
+
+    Dim oConnG As Object, oConnK As Object
+    On Error GoTo VerbindingsFout
+    oConnG = MaakDBVerbindingNaar("postgres")
+    oConnK = MaakDBVerbindingNaar("koffie")
+    On Error GoTo 0
+
+    Dim oStmt As Object, oRS As Object
+
+    ' --- Stap 1: bestellingen uit koffie-DB ---
+    oStmt = oConnK.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT id, COALESCE(klant_id::text,''), voornaam, familienaam, " & _
+        "       klant_email, COALESCE(telefoon,''), afhaalpunt, " & _
+        "       COALESCE(vragen_opmerkingen,''), aangemaakt " & _
+        "FROM koffie_bestellingen " & _
+        "ORDER BY aangemaakt")
+    Dim bId(500)      As Long
+    Dim bKlantId(500) As String
+    Dim bVoor(500)    As String
+    Dim bFam(500)     As String
+    Dim bEmail(500)   As String
+    Dim bTel(500)     As String
+    Dim bAfh(500)     As String
+    Dim bOpm(500)     As String
+    Dim nBest As Integer
+    nBest = 0
+    Do While oRS.next()
+        bId(nBest)      = CLng(oRS.getString(1))
+        bKlantId(nBest) = oRS.getString(2)
+        bVoor(nBest)    = oRS.getString(3)
+        bFam(nBest)     = oRS.getString(4)
+        bEmail(nBest)   = oRS.getString(5)
+        bTel(nBest)     = oRS.getString(6)
+        bAfh(nBest)     = oRS.getString(7)
+        bOpm(nBest)     = oRS.getString(8)
+        nBest = nBest + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 2: productdefinitie (18 SKU's in matrix-volgorde) ---
+    Dim sleutels(17) As String, labels(17) As String
+    Dim prijzen(17)  As Double, gewicht(17) As String
+    Dim soorten(2)   As String, vormen(1)   As String
+    soorten(0) = "el_dorado" : soorten(1) = "el_presso" : soorten(2) = "el_locco"
+    Dim soortLabels(2) As String
+    soortLabels(0) = "El Dorado" : soortLabels(1) = "El Presso" : soortLabels(2) = "El Locco"
+    vormen(0)  = "gemalen"   : vormen(1)  = "bonen"
+    Dim gewLab(2) As String, gewSlt(2) As String, gewPrijs(2) As Double
+    gewSlt(0) = "250g" : gewLab(0) = "x250g" : gewPrijs(0) = 7.5
+    gewSlt(1) = "500g" : gewLab(1) = "x500g" : gewPrijs(1) = 15
+    gewSlt(2) = "1kg"  : gewLab(2) = "x1kg"  : gewPrijs(2) = 29
+
+    Dim p As Integer : p = 0
+    Dim iV As Integer, iS As Integer, iG As Integer
+    For iV = 0 To 1                       ' eerst alle gemalen, dan alle bonen
+        For iS = 0 To 2                   ' soorten in volgorde Dorado/Presso/Locco
+            For iG = 0 To 2               ' gewichten 250g/500g/1kg
+                sleutels(p) = soorten(iS) & "_" & vormen(iV) & "_" & gewSlt(iG)
+                labels(p)   = soortLabels(iS) & " " & vormen(iV)
+                gewicht(p)  = gewLab(iG)
+                prijzen(p)  = gewPrijs(iG)
+                p = p + 1
+            Next iG
+        Next iS
+    Next iV
+
+    ' --- Stap 3: bestelregels per bestelling, koppelen aan kolom-index ---
+    Dim bAant(500, 17) As Integer
+    Dim b As Integer
+    For b = 0 To nBest - 1
+        For p = 0 To 17 : bAant(b, p) = 0 : Next p
+    Next b
+
+    oStmt = oConnK.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT bestelling_id, product_sleutel, aantal FROM koffie_bestelregels")
+    Do While oRS.next()
+        Dim lBId As Long  : lBId = CLng(oRS.getString(1))
+        Dim sSl  As String : sSl  = oRS.getString(2)
+        Dim iAant As Integer : iAant = CInt(oRS.getString(3))
+        For b = 0 To nBest - 1
+            If bId(b) = lBId Then
+                For p = 0 To 17
+                    If sleutels(p) = sSl Then
+                        bAant(b, p) = iAant
+                        Exit For
+                    End If
+                Next p
+                Exit For
+            End If
+        Next b
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 4: klant.type + dag_klaarmaken uit groenten-DB ---
+    Dim bType(500)    As String   ' k.type
+    Dim bKlaarDag(500) As String
+    For b = 0 To nBest - 1 : bType(b) = "" : bKlaarDag(b) = "" : Next b
+
+    ' 4a: afhaalpunten-map (voor fallback-match op naam-string)
+    Dim apNaam(50)    As String
+    Dim apNaamPub(50) As String
+    Dim apDag(50)     As String
+    Dim nAp As Integer : nAp = 0
+    oStmt = oConnG.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT COALESCE(naam,''), COALESCE(naam_publiek,''), " & _
+        "       COALESCE(dag_klaarmaken, dag_afhaling, '') " & _
+        "FROM afhaalpunten")
+    Do While oRS.next()
+        apNaam(nAp)    = oRS.getString(1)
+        apNaamPub(nAp) = oRS.getString(2)
+        apDag(nAp)     = oRS.getString(3)
+        nAp = nAp + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' 4b: bestellingen met klant_id → type + dag via JOIN
+    Dim sIds As String : sIds = ""
+    For b = 0 To nBest - 1
+        If bKlantId(b) <> "" Then
+            If sIds <> "" Then sIds = sIds & ","
+            sIds = sIds & bKlantId(b)
+        End If
+    Next b
+
+    If sIds <> "" Then
+        oStmt = oConnG.createStatement()
+        oRS = oStmt.executeQuery( _
+            "SELECT k.id, COALESCE(k.type,''), " & _
+            "       COALESCE(ap.dag_klaarmaken, ap.dag_afhaling, '') " & _
+            "FROM klanten k " & _
+            "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+            "WHERE k.id IN (" & sIds & ")")
+        Do While oRS.next()
+            Dim sId As String  : sId  = oRS.getString(1)
+            Dim sTyp As String : sTyp = oRS.getString(2)
+            Dim sDag As String : sDag = oRS.getString(3)
+            For b = 0 To nBest - 1
+                If bKlantId(b) = sId Then
+                    bType(b) = sTyp
+                    bKlaarDag(b) = sDag
+                End If
+            Next b
+        Loop
+        oRS.close() : oStmt.close()
+    End If
+
+    ' 4c: bestellingen zonder dag_klaarmaken (= geen klant_id, of klant_id
+    ' zonder afhaalpunt_id): probeer match via afhaalpunt-string in tekst.
+    Dim i As Integer
+    For b = 0 To nBest - 1
+        If bKlaarDag(b) = "" And bAfh(b) <> "" Then
+            Dim sZoek As String : sZoek = LCase(bAfh(b))
+            For i = 0 To nAp - 1
+                If apNaam(i) <> "" Then
+                    If LCase(apNaam(i)) = sZoek Or LCase(apNaamPub(i)) = sZoek _
+                       Or InStr(sZoek, LCase(apNaam(i))) > 0 Then
+                        bKlaarDag(b) = apDag(i)
+                        Exit For
+                    End If
+                End If
+            Next i
+        End If
+    Next b
+
+    oConnG.close()
+    oConnK.close()
+
+    ' =============================================
+    ' SPREADSHEET OPBOUWEN
+    ' =============================================
+    Dim oDesktop  As Object, oNieuwDoc As Object, oSheet As Object
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+    Dim aLaadProps(0) As New com.sun.star.beans.PropertyValue
+    aLaadProps(0).Name  = "Hidden" : aLaadProps(0).Value = False
+    oNieuwDoc = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aLaadProps())
+    oSheet = oNieuwDoc.Sheets.getByIndex(0)
+    oSheet.Name = "Koffie week " & iWeek
+
+    ' Kolomindices (0-based)
+    Const cNaam  = 0   ' A
+    Const cAfh   = 1   ' B
+    Const cKlDag = 2   ' C
+    Const cTyp   = 3   ' D
+    Const cOpm   = 4   ' E
+    Const cEmail = 5   ' F
+    Const cTel   = 6   ' G
+    Const cKlId  = 7   ' H
+    Const cProd0 = 8   ' I = eerste product
+
+    ' Producthoofding (rij 0/1/2 zoals in screenshot)
+    For p = 0 To 17
+        oSheet.getCellByPosition(cProd0 + p, 0).setString(labels(p))
+        oSheet.getCellByPosition(cProd0 + p, 1).setValue(prijzen(p))
+        oSheet.getCellByPosition(cProd0 + p, 2).setString(gewicht(p))
+    Next p
+
+    ' Klantkolom-titels (rij 3)
+    Dim r As Integer : r = 3
+    oSheet.getCellByPosition(cNaam,  r).setString("naam + voornaam")
+    oSheet.getCellByPosition(cAfh,   r).setString("afhaalpunt")
+    oSheet.getCellByPosition(cKlDag, r).setString("dag klaarmaken")
+    oSheet.getCellByPosition(cTyp,   r).setString("type")
+    oSheet.getCellByPosition(cOpm,   r).setString("vragen_opmerkingen")
+    oSheet.getCellByPosition(cEmail, r).setString("email")
+    oSheet.getCellByPosition(cTel,   r).setString("telefoon")
+    oSheet.getCellByPosition(cKlId,  r).setString("klant_id")
+
+    ' Bestelregels (rij 4 en verder)
+    For b = 0 To nBest - 1
+        r = 4 + b
+        oSheet.getCellByPosition(cNaam,  r).setString(Trim(bFam(b) & " " & bVoor(b)))
+        oSheet.getCellByPosition(cAfh,   r).setString(bAfh(b))
+        oSheet.getCellByPosition(cKlDag, r).setString(bKlaarDag(b))
+        oSheet.getCellByPosition(cTyp,   r).setString(bType(b))
+        oSheet.getCellByPosition(cOpm,   r).setString(bOpm(b))
+        oSheet.getCellByPosition(cEmail, r).setString(bEmail(b))
+        oSheet.getCellByPosition(cTel,   r).setString(bTel(b))
+        If bKlantId(b) <> "" Then
+            oSheet.getCellByPosition(cKlId, r).setValue(CDbl(bKlantId(b)))
+        End If
+        For p = 0 To 17
+            If bAant(b, p) > 0 Then
+                oSheet.getCellByPosition(cProd0 + p, r).setValue(bAant(b, p))
+            End If
+        Next p
+    Next b
+
+    ' Opslaan
+    Dim sUrl As String : sUrl = ConvertToURL(sBestand)
+    Dim aSaveProps(0) As New com.sun.star.beans.PropertyValue
+    aSaveProps(0).Name = "FilterName" : aSaveProps(0).Value = "calc8"
+    oNieuwDoc.storeToURL(sUrl, aSaveProps())
+
+    MsgBox "Koffie-weekbestand opgeslagen:" & Chr(10) & sBestand & Chr(10) & _
+           Chr(10) & nBest & " bestelling(en) verwerkt.", 64, "KoffieWeekbestand"
+    Exit Sub
+
+VerbindingsFout:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
+           "Controleer of de SSH-tunnel actief is.", 16, "Fout"
+End Sub
