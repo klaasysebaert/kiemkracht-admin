@@ -63,6 +63,11 @@ Sub StartMaakWeekbestand()
     MaakWeekbestand()
 End Sub
 
+Sub StartKoffieWeekbestand()
+    ReloadKiemkracht()
+    KoffieWeekbestand()
+End Sub
+
 Sub StartLaadAlleTabellen()
     ReloadKiemkracht()
     LaadAlleTabellen()
