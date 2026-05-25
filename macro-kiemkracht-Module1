@@ -7,6 +7,13 @@ Option Explicit
 ' JDBC-verbinding terug.
 ' =============================================
 
+' Module-level vlaggen: tunnel al gestart tijdens deze LO-sessie?
+' Voorkomt dat een macro die meerdere DB-verbindingen nodig heeft
+' (bv. KoffieWeekbestand: groenten + koffie) telkens een nieuwe
+' ssh-tunnel opent in een extra cmd-venster.
+Private mTunnelProdActief As Boolean
+Private mTunnelDevActief  As Boolean
+
 ' Geeft het ACTIEVE document terug als het een kiemkracht-data-bestand is,
 ' anders Null. ThisComponent = het venster waarin de macro gestart is — zo
 ' werkt alles op het bestand waarin je de macro oproept, ook met
