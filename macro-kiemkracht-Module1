@@ -95,7 +95,7 @@ End Function
 ' Sluit alle openstaande ssh-tunnels (cmd-vensters) en reset de
 ' module-level vlaggen. Alle DB-macro's roepen dit op het einde aan.
 Sub SluitSSHTunnels()
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     mTunnelProdActief = False
     mTunnelDevActief  = False
 End Sub
@@ -308,7 +308,7 @@ Sub LaadAlleTabellen()
     oIndicator.setText("Bijna klaar...")
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
     oIndicator.end()
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     Exit Sub
 
 VerbindingsFout:
@@ -1615,7 +1615,7 @@ Sub MaakWeekbestand()
         oDesktop.loadComponentFromURL(sUrl, "_blank", 0, aOpenProps())
         MsgBox "Weekbestand aangemaakt:" & Chr(10) & sBestand, 64, "Klaar"
     End If
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     Exit Sub
 
 VerbindingsFout:
@@ -1968,13 +1968,13 @@ Sub SchrijfWijzigingenTerug()
     Loop
 
     MsgBox nUpdates & " klant(en) bijgewerkt in postgres.", 64, "Klaar"
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     Exit Sub
 
 VerbindingsFout2:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
 End Sub
 
 ' =============================================
@@ -2115,7 +2115,7 @@ Sub VoegNieuweKlantToe()
     oStmt.executeUpdate(sSQL)
     oStmt.close()
     oConn.close()
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
 
     MsgBox "Klant '" & sVoornaam & " " & sFamilienaam & "' succesvol toegevoegd.", 64, "Klaar"
 
@@ -2133,7 +2133,7 @@ AfhaalpuntFout:
 
 VerbindingsFout3:
     MsgBox "Databasefout: " & Err & " - " & Error, 16, "Fout"
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
 
 End Sub
 
@@ -2571,7 +2571,7 @@ Sub VerwerkStopStart()
         Next k
         If kIdx = -1 Then
             oConn.close()
-            Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+            SluitSSHTunnels()
             MsgBox "Rij " & (riRij(i) + 1) & ": klant_id " & riKlant(i) & _
                    " bestaat niet in de klanten-tabel.", 16, "Fout"
             Exit Sub
@@ -2747,7 +2747,7 @@ Sub VerwerkStopStart()
             oSheet.getCellByPosition(COL_VB,    riRij(i)).setString("")
             oSheet.getCellByPosition(COL_START, riRij(i)).setString("")
         Next i
-        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        SluitSSHTunnels()
         MsgBox "Alle " & nDup & " ingevoerde week(en) stonden al in de database." & Chr(10) & _
                "De invoercellen zijn leeggemaakt.", 64, "VerwerkStopStart"
         Exit Sub
@@ -2768,7 +2768,7 @@ Sub VerwerkStopStart()
     sVraag = sVraag & "Akkoord?"
     If MsgBox(sVraag, 33, "VerwerkStopStart") <> 1 Then
         oConn.close()
-        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        SluitSSHTunnels()
         Exit Sub
     End If
 
@@ -2836,7 +2836,7 @@ Sub VerwerkStopStart()
         oSheet.getCellByPosition(COL_FORMAAT, riRij(i)).setString("")
     Next i
 
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     Dim sKlaar As String
     sKlaar = "Verwerkt: " & nAnn & " annulaties, " & nStopz & " stopzettingen, " & _
              nVb & " vooruitbestellingen, " & nStart & " abonnementstarts."
@@ -2853,12 +2853,12 @@ UitvoerFout:
     MsgBox "Databasefout tijdens het wegschrijven: " & Err & " - " & Error & Chr(10) & Chr(10) & _
            "Niet alle records zijn verwerkt. De invoer is bewaard — draai de macro " & _
            "opnieuw; reeds verwerkte weken worden automatisch overgeslagen.", 16, "Fout"
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     Exit Sub
 
 VerbindingsFoutSS:
     MsgBox "Verbindingsfout: " & Err & " - " & Error, 16, "Fout"
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
 
 End Sub
 
