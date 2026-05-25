@@ -3061,17 +3061,17 @@ Sub KoffieWeekbestand()
     gewSlt(2) = "1kg"  : gewLab(2) = "x1kg"  : gewPrijs(2) = 29
 
     p = 0
-    For iV = 0 To 1
-        For iS = 0 To 2
-            For iG = 0 To 2
-                sleutels(p) = soorten(iS) & "_" & vormen(iV) & "_" & gewSlt(iG)
-                labels(p)   = soortLabels(iS) & " " & vormen(iV)
-                gewicht(p)  = gewLab(iG)
-                prijzen(p)  = gewPrijs(iG)
+    For iVorm = 0 To 1
+        For iSrt = 0 To 2
+            For iGew = 0 To 2
+                sleutels(p) = soorten(iSrt) & "_" & vormen(iVorm) & "_" & gewSlt(iGew)
+                labels(p)   = soortLabels(iSrt) & " " & vormen(iVorm)
+                gewicht(p)  = gewLab(iGew)
+                prijzen(p)  = gewPrijs(iGew)
                 p = p + 1
-            Next iG
-        Next iS
-    Next iV
+            Next iGew
+        Next iSrt
+    Next iVorm
 
     ' --- Stap 3: bestelregels koppelen aan kolom-index ---
     For b = 0 To nBest - 1
