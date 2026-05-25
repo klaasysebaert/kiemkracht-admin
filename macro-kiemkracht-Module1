@@ -679,6 +679,13 @@ Sub MaakWeekbestand()
         Next g
     Next b
 
+    ' Hulp-variabelen voor stap 5 + 6: vooraf declareren zodat ze ook
+    ' beschikbaar zijn als de eerste loop geen rijen heeft (anders crasht
+    ' stap 6 met "Er is geen variabele gedefinieerd" op lBId).
+    Dim lBId  As Long
+    Dim sGr   As String
+    Dim dAant As Double
+
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT br.bestelling_id, br.groente_naam, br.aantal " & _
@@ -686,11 +693,8 @@ Sub MaakWeekbestand()
         "INNER JOIN bestellingen bst ON bst.id = br.bestelling_id " & _
         "WHERE bst.weeknummer = " & iWeek & " AND bst.jaar = " & iJaar)
     Do While oRS.next()
-        Dim lBId As Long
         lBId = CLng(oRS.getString(1))
-        Dim sGr As String
         sGr = oRS.getString(2)
-        Dim dAant As Double
         dAant = CDbl(Replace(oRS.getString(3), ".", ","))
         For b = 0 To nBest - 1
             If bId(b) = lBId Then
