@@ -95,7 +95,7 @@ End Function
 ' Sluit alle openstaande ssh-tunnels (cmd-vensters) en reset de
 ' module-level vlaggen. Alle DB-macro's roepen dit op het einde aan.
 Sub SluitSSHTunnels()
-    SluitSSHTunnels()
+    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
     mTunnelProdActief = False
     mTunnelDevActief  = False
 End Sub
