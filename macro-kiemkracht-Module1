@@ -2988,13 +2988,13 @@ Sub KoffieWeekbestand()
     Dim lBId   As Long
     Dim iAant  As Integer
 
-    Dim b  As Integer
-    Dim p  As Integer
-    Dim r  As Integer
-    Dim i  As Integer
-    Dim iV As Integer
-    Dim iS As Integer
-    Dim iG As Integer
+    Dim b     As Integer
+    Dim p     As Integer
+    Dim r     As Integer
+    Dim i     As Integer
+    Dim iVorm As Integer
+    Dim iSrt  As Integer
+    Dim iGew  As Integer
 
     Dim oDesktop  As Object
     Dim oNieuwDoc As Object
