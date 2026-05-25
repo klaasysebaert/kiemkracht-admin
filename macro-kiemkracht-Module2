@@ -73,7 +73,7 @@ Sub BereidMailmergeVoor()
         "Doorgaan?", _
         36, "BereidMailmergeVoor")
     If sAntwoord <> 6 Then  ' 6 = Ja
-        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        SluitSSHTunnels()
         Exit Sub
     End If
 
@@ -179,7 +179,7 @@ Sub BereidMailmergeVoor()
     If IsNull(oDoc) Then
         MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
                "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
-        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        SluitSSHTunnels()
         Exit Sub
     End If
     oSheets = oDoc.Sheets
@@ -421,13 +421,13 @@ Sub BereidMailmergeVoor()
            "  bevestiging           = weekperweek met vooruitbestelling", _
            64, "BereidMailmergeVoor"
 
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     Exit Sub
 
 VerbindingsFout:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
 
 End Sub
 
@@ -464,7 +464,7 @@ Sub BereidKoffieMailmergeVoor()
         "Doorgaan?", _
         36, "BereidKoffieMailmergeVoor")
     If sAntwoord <> 6 Then  ' 6 = Ja
-        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        SluitSSHTunnels()
         Exit Sub
     End If
 
@@ -529,7 +529,7 @@ Sub BereidKoffieMailmergeVoor()
     If IsNull(oDoc) Then
         MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
                "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
-        Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+        SluitSSHTunnels()
         Exit Sub
     End If
     oSheets = oDoc.Sheets
@@ -621,13 +621,13 @@ Sub BereidKoffieMailmergeVoor()
            "Doelomgeving: " & KOFFIE_URL, _
            64, "BereidKoffieMailmergeVoor"
 
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
     Exit Sub
 
 VerbindingsFout:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is.", 16, "Fout"
-    Shell "cmd.exe /c taskkill /F /IM ssh.exe"
+    SluitSSHTunnels()
 
 End Sub
 
