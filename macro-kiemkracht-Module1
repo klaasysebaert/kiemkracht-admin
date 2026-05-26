@@ -1150,14 +1150,10 @@ Sub MaakWeekbestand()
         "=SUM(" & KolomLetter(cKG) & "4:" & KolomLetter(cMINI) & "4)&"" PAKKETTEN""")
 
     ' W3: "<aantal losse bestellingen> LOSSE BESTELLINGEN" — klanten zonder
-    ' pakket (R,S,T,U leeg) maar met een waarde in X (cWaarde > 0). Loopt
-    ' automatisch mee dankzij de live afrekening.C-formule in kolom X.
+    ' pakket (R,S,T,U leeg) maar met een waarde in X (cWaarde > 0). Hergebruikt
+    ' W4 (totaalrij) zodat W3 automatisch meeloopt bij wijzigingen.
     oSheet.getCellByPosition(cSamenv, 2).setFormula( _
-        "=COUNTIFS(" & KolomLetter(cKG)     & "7:" & KolomLetter(cKG)     & iLaatste & ";"""";" & _
-                       KolomLetter(cGG)     & "7:" & KolomLetter(cGG)     & iLaatste & ";"""";" & _
-                       KolomLetter(cEGG)    & "7:" & KolomLetter(cEGG)    & iLaatste & ";"""";" & _
-                       KolomLetter(cMINI)   & "7:" & KolomLetter(cMINI)   & iLaatste & ";"""";" & _
-                       KolomLetter(cWaarde) & "7:" & KolomLetter(cWaarde) & iLaatste & ";"">0"")&"" LOSSE BESTELLINGEN""")
+        "=" & KolomLetter(cSamenv) & "4&"" LOSSE BESTELLINGEN""")
 
     ' Donderdagrij (code rij 4 = spreadsheet rij 5) — SUMIF op kolom C (dag_klaarmaken)
     For ic = cKG To cMINI
