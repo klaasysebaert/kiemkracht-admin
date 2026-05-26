@@ -1093,20 +1093,21 @@ Sub MaakWeekbestand()
         "=SUM(" & KolomLetter(cKG) & "6:" & KolomLetter(cMINI) & "6)")
 
     ' W4/W5/W6: aantal losse bestellingen (geen pakket, X > 0), opgesplitst per
-    ' klaarmaakdag voor rij 5/6. COUNTIFS-criterium per pakket-kolom = "" (leeg).
+    ' klaarmaakdag voor rij 5/6. SUMPRODUCT met ='' tests werkt mét echt-lege
+    ' cellen — COUNTIFS-criterium '""' deed dat niet en gaf altijd 0.
     Dim sW45Basis As String
-    sW45Basis = KolomLetter(cKG)     & "7:" & KolomLetter(cKG)     & iLaatste & ";"""";" & _
-                KolomLetter(cGG)     & "7:" & KolomLetter(cGG)     & iLaatste & ";"""";" & _
-                KolomLetter(cEGG)    & "7:" & KolomLetter(cEGG)    & iLaatste & ";"""";" & _
-                KolomLetter(cMINI)   & "7:" & KolomLetter(cMINI)   & iLaatste & ";"""";" & _
-                KolomLetter(cWaarde) & "7:" & KolomLetter(cWaarde) & iLaatste & ";"">0"""
-    oSheet.getCellByPosition(cSamenv, 3).setFormula("=COUNTIFS(" & sW45Basis & ")")
+    sW45Basis = "(" & KolomLetter(cKG)     & "7:" & KolomLetter(cKG)     & iLaatste & "="""")*" & _
+                "(" & KolomLetter(cGG)     & "7:" & KolomLetter(cGG)     & iLaatste & "="""")*" & _
+                "(" & KolomLetter(cEGG)    & "7:" & KolomLetter(cEGG)    & iLaatste & "="""")*" & _
+                "(" & KolomLetter(cMINI)   & "7:" & KolomLetter(cMINI)   & iLaatste & "="""")*" & _
+                "(" & KolomLetter(cWaarde) & "7:" & KolomLetter(cWaarde) & iLaatste & ">0)"
+    Dim sDagRange As String
+    sDagRange = "$" & KolomLetter(cKlaarDag) & "$7:$" & KolomLetter(cKlaarDag) & "$" & iLaatste
+    oSheet.getCellByPosition(cSamenv, 3).setFormula("=SUMPRODUCT(" & sW45Basis & ")")
     oSheet.getCellByPosition(cSamenv, 4).setFormula( _
-        "=COUNTIFS(" & sW45Basis & ";" & _
-        "$" & KolomLetter(cKlaarDag) & "$7:$" & KolomLetter(cKlaarDag) & "$" & iLaatste & ";""donderdag"")")
+        "=SUMPRODUCT(" & sW45Basis & "*(" & sDagRange & "=""donderdag""))")
     oSheet.getCellByPosition(cSamenv, 5).setFormula( _
-        "=COUNTIFS(" & sW45Basis & ";" & _
-        "$" & KolomLetter(cKlaarDag) & "$7:$" & KolomLetter(cKlaarDag) & "$" & iLaatste & ";""vrijdag"")")
+        "=SUMPRODUCT(" & sW45Basis & "*(" & sDagRange & "=""vrijdag""))")
 
     ' B4-B6 spiegelen Q4-Q6, C4-C6 spiegelen W4-W6 (gewoon doorgeef-formules,
     ' geen aparte opmaak — die volgt de algemene rij 3-5 layout).
