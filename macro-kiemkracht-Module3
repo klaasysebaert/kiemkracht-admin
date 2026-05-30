@@ -1423,7 +1423,9 @@ Sub MaakPrint()
     Next dd
 
     If nPaths = 0 Then
-        MsgBox "Geen documenten gevonden om af te drukken.", 48, "Print"
+        MsgBox "Geen documenten gevonden om af te drukken. " & _
+               "Controleer of je de macro hebt uitgevoerd vanuit het weekbestand " & _
+               "van waaruit je eerder de overzichten hebt aangemaakt.", 48, "Print"
         Exit Sub
     End If
 
