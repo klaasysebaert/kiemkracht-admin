@@ -1,14 +1,17 @@
 Sub BereidMailmergeVoor()
 
     ' =============================================
-    ' Kiemkracht - Mailmerge voorbereiden (DB-driven)
+    ' Kiemkracht - Mailmerge voorbereiden
     '
-    ' Maakt een nieuwe 'concept'-run aan in mailmerge_runs +
-    ' recipients in mailmerge_recipients met klantspecifieke
-    ' base64-URL. Geen Mailmerge-sheet meer in Calc — de mail-
-    ' tekst wordt via admin-mailmerge.php ingevoerd (mobile-
-    ' friendly) en de cron-runner verstuurt op het geplande
-    ' moment, na test-mails + goedkeuring.
+    ' Doet TWEE dingen tegelijk (transitie-modus):
+    '   (a) Vult sheet "Mailmerge" in kiemkracht-data.ods met
+    '       1 rij per klant per geldige mail — bron voor de
+    '       bestaande Thunderbird-mailmerge (backup-pad).
+    '   (b) Maakt een 'concept'-run aan in mailmerge_runs +
+    '       recipients in mailmerge_recipients (klantspecifieke
+    '       base64-URL vooraf berekend). Bron voor de nieuwe
+    '       geautomatiseerde flow via admin-mailmerge.php +
+    '       mailmerge-runner.php.
     '
     ' Logica per klanttype:
     '   abonnee              -> altijd uitgenodigd
@@ -27,8 +30,10 @@ Sub BereidMailmergeVoor()
     '   weekperweek met vooruit          -> 'bevestiging'
     '   abonnee in off-pariteit met vooruit -> 'bevestiging'
     '
-    ' Per klant 1+ rij(en) in mailmerge_recipients: één per geldig
-    ' e-mailadres (email1 + optioneel email2/3/4).
+    ' Voor DB-recipients: 1 rij per geldig e-mailadres (email1
+    ' + optioneel email2/3/4). Voor de Mailmerge-sheet blijft de
+    ' oude indeling: 1 rij per klant met extra emails in
+    ' kolommen N/Q/T.
     ' =============================================
 
     ' Webshop- en admin-URL volgen de omgeving
@@ -75,8 +80,8 @@ Sub BereidMailmergeVoor()
         "Mailmerge voorbereiden voor:" & Chr(10) & _
         "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & _
         "Komende donderdag: " & Format(dDonderdag, "DD/MM/YYYY") & Chr(10) & Chr(10) & _
-        "Mail-tekst voer je daarna in via:" & Chr(10) & _
-        ADMIN_URL & Chr(10) & Chr(10) & _
+        "Vult zowel het tabblad 'Mailmerge' (Thunderbird-backup) als" & Chr(10) & _
+        "de DB-queue (nieuwe geautomatiseerde flow via " & ADMIN_URL & ")." & Chr(10) & Chr(10) & _
         "Doorgaan?", _
         36, "BereidMailmergeVoor")
     If sAntwoord <> 6 Then  ' 6 = Ja
@@ -88,10 +93,20 @@ Sub BereidMailmergeVoor()
     sGepland = InputBox( _
         "Wanneer mag de bulk-mail vroegst verstuurd worden?" & Chr(10) & _
         "Formaat: YYYY-MM-DD HH:MM" & Chr(10) & Chr(10) & _
-        "Tot dat moment kan je nog tekst aanpassen via admin-mailmerge.php" & Chr(10) & _
-        "en moet je de testmails bekijken + goedkeuren.", _
+        "Tot dat moment kan je tekst aanpassen via admin-mailmerge.php" & Chr(10) & _
+        "en de testmails bekijken + goedkeuren.", _
         "Plan verzending", sDefault)
     If sGepland = "" Then
+        SluitSSHTunnels()
+        Exit Sub
+    End If
+
+    ' --- Check data-bestand vroeg (we hebben oDoc nodig voor de Mailmerge-sheet) ---
+    Dim oDoc As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
         SluitSSHTunnels()
         Exit Sub
     End If
@@ -208,9 +223,55 @@ Sub BereidMailmergeVoor()
         Exit Sub
     End If
 
-    ' --- Stap 4: recipients schrijven per klant ---
+    ' --- Stap 4: sheet "Mailmerge" aanmaken of leegmaken ---
+    Dim oSheets As Object
+    Dim oSheet  As Object
+    oSheets = oDoc.Sheets
+
+    If oSheets.hasByName("Mailmerge") Then
+        oSheet = oSheets.getByName("Mailmerge")
+        oSheet.clearContents(7)
+    Else
+        oSheets.insertNewByName("Mailmerge", 0)  ' eerste positie
+        oSheet = oSheets.getByName("Mailmerge")
+    End If
+
+    ' --- Stap 5: kolomhoofden Mailmerge-sheet ---
+    Dim hoofden(19) As String
+    hoofden(0)  = "Voornaam"
+    hoofden(1)  = "Familienaam"
+    hoofden(2)  = "Email"
+    hoofden(3)  = "Type"
+    hoofden(4)  = "Mailtype"
+    hoofden(5)  = "Pakket"
+    hoofden(6)  = "Leverdag"
+    hoofden(7)  = "Afhaal"
+    hoofden(8)  = "Week"
+    hoofden(9)  = "BestelURL"
+    hoofden(10) = "BestelURL_encoded"
+    hoofden(11) = "Voornaam2"
+    hoofden(12) = "Familienaam2"
+    hoofden(13) = "Email2"
+    hoofden(14) = "Voornaam3"
+    hoofden(15) = "Familienaam3"
+    hoofden(16) = "Email3"
+    hoofden(17) = "Voornaam4"
+    hoofden(18) = "Familienaam4"
+    hoofden(19) = "Email4"
+
+    Dim c As Integer
+    For c = 0 To 19
+        Dim oCell As Object
+        oCell = oSheet.getCellByPosition(c, 0)
+        oCell.setString(hoofden(c))
+        oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oCell.CellBackColor = RGB(204, 204, 204)
+    Next c
+
+    ' --- Stap 6: klanten verwerken — schrijven naar Mailmerge-sheet ÉN DB ---
     Dim oStmtIns As Object : oStmtIns = oConn.createStatement()
-    Dim nTotaal As Long : nTotaal = 0
+    Dim nDbRecipients As Long : nDbRecipients = 0
+    Dim r As Integer : r = 1  ' rij 1 = eerste datarij (rij 0 = hoofden)
 
     Dim k As Integer
     For k = 0 To nKlanten - 1
@@ -295,7 +356,24 @@ Sub BereidMailmergeVoor()
             sTypeURL = sType
         End If
 
-        ' Querystring + base64-URL
+        ' --- Plain URL (oude kolom J) ---
+        Dim sVoornaamURL As String
+        Dim sAfhaalURL   As String
+        sVoornaamURL = JoinPlus(kVoor(k))
+        sAfhaalURL   = JoinPlus(sAfhaal)
+
+        Dim sURL As String
+        sURL = BESTEL_URL & _
+               "?voornaam="  & sVoornaamURL & _
+               "&naam="      & JoinPlus(kFam(k)) & _
+               "&email="     & kEmail(k) & _
+               "&klant_id="  & kID(k) & _
+               "&type="      & sTypeURL & _
+               "&leverdag="  & sLevdag & _
+               "&afhaalpunt=" & sAfhaalURL
+        If sPakketURL <> "" Then sURL = sURL & "&formaat=" & sPakketURL
+
+        ' --- Base64-URL (oude kolom K + nieuwe DB) ---
         Dim sQuerystring As String
         sQuerystring = "voornaam="    & UrlEncodeValue(kVoor(k))  & _
                        "&naam="       & UrlEncodeValue(kFam(k))   & _
@@ -310,7 +388,28 @@ Sub BereidMailmergeVoor()
         Dim sBestelURL As String
         sBestelURL = BESTEL_URL & "?d=" & Base64UrlEncode(sQuerystring)
 
-        ' Verzamel max 4 emails + bijhorende namen (dedupe op LCase)
+        ' === Mailmerge-sheet rij schrijven (oude gedrag) ===
+        oSheet.getCellByPosition(0, r).setString(kVoor(k))
+        oSheet.getCellByPosition(1, r).setString(kFam(k))
+        oSheet.getCellByPosition(2, r).setString(kEmail(k))
+        oSheet.getCellByPosition(3, r).setString(sType)
+        oSheet.getCellByPosition(4, r).setString(sMailtype)
+        oSheet.getCellByPosition(5, r).setString(sPakketURL)
+        oSheet.getCellByPosition(6, r).setString(sLevdag)
+        oSheet.getCellByPosition(7, r).setString(sAfhaal)
+        oSheet.getCellByPosition(8, r).setValue(iWeek)
+        oSheet.getCellByPosition(9, r).setString(sURL)
+        oSheet.getCellByPosition(10, r).setString(sBestelURL)
+
+        If kVoor2(k)  <> "" Then oSheet.getCellByPosition(11, r).setString(kVoor2(k))
+        If kFam2(k)   <> "" Then oSheet.getCellByPosition(12, r).setString(kFam2(k))
+        If kEmail2(k) <> "" Then oSheet.getCellByPosition(13, r).setString(kEmail2(k))
+        If kEmail3(k) <> "" Then oSheet.getCellByPosition(16, r).setString(kEmail3(k))
+        If kEmail4(k) <> "" Then oSheet.getCellByPosition(19, r).setString(kEmail4(k))
+
+        r = r + 1
+
+        ' === DB-recipients schrijven (nieuw gedrag): 1 rij per uniek email ===
         Dim sEmails(3)    As String
         Dim sVoornamen(3) As String
         Dim sFamnamen(3)  As String
@@ -342,7 +441,6 @@ Sub BereidMailmergeVoor()
             nE = nE + 1
         End If
 
-        ' INSERT per email
         Dim e As Integer
         For e = 0 To nE - 1
             Dim sSqlRcp As String
@@ -360,26 +458,40 @@ Sub BereidMailmergeVoor()
                       SqlStr(sLevdag)       & ", " & _
                       SqlStr(sAfhaal)       & ")"
             oStmtIns.executeUpdate(sSqlRcp)
-            nTotaal = nTotaal + 1
+            nDbRecipients = nDbRecipients + 1
         Next e
 
         VolgendeKlant:
     Next k
     oStmtIns.close()
 
-    ' --- Stap 5: totaal_recipients bijwerken ---
+    ' --- Stap 7: totaal_recipients bijwerken in DB ---
     Dim oStmtUpd As Object : oStmtUpd = oConn.createStatement()
     oStmtUpd.executeUpdate("UPDATE mailmerge_runs SET totaal_recipients = " & _
-                            nTotaal & " WHERE id = " & lRunId)
+                            nDbRecipients & " WHERE id = " & lRunId)
     oStmtUpd.close()
 
     oConn.close()
+
+    ' --- Stap 8: kolombreedte Mailmerge-sheet ---
+    Dim oKolommen As Object
+    oKolommen = oSheet.getColumns()
+    Dim cIdx As Integer
+    For cIdx = 0 To 19
+        oKolommen.getByIndex(cIdx).OptimalWidth = True
+    Next cIdx
+    oKolommen.getByIndex(9).Width  = 12000  ' ~12 cm
+    oKolommen.getByIndex(10).Width = 12000
+
     SluitSSHTunnels()
 
     ' --- Klaar ---
-    MsgBox "Mailmerge run #" & lRunId & " aangemaakt." & Chr(10) & Chr(10) & _
-           "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & _
-           nTotaal & " ontvangers (incl. extra e-mailadressen)" & Chr(10) & _
+    Dim nSheetRijen As Integer
+    nSheetRijen = r - 1
+    MsgBox "Mailmerge klaar!" & Chr(10) & Chr(10) & _
+           "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & Chr(10) & _
+           "Tabblad 'Mailmerge': " & nSheetRijen & " klanten (Thunderbird-backup-pad)" & Chr(10) & _
+           "DB-run #" & lRunId & ": " & nDbRecipients & " ontvangers (incl. extra e-mailadressen)" & Chr(10) & _
            "Geplande verzending: " & sGepland & Chr(10) & Chr(10) & _
            "Schrijf de mail-tekst en stuur testmails via:" & Chr(10) & _
            ADMIN_URL & "?run_id=" & lRunId, _
