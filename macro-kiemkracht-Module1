@@ -393,7 +393,12 @@ Sub MaakWeekbestand()
     Dim sBestand   As String
     Dim sOmgSuffix As String
     If BepaalOmgeving() = "dev" Then sOmgSuffix = "-dev" Else sOmgSuffix = ""
-    sBestand = SAVE_MAP & "week_" & iWeek & "_" & iJaar & sOmgSuffix & ".ods"
+
+    Dim sWeekMap As String
+    sWeekMap = SAVE_MAP & iJaar & "_week_" & iWeek & "\"
+    If Not FileExists(sWeekMap) Then MkDir(sWeekMap)
+
+    sBestand = sWeekMap & "week_" & iWeek & "_" & iJaar & sOmgSuffix & ".ods"
 
     ' JDBC-verbinding (juiste omgeving via MaakDBVerbinding)
     On Error GoTo VerbindingsFout
