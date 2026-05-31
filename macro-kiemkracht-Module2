@@ -399,7 +399,6 @@ Sub BereidMailmergeVoor()
         If sPakketURL <> "" Then
             sQuerystring = sQuerystring & "&formaat=" & UrlEncodeValue(sPakketURL)
         End If
-        Dim sBestelURL As String
         sBestelURL = BESTEL_URL & "?d=" & Base64UrlEncode(sQuerystring)
 
         ' === Mailmerge-sheet rij schrijven (oude gedrag) ===
