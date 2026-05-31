@@ -343,8 +343,6 @@ Sub BereidMailmergeVoor()
         If kEmail(k) = "" Then GoTo VolgendeKlant
 
         ' Mailtype + pakket-in-URL
-        Dim sMailtype  As String
-        Dim sPakketURL As String
         If bVooruit Then
             sMailtype  = "bevestiging"
             sPakketURL = sFormaat
