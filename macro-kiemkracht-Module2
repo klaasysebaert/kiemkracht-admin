@@ -273,13 +273,36 @@ Sub BereidMailmergeVoor()
     Dim nDbRecipients As Long : nDbRecipients = 0
     Dim r As Integer : r = 1  ' rij 1 = eerste datarij (rij 0 = hoofden)
 
+    ' ALLE per-klant variabelen vooraan declareren. LO Basic struikelt op
+    ' `Dim` binnen een loop (vooral fixed-size arrays) — zelfde patroon
+    ' als de oude MaakWeekbestand-bug.
     Dim k As Integer
+    Dim sType         As String
+    Dim sFormaat      As String
+    Dim sAfhaal       As String
+    Dim sLevdag       As String
+    Dim bVooruit      As Boolean
+    Dim v             As Integer
+    Dim bMail         As Boolean
+    Dim sMailtype     As String
+    Dim sPakketURL    As String
+    Dim bGean         As Boolean
+    Dim a             As Integer
+    Dim sTypeURL      As String
+    Dim sVoornaamURL  As String
+    Dim sAfhaalURL    As String
+    Dim sURL          As String
+    Dim sQuerystring  As String
+    Dim sBestelURL    As String
+    Dim sEmails(3)    As String
+    Dim sVoornamen(3) As String
+    Dim sFamnamen(3)  As String
+    Dim nE            As Integer
+    Dim e             As Integer
+    Dim sSqlRcp       As String
+
     For k = 0 To nKlanten - 1
 
-        Dim sType    As String
-        Dim sFormaat As String
-        Dim sAfhaal  As String
-        Dim sLevdag  As String
         sType    = kType(k)
         sFormaat = kFormaat(k)
         sAfhaal  = kAfhaal(k)
