@@ -309,8 +309,7 @@ Sub BereidMailmergeVoor()
         sLevdag  = kLevdag(k)
 
         ' Vooruitbesteld?
-        Dim bVooruit As Boolean : bVooruit = False
-        Dim v As Integer
+        bVooruit = False
         For v = 0 To nVB - 1
             If LCase(vbEmail(v)) = LCase(kEmail(k)) Then
                 bVooruit = True
