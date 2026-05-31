@@ -2044,6 +2044,10 @@ Sub VoegNieuweKlantToe()
     Dim sNooitGroenten As String : sNooitGroenten = Trim(oSheet.getCellByPosition(COL_G, 22).getString())
     ' Rij 24-25 = datumvelden (type VALUE als celdatum, TEXT als tekst)
     Dim sKlantSindsSql  As String : sKlantSindsSql  = SqlDateCell(oSheet.getCellByPosition(COL_G, 23))
+    ' Klant_sinds leeg gelaten? Vul automatisch met vandaag (formaat YYYY-MM-DD).
+    If sKlantSindsSql = "NULL" Then
+        sKlantSindsSql = "'" & Format(Now(), "YYYY-MM-DD") & "'"
+    End If
     Dim sLaatsteBestSql As String : sLaatsteBestSql = SqlDateCell(oSheet.getCellByPosition(COL_G, 24))
     Dim sOpmerkingen   As String : sOpmerkingen   = Trim(oSheet.getCellByPosition(COL_G, 25).getString())
     Dim sOpmerkVolg    As String : sOpmerkVolg    = Trim(oSheet.getCellByPosition(COL_G, 26).getString())
