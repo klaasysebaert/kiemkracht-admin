@@ -319,7 +319,7 @@ Sub BereidMailmergeVoor()
         Next v
 
         ' Mail deze week?
-        Dim bMail As Boolean : bMail = False
+        bMail = False
         If bVooruit Then
             bMail = True
         ElseIf sType = "abonnee" Then
