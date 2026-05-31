@@ -456,9 +456,8 @@ Sub BereidMailmergeVoor()
             nE = nE + 1
         End If
 
-        Dim e As Integer
+        ' INSERT per email
         For e = 0 To nE - 1
-            Dim sSqlRcp As String
             sSqlRcp = "INSERT INTO mailmerge_recipients " & _
                       "(run_id, klant_id, naar_email, voornaam, familienaam, " & _
                       " klant_type, mailtype, bestel_url, pakket, leverdag, afhaalpunt) " & _
