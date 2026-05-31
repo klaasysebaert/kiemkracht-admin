@@ -368,7 +368,6 @@ Sub BereidMailmergeVoor()
         End If
 
         ' Type voor URL (toekomst -> weekperweek)
-        Dim sTypeURL As String
         If InStr(sType, "-toekomst") > 0 Then
             sTypeURL = "weekperweek"
         Else
