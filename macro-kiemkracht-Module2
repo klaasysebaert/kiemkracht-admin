@@ -518,9 +518,9 @@ Function VolgendeMaandag13u() As Date
     Else
         iDagen = 8 - iDow
     End If
-    Dim dMa As Date
-    dMa = DateSerial(Year(dNu), Month(dNu), Day(dNu) + iDagen)
-    VolgendeMaandag13u = dMa + TimeSerial(13, 0, 0)
+    ' Int(dNu) trunceert naar datum-only; daarna iDagen optellen en
+    ' 13:00 toevoegen. Vermijdt DateSerial-overflow-bug bij dagen > 31.
+    VolgendeMaandag13u = Int(dNu) + iDagen + TimeSerial(13, 0, 0)
 End Function
 
 ' =============================================
