@@ -352,8 +352,7 @@ Sub BereidMailmergeVoor()
             sMailtype  = "uitnodiging-los"
             sPakketURL = ""
         Else
-            Dim bGean As Boolean : bGean = False
-            Dim a As Integer
+            bGean = False
             For a = 0 To nAnn - 1
                 If LCase(annEmail(a)) = LCase(kEmail(k)) Then
                     bGean = True : Exit For
