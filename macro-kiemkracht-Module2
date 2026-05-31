@@ -389,7 +389,6 @@ Sub BereidMailmergeVoor()
         If sPakketURL <> "" Then sURL = sURL & "&formaat=" & sPakketURL
 
         ' --- Base64-URL (oude kolom K + nieuwe DB) ---
-        Dim sQuerystring As String
         sQuerystring = "voornaam="    & UrlEncodeValue(kVoor(k))  & _
                        "&naam="       & UrlEncodeValue(kFam(k))   & _
                        "&email="      & UrlEncodeValue(kEmail(k)) & _
