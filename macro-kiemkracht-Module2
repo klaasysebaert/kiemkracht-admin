@@ -423,10 +423,12 @@ Sub BereidMailmergeVoor()
         r = r + 1
 
         ' === DB-recipients schrijven (nieuw gedrag): 1 rij per uniek email ===
-        Dim sEmails(3)    As String
-        Dim sVoornamen(3) As String
-        Dim sFamnamen(3)  As String
-        Dim nE As Integer : nE = 0
+        ' Arrays expliciet leegmaken — Dim staat vooraan, dus de waarden
+        ' van de vorige iteratie zitten er nog in.
+        sEmails(0) = "" : sEmails(1) = "" : sEmails(2) = "" : sEmails(3) = ""
+        sVoornamen(0) = "" : sVoornamen(1) = "" : sVoornamen(2) = "" : sVoornamen(3) = ""
+        sFamnamen(0) = "" : sFamnamen(1) = "" : sFamnamen(2) = "" : sFamnamen(3) = ""
+        nE = 0
         sEmails(0)    = kEmail(k)
         sVoornamen(0) = kVoor(k)
         sFamnamen(0)  = kFam(k)
