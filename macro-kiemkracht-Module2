@@ -375,12 +375,9 @@ Sub BereidMailmergeVoor()
         End If
 
         ' --- Plain URL (oude kolom J) ---
-        Dim sVoornaamURL As String
-        Dim sAfhaalURL   As String
         sVoornaamURL = JoinPlus(kVoor(k))
         sAfhaalURL   = JoinPlus(sAfhaal)
 
-        Dim sURL As String
         sURL = BESTEL_URL & _
                "?voornaam="  & sVoornaamURL & _
                "&naam="      & JoinPlus(kFam(k)) & _
