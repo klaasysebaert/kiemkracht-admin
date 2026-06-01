@@ -1501,6 +1501,46 @@ Sub MaakWeekbestand()
     ' --- Rijen/kolommen vastzetten bij B7 ---
     oNieuwDoc.getCurrentController().freezeAtPosition(1, 6)
 
+    ' --- Tabblad "pakketwaardes" (bewerkbaar; bron voor weglatingen-verrekening) ---
+    ' Eén rij per groente met de in-pakket-waarde per formaat. Initieel gevuld
+    ' vanuit pakket_inhoud.waarde (Sheets-sync), maar vrij bewerkbaar: de
+    ' afrekening verwijst hiernaar zodat jouw bijsturing meteen doorwerkt.
+    ' MOET vóór het afrekeningstabblad worden aangemaakt — de afrekening-formules
+    ' verwijzen ernaar, en LibreOffice compileert een verwijzing naar een nog
+    ' onbestaand blad meteen tot een fout.
+    Dim oPW As Object
+    If oNieuwDoc.Sheets.hasByName("pakketwaardes") Then
+        oPW = oNieuwDoc.Sheets.getByName("pakketwaardes")
+    Else
+        oNieuwDoc.Sheets.insertNewByName("pakketwaardes", oNieuwDoc.Sheets.Count)
+        oPW = oNieuwDoc.Sheets.getByName("pakketwaardes")
+    End If
+    Dim oFmtsPW As Object : oFmtsPW = oNieuwDoc.getNumberFormats()
+    Dim oLocPW As New com.sun.star.lang.Locale
+    oLocPW.Language = "nl" : oLocPW.Country = "BE"
+    Dim nCurPW As Long, sCurPW As String
+    sCurPW = "#.##0,00"" " & Chr(8364) & """"
+    nCurPW = oFmtsPW.queryKey(sCurPW, oLocPW, False)
+    If nCurPW = -1 Then nCurPW = oFmtsPW.addNew(sCurPW, oLocPW)
+    oPW.getCellByPosition(0, 0).setString("groente")
+    oPW.getCellByPosition(1, 0).setString("klein (KG)")
+    oPW.getCellByPosition(2, 0).setString("groot (GG)")
+    oPW.getCellByPosition(3, 0).setString("extra groot (EGG)")
+    oPW.getCellByPosition(4, 0).setString("mini (MINI)")
+    Dim iPwRij As Integer
+    For iPwRij = 0 To nPW - 1
+        oPW.getCellByPosition(0, iPwRij + 1).setString(pwNaam(iPwRij))
+        oPW.getCellByPosition(1, iPwRij + 1).setValue(pwKG(iPwRij))
+        oPW.getCellByPosition(2, iPwRij + 1).setValue(pwGG(iPwRij))
+        oPW.getCellByPosition(3, iPwRij + 1).setValue(pwEGG(iPwRij))
+        oPW.getCellByPosition(4, iPwRij + 1).setValue(pwMINI(iPwRij))
+    Next iPwRij
+    If nPW > 0 Then
+        oPW.getCellRangeByName("B2:E" & (nPW + 1)).NumberFormat = nCurPW
+    End If
+    oPW.getCellRangeByName("A1:E1").CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oPW.Columns.getByIndex(0).Width = 5000
+
     ' --- Tabblad "afrekening" ---
     ' Spiegelt de klantrijen van het databstblad met levende formules en
     ' berekent per klant het te betalen bedrag. Manuele correcties van de
