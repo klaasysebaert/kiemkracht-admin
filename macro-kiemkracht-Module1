@@ -462,6 +462,50 @@ Sub MaakWeekbestand()
     Loop
     oRS.close() : oStmt.close()
 
+    ' --- Pakketwaardes per (formaat, groente) — bron voor weglatingen-verrekening ---
+    ' Komt uit pakket_inhoud.waarde (gesynct vanuit Sheets "€ in pakket").
+    ' Belandt in een bewerkbaar tabblad "pakketwaardes"; de afrekening verwijst
+    ' ernaar zodat manuele bijsturing in het weekbestand meteen doorwerkt.
+    Dim pwNaam(200) As String
+    Dim pwKG(200)   As Double, pwGG(200) As Double
+    Dim pwEGG(200)  As Double, pwMINI(200) As Double
+    Dim nPW         As Integer
+    Dim sPwSleutel  As String, sPwNaam As String
+    Dim dPwWaarde   As Double
+    Dim iPwIdx      As Integer, iPw As Integer
+    nPW = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT p.sleutel, pi.groente_naam, pi.waarde " & _
+        "FROM pakket_inhoud pi JOIN pakketten p ON p.id = pi.pakket_id " & _
+        "WHERE pi.weeknummer = " & iWeek & " AND pi.jaar = " & iJaar & _
+        " ORDER BY pi.groente_naam")
+    Do While oRS.next()
+        sPwSleutel = oRS.getString(1)
+        sPwNaam    = oRS.getString(2)
+        dPwWaarde  = oRS.getDouble(3)
+        iPwIdx = -1
+        For iPw = 0 To nPW - 1
+            If pwNaam(iPw) = sPwNaam Then
+                iPwIdx = iPw
+                Exit For
+            End If
+        Next iPw
+        If iPwIdx = -1 Then
+            iPwIdx = nPW
+            pwNaam(nPW) = sPwNaam
+            pwKG(nPW) = 0 : pwGG(nPW) = 0 : pwEGG(nPW) = 0 : pwMINI(nPW) = 0
+            nPW = nPW + 1
+        End If
+        Select Case sPwSleutel
+            Case "klein"       : pwKG(iPwIdx)   = dPwWaarde
+            Case "groot"       : pwGG(iPwIdx)   = dPwWaarde
+            Case "extra-groot" : pwEGG(iPwIdx)  = dPwWaarde
+            Case "mini"        : pwMINI(iPwIdx) = dPwWaarde
+        End Select
+    Loop
+    oRS.close() : oStmt.close()
+
     ' --- Stap 2: unieke weglatingen deze week ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
