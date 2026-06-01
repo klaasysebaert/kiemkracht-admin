@@ -1610,6 +1610,30 @@ Sub MaakWeekbestand()
                 "&"" ""&" & sEenRng & "&"" " & Chr(224) & " ""&" & _
                 "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
                 "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
+            ' Weglatingen: per groente de in-pakket-waarde, maar enkel als de
+            ' klant ze weglaat (cel in databstblad niet leeg). Opzoeken in
+            ' 'pakketwaardes' met de juiste formaatkolom (1=KG..4=MINI). Een
+            ' niet-gevonden naam of "geen pakket" levert 0 op (IFERROR).
+            If nWeg > 0 Then
+                Dim sFmtCol As String
+                sFmtCol = "IF(" & sData & "." & KolomLetter(cKG)   & asr & ">0;1;" & _
+                          "IF(" & sData & "." & KolomLetter(cGG)   & asr & ">0;2;" & _
+                          "IF(" & sData & "." & KolomLetter(cEGG)  & asr & ">0;3;" & _
+                          "IF(" & sData & "." & KolomLetter(cMINI) & asr & ">0;4;0))))"
+                Dim sPwVal As String, sPwKey As String
+                sPwVal = "pakketwaardes.$B$2:$E$" & (nPW + 1)
+                sPwKey = "pakketwaardes.$A$2:$A$" & (nPW + 1)
+                Dim wAfr As Integer, sWegColA As String
+                For wAfr = 0 To nWeg - 1
+                    sWegColA = KolomLetter(cWeg0 + wAfr)
+                    oAfr.getCellByPosition(cWeg0 + wAfr, ar).setFormula( _
+                        "=IF(" & sData & "." & sWegColA & asr & "="""";"""";" & _
+                        "IFERROR(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
+                        sFmtCol & ");0))")
+                Next wAfr
+                oAfr.getCellByPosition(cWeg0 + nWeg, ar).setFormula( _
+                    "=SUM(" & KolomLetter(cWeg0) & asr & ":" & KolomLetter(cWeg0 + nWeg - 1) & asr & ")")
+            End If
         End If
     Next ar
 
