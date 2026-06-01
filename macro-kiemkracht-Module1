@@ -1548,6 +1548,18 @@ Sub MaakWeekbestand()
             "=" & sData & "." & KolomLetter(cGroent0 + g) & "2")
     Next g
 
+    ' Weglatingskolommen (vanaf AZ, uitgelijnd op het databstblad): per
+    ' weglatingsgroente de waarde die de klant in mindering krijgt, plus een
+    ' totaalkolom. De waarde wordt opgezocht in 'pakketwaardes' o.b.v.
+    ' (formaat van de klant, groentenaam).
+    If nWeg > 0 Then
+        Dim wHdr As Integer
+        For wHdr = 0 To nWeg - 1
+            oAfr.getCellByPosition(cWeg0 + wHdr, 5).setString(wegNaam(wHdr))
+        Next wHdr
+        oAfr.getCellByPosition(cWeg0 + nWeg, 5).setString("weglatingen (-)")
+    End If
+
     ' Spiegel: één rij per databstblad-rij (klantrijen krijgen formules)
     Dim sLG As String
     sLG = KolomLetter(cGroent0 + nGroenten - 1)
