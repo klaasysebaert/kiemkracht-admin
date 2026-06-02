@@ -1038,8 +1038,8 @@ Sub MaakMaandbestand()
         oWeek.calculateAll()
         oData = oWeek.Sheets.getByIndex(0)
         oAfr  = oWeek.Sheets.getByName("afrekening")
-        oBlad2 = Nothing
-        If oWeek.Sheets.hasByName("Blad2") Then oBlad2 = oWeek.Sheets.getByName("Blad2")
+        bBlad2 = oWeek.Sheets.hasByName("Blad2")
+        If bBlad2 Then oBlad2 = oWeek.Sheets.getByName("Blad2")
 
         ' Groente-metadata
         nGroenten = 0
