@@ -1690,7 +1690,7 @@ Sub MaakWeekbestand()
                 sWegL = KolomLetter(cWeg0 + nWeg - 1)
                 oAfr.getCellRangeByName(KolomLetter(cGeen) & asr).setArrayFormula( _
                     "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sWegF & asr & ":" & sWegL & asr & "="""";"""";" & _
-                    """Geen ""&" & sWegF & "$6:" & sWegL & "$6&"": -""&" & _
+                    """Geen ""&LOWER(" & sWegF & "$6:" & sWegL & "$6)&"": -""&" & _
                     "TEXT(" & sWegF & asr & ":" & sWegL & asr & ";""0,00"")&"" " & Chr(8364) & """))")
             Else
                 oAfr.getCellByPosition(3, ar).setValue(0)
