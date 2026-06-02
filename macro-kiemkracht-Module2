@@ -1268,7 +1268,7 @@ Sub MaakMaandbestand()
     MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
            (ro - 1) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
            sMaandNaam & " " & iJaar & ")." & Chr(10) & Chr(10) & _
-           "'Bijb n als' = items met ' & ' (Thunderbild)." & Chr(10) & _
+           "'Bijb n als' = items met ' & ' (Thunderbird)." & Chr(10) & _
            "'Bijb n als (regeleindes)' = echte regeleindes (PHP/ZeptoMail).", _
            64, "Maandafrekening"
 
