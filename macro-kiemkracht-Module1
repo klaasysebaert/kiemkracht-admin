@@ -1761,6 +1761,7 @@ Sub MaakWeekbestand()
 
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
+    sStap = "opslaan/heropenen weekbestand"
     ' --- Opslaan ---
     Dim sUrl As String
     sUrl = ConvertToURL(sBestand)
