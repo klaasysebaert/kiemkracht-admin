@@ -1233,11 +1233,19 @@ Sub MaakMaandbestand()
         oS.getCellByPosition(3, ro).setString(mEmail(idx))
         oS.getCellByPosition(4, ro).setString(sMaandNaam)
         oS.getCellByPosition(5, ro).setString(FmtNum2(mSaldo(idx)))
-        For wi = 0 To nWk - 1
-            baseCol = 6 + wi * 3
-            If mPak(idx, wi)  <> "" Then oS.getCellByPosition(baseCol,     ro).setString(mPak(idx, wi))
-            If mBijA(idx, wi) <> "" Then oS.getCellByPosition(baseCol + 1, ro).setString(mBijA(idx, wi))
-            If mBijN(idx, wi) <> "" Then oS.getCellByPosition(baseCol + 2, ro).setString(mBijN(idx, wi))
+        For wi = 0 To NWEKEN - 1
+            ' ruwe inhoud (enkel voor weken die deze maand bestaan)
+            If wi < nWk Then
+                If mPak(idx, wi)  <> "" Then oS.getCellByPosition(6 + wi * 2,     ro).setString(mPak(idx, wi))
+                If mBijA(idx, wi) <> "" Then oS.getCellByPosition(6 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
+            End If
+            ' "als"-formules: lege ruwe cel -> "|" (toont als =ALS(..) in NL-UI)
+            oS.getCellByPosition(16 + wi * 2, ro).setFormula( _
+                "=IF(" & KolomLetter(6 + wi * 2) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(6 + wi * 2) & (ro + 1) & ")")
+            oS.getCellByPosition(16 + wi * 2 + 1, ro).setFormula( _
+                "=IF(" & KolomLetter(6 + wi * 2 + 1) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(6 + wi * 2 + 1) & (ro + 1) & ")")
         Next wi
         ro = ro + 1
         VolgendeUit:
