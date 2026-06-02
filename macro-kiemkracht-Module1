@@ -1727,6 +1727,8 @@ Sub MaakWeekbestand()
     oAfr.Columns.getByIndex(4).Width = 2400
     oAfr.Columns.getByIndex(cSamenv).Width = 9000
     oAfr.getCellRangeByName(KolomLetter(cSamenv) & "7:" & KolomLetter(cSamenv) & iLaatste).IsTextWrapped = True
+    oAfr.Columns.getByIndex(cGeen).Width = 9000
+    oAfr.getCellRangeByName(KolomLetter(cGeen) & "7:" & KolomLetter(cGeen) & iLaatste).IsTextWrapped = True
 
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
