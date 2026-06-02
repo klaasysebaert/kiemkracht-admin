@@ -1018,8 +1018,13 @@ Sub MaakMaandbestand()
     Dim nVerwerkt As Integer : nVerwerkt = 0
 
     For wi = 0 To nWk - 1
-        sPad = SAVE_MAP & iJaar & "_week_" & wkNr(wi) & "\week_" & wkNr(wi) & "_" & iJaar & sOmg & ".ods"
-        If Not FileExists(sPad) Then GoTo VolgendeWeek
+        ' Bestand zoeken: de exacte naam kan variëren (bv. _definitief-suffix).
+        ' Strategie: zoek in de weekmap het eerste .ods-bestand waarvan de naam
+        ' begint met "week_<wk>_<jaar>" en de omgevingssuffix bevat.
+        Dim sWeekMap As String
+        sWeekMap = SAVE_MAP & iJaar & "_week_" & wkNr(wi) & "\"
+        sPad = ZoekWeekbestand(sWeekMap, wkNr(wi), iJaar, sOmg)
+        If sPad = "" Then GoTo VolgendeWeek
         sUrlW = ConvertToURL(sPad)
 
         ' Al open (jij bekijkt het bestand)? Hergebruiken, niet sluiten.
