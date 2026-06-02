@@ -1275,8 +1275,25 @@ Sub MaakMaandbestand()
     ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
     Dim sUit As String : sUit = SAVE_MAP & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
     Dim sUrlUit As String : sUrlUit = ConvertToURL(sUit)
-    Dim aSave(0) As New com.sun.star.beans.PropertyValue
+
+    ' Sluit het doelbestand als het nog open staat (bv. van een vorige run),
+    ' anders faalt storeToURL met een AlreadyExists-lock.
+    If FileExists(sUit) Then
+        Dim oComp As Object, oEnum As Object
+        oEnum = StarDesktop.Components.createEnumeration()
+        Do While oEnum.hasMoreElements()
+            oComp = oEnum.nextElement()
+            If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
+                If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                    If sUrlUit = oComp.getURL() Then oComp.close(True)
+                End If
+            End If
+        Loop
+    End If
+
+    Dim aSave(1) As New com.sun.star.beans.PropertyValue
     aSave(0).Name = "FilterName" : aSave(0).Value = "calc8"
+    aSave(1).Name = "Overwrite"  : aSave(1).Value = True
     oOut.storeToURL(sUrlUit, aSave())
     oOut.close(True)
 
