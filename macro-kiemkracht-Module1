@@ -1687,25 +1687,23 @@ Sub MaakWeekbestand()
     oAfr.getCellByPosition(1, arTot).setFormula("=SUM(B7:B" & iLaatste & ")")
     oAfr.getCellByPosition(2, arTot).setFormula("=SUM(C7:C" & iLaatste & ")")
     oAfr.getCellByPosition(3, arTot).setFormula("=SUM(D7:D" & iLaatste & ")")
-    If nWeg > 0 Then
-        oAfr.getCellByPosition(cWeg0 + nWeg, arTot).setFormula( _
-            "=SUM(" & KolomLetter(cWeg0 + nWeg) & "7:" & KolomLetter(cWeg0 + nWeg) & iLaatste & ")")
-    End If
+    oAfr.getCellByPosition(4, arTot).setFormula("=SUM(E7:E" & iLaatste & ")")
 
     ' Opmaak afrekeningstabblad
-    oAfr.getCellRangeByName("B7:D" & (arTot + 1)).NumberFormat = nCur
+    oAfr.getCellRangeByName("B7:E" & (arTot + 1)).NumberFormat = nCur
     oAfr.getCellRangeByName(KolomLetter(cGroent0) & "7:" & sLG & iLaatste).NumberFormat = nCur
     If nWeg > 0 Then
-        oAfr.getCellRangeByName(KolomLetter(cWeg0) & "7:" & KolomLetter(cWeg0 + nWeg) & (arTot + 1)).NumberFormat = nCur
-        oAfr.getCellRangeByName(KolomLetter(cWeg0) & "6:" & KolomLetter(cWeg0 + nWeg) & "6").CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oAfr.getCellRangeByName(KolomLetter(cWeg0) & "7:" & KolomLetter(cWeg0 + nWeg - 1) & iLaatste).NumberFormat = nCur
+        oAfr.getCellRangeByName(KolomLetter(cWeg0) & "6:" & KolomLetter(cWeg0 + nWeg - 1) & "6").CharWeight = com.sun.star.awt.FontWeight.BOLD
     End If
     oAfr.getCellRangeByName("A6:" & sLG & "6").CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oAfr.getCellRangeByName("A" & (arTot + 1) & ":D" & (arTot + 1)).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oAfr.getCellRangeByName("A" & (arTot + 1) & ":E" & (arTot + 1)).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfr.Columns.getByIndex(0).Width = 5000
     oAfr.Columns.getByIndex(1).Width = 2000
     oAfr.Columns.getByIndex(2).Width = 2600
-    oAfr.Columns.getByIndex(3).Width = 2400
+    oAfr.Columns.getByIndex(3).Width = 2600
+    oAfr.Columns.getByIndex(4).Width = 2400
     oAfr.Columns.getByIndex(cSamenv).Width = 9000
     oAfr.getCellRangeByName(KolomLetter(cSamenv) & "7:" & KolomLetter(cSamenv) & iLaatste).IsTextWrapped = True
 
