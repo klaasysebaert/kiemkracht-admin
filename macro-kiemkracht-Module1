@@ -1550,6 +1550,7 @@ Sub MaakWeekbestand()
     oPW.getCellRangeByName("A1:E1").CharWeight = com.sun.star.awt.FontWeight.BOLD
     oPW.Columns.getByIndex(0).Width = 5000
 
+    sStap = "afrekening-tabblad opbouwen (koprij/prijzen)"
     ' --- Tabblad "afrekening" ---
     ' Spiegelt de klantrijen van het databstblad met levende formules en
     ' berekent per klant het te betalen bedrag. Manuele correcties van de
