@@ -406,6 +406,11 @@ Sub MaakWeekbestand()
     oConn = MaakDBVerbinding()
     On Error GoTo 0
 
+    ' [DIAGNOSE — tijdelijk] vang elke fout met een breadcrumb (sStap)
+    Dim sStap As String
+    On Error GoTo MaakWeekFout
+    sStap = "na DB-connect, data ophalen"
+
     Dim oStmt As Object
     Dim oRS   As Object
 
