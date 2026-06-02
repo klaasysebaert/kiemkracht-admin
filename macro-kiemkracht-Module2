@@ -1258,11 +1258,11 @@ Sub MaakMaandbestand()
     oHdr.CellBackColor = RGB(204, 204, 204)
     oS.Columns.getByIndex(2).Width = 5000
     oS.Columns.getByIndex(3).Width = 6000
-    For wi = 0 To nWk - 1
-        baseCol = 6 + wi * 3
-        oS.Columns.getByIndex(baseCol).Width     = 8000
-        oS.Columns.getByIndex(baseCol + 1).Width = 9000
-        oS.Columns.getByIndex(baseCol + 2).Width = 9000
+    For wi = 0 To NWEKEN - 1
+        oS.Columns.getByIndex(6 + wi * 2).Width      = 8000
+        oS.Columns.getByIndex(6 + wi * 2 + 1).Width  = 9000
+        oS.Columns.getByIndex(16 + wi * 2).Width     = 8000
+        oS.Columns.getByIndex(16 + wi * 2 + 1).Width = 9000
     Next wi
 
     ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
