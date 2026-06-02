@@ -1193,14 +1193,18 @@ Sub MaakMaandbestand()
     oS.getCellByPosition(3, 0).setString("Email")
     oS.getCellByPosition(4, 0).setString("Maand")
     oS.getCellByPosition(5, 0).setString("Saldo")
-    Dim baseCol As Integer
-    For wi = 0 To nWk - 1
-        baseCol = 6 + wi * 3
-        oS.getCellByPosition(baseCol,     0).setString("Pakket " & (wi + 1) & " als")
-        oS.getCellByPosition(baseCol + 1, 0).setString("Bijb " & (wi + 1) & " als")
-        oS.getCellByPosition(baseCol + 2, 0).setString("Bijb " & (wi + 1) & " als (regeleindes)")
+    ' Per week 2 ruwe inhoud-kolommen (G..P) + 2 mailmerge-kolommen (Q..Z).
+    ' De "als"-kolommen vervangen een lege week door "|", zodat de mail geen
+    ' grote lege gaten heeft (lege weken vallen samen tot een kolom "|").
+    Dim n As Integer
+    For wi = 0 To NWEKEN - 1
+        n = wi + 1
+        oS.getCellByPosition(6 + wi * 2,      0).setString("Pakket week " & n)
+        oS.getCellByPosition(6 + wi * 2 + 1,  0).setString("Bijbestellingen week " & n)
+        oS.getCellByPosition(16 + wi * 2,     0).setString("Pakket " & n & " als")
+        oS.getCellByPosition(16 + wi * 2 + 1, 0).setString("Bijb " & n & " als")
     Next wi
-    Dim nKol As Integer : nKol = 6 + nWk * 3
+    Dim nKol As Integer : nKol = 6 + NWEKEN * 4
 
     ' Sorteren op naam (insertion sort op index-array)
     Dim ord(600) As Integer, i2 As Integer, j2 As Integer, tmp As Integer
