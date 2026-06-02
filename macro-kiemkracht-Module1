@@ -1712,7 +1712,7 @@ Sub MaakWeekbestand()
                         "TEXT(" & sWCol & asr & ";""0,00"")&"" " & Chr(8364) & """)"
                 Next wd
                 sWegDet = sWegDet & ")"
-                oAfr.getCellRangeByName(KolomLetter(cGeen) & asr).setFormula(sWegDet)
+                oAfr.getCellByPosition(cGeen, ar).setFormula(sWegDet)
             Else
                 oAfr.getCellByPosition(3, ar).setValue(0)
             End If
