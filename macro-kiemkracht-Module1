@@ -1669,9 +1669,14 @@ Sub MaakWeekbestand()
                         "IFERROR(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
                         sFmtCol & ");0))")
                 Next wAfr
-                oAfr.getCellByPosition(cWeg0 + nWeg, ar).setFormula( _
+                ' Vast weglatingen-totaal in kolom D = som van de detailkolommen.
+                oAfr.getCellByPosition(3, ar).setFormula( _
                     "=SUM(" & KolomLetter(cWeg0) & asr & ":" & KolomLetter(cWeg0 + nWeg - 1) & asr & ")")
+            Else
+                oAfr.getCellByPosition(3, ar).setValue(0)
             End If
+            ' TOTAAL (vaste kolom E) = pakket + losse - weglatingen
+            oAfr.getCellByPosition(4, ar).setFormula("=B" & asr & "+C" & asr & "-D" & asr)
         End If
     Next ar
 
