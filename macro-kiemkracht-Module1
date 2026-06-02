@@ -1651,14 +1651,24 @@ Sub MaakWeekbestand()
             ' MaakWeekbestand boven), dus we plakken hem hier zonder extra ×.
             ' à via Chr(224) ipv letterlijk, om UTF-8 → Latin-1 mojibake te
             ' vermijden bij de basic-source-encoding (zie ook Chr(215), Chr(8364)).
-            Dim sEenRng As String
-            sEenRng = "Blad2.A$100:" & KolomLetter(nGroenten - 1) & "$100"
-            oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
-                "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
-                sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
-                "&"" ""&" & sEenRng & "&"" " & Chr(224) & " ""&" & _
-                "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
-                "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
+            ' Eén scalair IF per groente-kolom als los TEXTJOIN-argument (i.p.v.
+            ' één IF over het hele bereik). Zo blijft het een gewone formule
+            ' (geen matrix) en is de cel sleepbaar met de vulgreep.
+            Dim sDetail As String, gd As Integer, sGCol As String, sUnit As String
+            sDetail = "=TEXTJOIN(CHAR(10);1;"
+            For gd = 0 To nGroenten - 1
+                sGCol = KolomLetter(cGroent0 + gd)
+                sUnit = KolomLetter(gd)
+                If gd > 0 Then sDetail = sDetail & ";"
+                sDetail = sDetail & _
+                    "IF(" & sData & "." & sGCol & asr & "="""";"""";" & _
+                    sData & "." & sGCol & "$2&"": ""&" & sData & "." & sGCol & asr & _
+                    "&"" ""&Blad2." & sUnit & "$100&"" " & Chr(224) & " ""&" & _
+                    "TEXT(" & sData & "." & sGCol & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
+                    "TEXT(" & sData & "." & sGCol & asr & "*" & sData & "." & sGCol & "$3;""0,00"")&"" " & Chr(8364) & """)"
+            Next gd
+            sDetail = sDetail & ")"
+            oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setFormula(sDetail)
             ' Weglatingen: per groente de in-pakket-waarde, maar enkel als de
             ' klant ze weglaat (cel in databstblad niet leeg). Opzoeken in
             ' 'pakketwaardes' met de juiste formaatkolom (1=KG..4=MINI). Een
