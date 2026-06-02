@@ -1616,6 +1616,11 @@ Sub MaakWeekbestand()
         ElseIf Trim(oSheet.getCellByPosition(cNaam, ar).getString()) <> "" Then
             ' klantrij
             oAfr.getCellByPosition(cNaam, ar).setFormula("=" & sData & ".A" & asr)
+            ' klant_id (kolom F) gespiegeld uit kolom P van het databstblad;
+            ' lege bron → leeg (niet 0) zodat maandbestanden er proper op kunnen matchen.
+            oAfr.getCellByPosition(5, ar).setFormula( _
+                "=IF(" & sData & "." & KolomLetter(cWBest) & asr & "="""";"""";" & _
+                sData & "." & KolomLetter(cWBest) & asr & ")")
             ' pakket-bedrag = pakkettype × pakketprijs-cel bovenaan
             oAfr.getCellByPosition(1, ar).setFormula( _
                 "=" & sData & "." & KolomLetter(cKG)   & asr & "*$B$2+" & _
