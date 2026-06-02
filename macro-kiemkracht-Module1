@@ -1620,6 +1620,7 @@ Sub MaakWeekbestand()
     Dim ar As Integer, asr As Integer
     For ar = 6 To iLaatste - 1
         asr = ar + 1
+        sStap = "afrekening: klantrij ar=" & ar
         If oSheet.getCellByPosition(cAfh, ar).getString() = "afhaalpunt/dag" Then
             ' koprij: afhaalpuntlabel spiegelen
             oAfr.getCellByPosition(cNaam, ar).setFormula("=" & sData & ".A" & asr)
