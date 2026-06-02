@@ -1589,16 +1589,17 @@ Sub MaakWeekbestand()
             "=" & sData & "." & KolomLetter(cGroent0 + g) & "2")
     Next g
 
-    ' Weglatingskolommen (vanaf AZ, uitgelijnd op het databstblad): per
-    ' weglatingsgroente de waarde die de klant in mindering krijgt, plus een
-    ' totaalkolom. De waarde wordt opgezocht in 'pakketwaardes' o.b.v.
-    ' (formaat van de klant, groentenaam).
+    ' Weglatings-DETAILkolommen (vanaf AZ, uitgelijnd op het databstblad): per
+    ' weglatingsgroente de waarde die de klant in mindering krijgt. Deze
+    ' kolommen verschuiven elke week (één extra zodra een (groente×formaat)
+    ' weggelaten wordt). Het vaste TOTAAL staat daarom in kolom D — dáár naar
+    ' verwijzen voor maandoverzichten, niet naar deze detailkolommen.
+    ' De waarde wordt opgezocht in 'pakketwaardes' o.b.v. (formaat, groentenaam).
     If nWeg > 0 Then
         Dim wHdr As Integer
         For wHdr = 0 To nWeg - 1
             oAfr.getCellByPosition(cWeg0 + wHdr, 5).setString(wegNaam(wHdr))
         Next wHdr
-        oAfr.getCellByPosition(cWeg0 + nWeg, 5).setString("weglatingen (-)")
     End If
 
     ' Spiegel: één rij per databstblad-rij (klantrijen krijgen formules)
