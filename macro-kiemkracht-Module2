@@ -1337,6 +1337,36 @@ Function FmtNumTrim(dValue As Double) As String
     FmtNumTrim = s
 End Function
 
+' Zoekt het weekbestand in sMap: begint met "week_<wk>_<jaar>", bevat sOmg
+' (leeg = prod, "-dev" = dev), eindigt op ".ods". Geeft volledig pad terug,
+' "" als niet gevonden. Zo werken suffixen als "_definitief" transparant.
+Function ZoekWeekbestand(sMap As String, iWk As Integer, iJr As Integer, sOmg As String) As String
+    Dim sPrefix As String
+    sPrefix = LCase("week_" & iWk & "_" & iJr)
+    Dim sOmgL As String : sOmgL = LCase(sOmg)
+    Dim sGlob As String : sGlob = sMap & "week_*.ods"
+    Dim sCand As String
+    sCand = Dir(sGlob)
+    Do While sCand <> ""
+        Dim sCandL As String : sCandL = LCase(sCand)
+        If Left(sCandL, Len(sPrefix)) = sPrefix Then
+            If sOmgL = "" Then
+                If InStr(sCandL, "-dev") = 0 Then
+                    ZoekWeekbestand = sMap & sCand
+                    Exit Function
+                End If
+            Else
+                If InStr(sCandL, sOmgL) > 0 Then
+                    ZoekWeekbestand = sMap & sCand
+                    Exit Function
+                End If
+            End If
+        End If
+        sCand = Dir()
+    Loop
+    ZoekWeekbestand = ""
+End Function
+
 ' Eerste letter naar hoofdletter ("donderdag" -> "Donderdag").
 Function KapWoord(s As String) As String
     If Len(s) = 0 Then
