@@ -894,3 +894,434 @@ Sub TestBase64Volledig()
     s = "voornaam=Henk&naam=Cornelus&email=henkcornelus@live.be&type=abonnee&leverdag=vrijdag&afhaalpunt=Zwevegemstraat&formaat=groot"
     MsgBox Base64UrlEncode(s)
 End Sub
+
+' =============================================
+' Kiemkracht - Maandafrekening voorbereiden
+'
+' Bouwt EEN maandbestand (mailmerge-bron) door per klant de gegevens
+' te plukken uit de weekbestanden van een maand. Werkt zelfstandig op
+' de reeds afgewerkte weekbestanden (met jouw manuele correcties) —
+' geen database, en de weekbestanden hoeven NIET hergenereerd te worden.
+'
+' Welke weekbestanden? Alle ISO-weken waarvan de donderdag in de
+' doelmaand valt (zelfde logica als MaakWeekbestand: de week "hoort"
+' bij de maand van zijn donderdag). Bestandspad volgt de vaste conventie
+'   <SAVE_MAP>\<jaar>_week_<wk>\week_<wk>_<jaar>[-dev].ods
+'
+' Per klant (gesleuteld op klant_id, anders e-mail, anders naam):
+'   - Saldo   = som van afrekening!E (TOTAAL) over de weken
+'   - per leverweek n: "Pakket n als" + "Bijb n als"
+'       Pakket n als : "<leverdatum>: 1 x <Pakket>, <bedrag> €"
+'       Bijb n als   : "<leverdatum>: <losse groenten> & <weglatingen>"
+'   Losse groenten en weglatingen worden in TWEE varianten geschreven:
+'       "Bijb n als"               -> items met " & " (Thunderbird-mailmerge,
+'                                     waar echte regeleindes lastig zijn)
+'       "Bijb n als (regeleindes)" -> items met echte regeleindes (CHAR 10),
+'                                     voor de PHP/ZeptoMail-flow
+'   Weglatingen worden per groente getoond ("geen rabarber: -3,00 €"),
+'   met de waarde uit de afrekening-detailkolommen (AZ+).
+'
+' Output: <SAVE_MAP>\afrekening_<maand>_<jaar>[-dev].ods, 1 rij per klant,
+' kolomhoofden = de mailmerge-placeholders ({{Voornaam}}, {{Saldo}}, ...).
+' =============================================
+Sub MaakMaandbestand()
+
+    Const SAVE_MAP As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
+
+    ' Databstblad-kolommen (0-based), exact zoals MaakWeekbestand ze schrijft
+    Const cdNaam    = 0    ' voornaam + familienaam
+    Const cdEmail   = 6
+    Const cdVoor    = 8
+    Const cdDag     = 10   ' leverdag (donderdag/vrijdag)
+    Const cdKlantId = 15   ' kolom P
+    Const cdKG      = 17
+    Const cdGG      = 18
+    Const cdEGG     = 19
+    Const cdMINI    = 20
+    Const cdGroent0 = 24   ' eerste losse-groentekolom (Y); naam in rij 2, prijs in rij 3
+    ' Afrekening-tabblad
+    Const caBedrag  = 1    ' B = pakket-bedrag
+    Const caTotaal  = 4    ' E = TOTAAL
+    Const caWeg0    = 51   ' AZ = eerste weglating-detailkolom (vast: 24+24+3)
+
+    Dim saMaanden(12) As String
+    saMaanden(1)="januari"  : saMaanden(2)="februari" : saMaanden(3)="maart"
+    saMaanden(4)="april"    : saMaanden(5)="mei"      : saMaanden(6)="juni"
+    saMaanden(7)="juli"     : saMaanden(8)="augustus" : saMaanden(9)="september"
+    saMaanden(10)="oktober" : saMaanden(11)="november": saMaanden(12)="december"
+
+    ' --- doelmaand (default = vorige maand) ---
+    Dim dNu As Date, iTM As Integer, iJaar As Integer
+    dNu = Now()
+    iTM = Month(dNu) - 1 : iJaar = Year(dNu)
+    If iTM < 1 Then iTM = 12 : iJaar = iJaar - 1
+    Dim sIn As String
+    sIn = InputBox("Voor welke maand een afrekening maken?" & Chr(10) & _
+                   "Formaat: MM JJJJ (bv. 05 2026)", "Maandafrekening", _
+                   Right("0" & iTM, 2) & " " & iJaar)
+    If Trim(sIn) = "" Then Exit Sub
+    sIn = Trim(sIn)
+    Dim iSp As Integer : iSp = InStr(sIn, " ")
+    If iSp = 0 Then MsgBox "Ongeldige invoer. Gebruik 'MM JJJJ'.", 16, "Maandafrekening" : Exit Sub
+    iTM   = CInt(Left(sIn, iSp - 1))
+    iJaar = CInt(Trim(Mid(sIn, iSp + 1)))
+    If iTM < 1 Or iTM > 12 Then MsgBox "Maand moet 1-12 zijn.", 16, "Maandafrekening" : Exit Sub
+    Dim sMaandNaam As String : sMaandNaam = saMaanden(iTM)
+
+    ' --- omgeving-suffix: volgt actief data-bestand, standaard prod ---
+    Dim sOmg As String : sOmg = ""
+    Dim oActief As Object : oActief = HuidigDataDocument()
+    If Not IsNull(oActief) Then
+        If InStr(LCase(oActief.getURL()), "-dev.ods") > 0 Then sOmg = "-dev"
+    End If
+
+    ' --- kandidaat-weken: ISO-weken met donderdag in de doelmaand ---
+    Dim dJan4 As Date, dWk1Ma As Date, dThu As Date
+    dJan4  = DateSerial(iJaar, 1, 4)
+    dWk1Ma = dJan4 - (Weekday(dJan4, 2) - 1)   ' maandag van ISO-week 1
+    Dim wkNr(60) As Integer, wkThu(60) As Date, nWk As Integer
+    Dim wk As Integer
+    nWk = 0
+    For wk = 1 To 53
+        dThu = dWk1Ma + (wk - 1) * 7 + 3
+        If Year(dThu) = iJaar And Month(dThu) = iTM Then
+            wkNr(nWk) = wk : wkThu(nWk) = dThu : nWk = nWk + 1
+        End If
+    Next wk
+    If nWk = 0 Then MsgBox "Geen weken gevonden voor die maand.", 16, "Maandafrekening" : Exit Sub
+
+    ' --- klant-aggregatie ---
+    Dim mKey(600) As String, mKid(600) As String, mVoor(600) As String
+    Dim mNaam(600) As String, mEmail(600) As String, mSaldo(600) As Double
+    Dim mPak(600, 8) As String, mBijA(600, 8) As String, mBijN(600, 8) As String
+    Dim nKl As Integer : nKl = 0
+
+    Dim oDesktop As Object : oDesktop = createUnoService("com.sun.star.frame.Desktop")
+    Dim aHidden(0) As New com.sun.star.beans.PropertyValue
+    aHidden(0).Name = "Hidden" : aHidden(0).Value = True
+
+    ' Alle lus-variabelen vooraan (LO Basic struikelt op Dim binnen een lus)
+    Dim wi As Integer, sPad As String, sUrlW As String
+    Dim oWeek As Object, bSluiten As Boolean
+    Dim oData As Object, oAfr As Object, oBlad2 As Object
+    Dim nGroenten As Integer, nWeg As Integer
+    Dim gName(80) As String, gPrice(80) As Double, gEenh(80) As String
+    Dim wName(40) As String
+    Dim g As Integer, w As Integer, rr As Integer, blanks As Integer
+    Dim sNaam As String, sAfhM As String, sKid As String
+    Dim sEmail As String, sVoor As String, sLev As String
+    Dim dLever As Date, sDatum As String
+    Dim sPak As String, dBedrag As Double, q As Double, dVal As Double, dTot As Double, cnt As Double
+    Dim sItemsA As String, sItemsN As String, sItem As String
+    Dim sKey As String, ki As Integer, kFound As Integer
+    Dim nVerwerkt As Integer : nVerwerkt = 0
+
+    For wi = 0 To nWk - 1
+        sPad = SAVE_MAP & iJaar & "_week_" & wkNr(wi) & "\week_" & wkNr(wi) & "_" & iJaar & sOmg & ".ods"
+        If Not FileExists(sPad) Then GoTo VolgendeWeek
+        sUrlW = ConvertToURL(sPad)
+
+        ' Al open (jij bekijkt het bestand)? Hergebruiken, niet sluiten.
+        oWeek = VindOpenDocument(sUrlW)
+        If IsNull(oWeek) Then
+            oWeek = oDesktop.loadComponentFromURL(sUrlW, "_blank", 0, aHidden())
+            bSluiten = True
+        Else
+            bSluiten = False
+        End If
+        If IsNull(oWeek) Then GoTo VolgendeWeek
+        If Not oWeek.Sheets.hasByName("afrekening") Then
+            If bSluiten Then oWeek.close(True)
+            GoTo VolgendeWeek
+        End If
+
+        oWeek.calculateAll()
+        oData = oWeek.Sheets.getByIndex(0)
+        oAfr  = oWeek.Sheets.getByName("afrekening")
+        oBlad2 = Nothing
+        If oWeek.Sheets.hasByName("Blad2") Then oBlad2 = oWeek.Sheets.getByName("Blad2")
+
+        ' Groente-metadata
+        nGroenten = 0
+        Do While oData.getCellByPosition(cdGroent0 + nGroenten, 1).getString() <> "" And nGroenten < 80
+            nGroenten = nGroenten + 1
+        Loop
+        For g = 0 To nGroenten - 1
+            gName(g)  = oData.getCellByPosition(cdGroent0 + g, 1).getString()
+            gPrice(g) = oData.getCellByPosition(cdGroent0 + g, 2).getValue()
+            gEenh(g)  = ""
+            If Not IsNull(oBlad2) Then gEenh(g) = oBlad2.getCellByPosition(8, g).getString()
+        Next g
+
+        ' Weglating-namen (koprij afrekening, vanaf AZ)
+        nWeg = 0
+        Do While oAfr.getCellByPosition(caWeg0 + nWeg, 5).getString() <> "" And nWeg < 40
+            wName(nWeg) = oAfr.getCellByPosition(caWeg0 + nWeg, 5).getString()
+            nWeg = nWeg + 1
+        Loop
+
+        ' Klantrijen (vanaf rij 7 = index 6)
+        blanks = 0 : rr = 6
+        Do While blanks < 10 And rr < 5000
+            sNaam = oData.getCellByPosition(cdNaam, rr).getString()
+            If sNaam = "" Then
+                blanks = blanks + 1
+                GoTo VolgendeRij
+            End If
+            blanks = 0
+            sAfhM = oData.getCellByPosition(1, rr).getString()
+            If sAfhM = "afhaalpunt/dag" Then GoTo VolgendeRij   ' koprij afhaalpunt
+
+            sKid   = Trim(oData.getCellByPosition(cdKlantId, rr).getString())
+            sEmail = oData.getCellByPosition(cdEmail, rr).getString()
+            sVoor  = oData.getCellByPosition(cdVoor, rr).getString()
+            sLev   = LCase(Trim(oData.getCellByPosition(cdDag, rr).getString()))
+
+            If sKid <> "" Then
+                sKey = "K:" & sKid
+            ElseIf sEmail <> "" Then
+                sKey = "E:" & LCase(sEmail)
+            Else
+                sKey = "N:" & LCase(sNaam)
+            End If
+
+            ' Leverdatum (donderdag van deze week; vrijdag-afhaalpunt = +1)
+            dLever = wkThu(wi)
+            If Left(sLev, 2) = "vr" Then dLever = dLever + 1
+            sDatum = KapWoord(sLev)
+            If sDatum = "" Then sDatum = "Donderdag"
+            sDatum = sDatum & " " & Day(dLever) & " " & saMaanden(Month(dLever))
+
+            ' Pakketregel
+            sPak = ""
+            dBedrag = oAfr.getCellByPosition(caBedrag, rr).getValue()
+            cnt = oData.getCellByPosition(cdKG, rr).getValue()
+            If cnt > 0 Then sPak = FmtNumTrim(cnt) & " x Klein groentenpakket"
+            cnt = oData.getCellByPosition(cdGG, rr).getValue()
+            If cnt > 0 Then
+                If sPak <> "" Then sPak = sPak & " & "
+                sPak = sPak & FmtNumTrim(cnt) & " x Groot groentenpakket"
+            End If
+            cnt = oData.getCellByPosition(cdEGG, rr).getValue()
+            If cnt > 0 Then
+                If sPak <> "" Then sPak = sPak & " & "
+                sPak = sPak & FmtNumTrim(cnt) & " x Extra groot groentenpakket"
+            End If
+            cnt = oData.getCellByPosition(cdMINI, rr).getValue()
+            If cnt > 0 Then
+                If sPak <> "" Then sPak = sPak & " & "
+                sPak = sPak & FmtNumTrim(cnt) & " x Mini groentenpakket"
+            End If
+            If sPak <> "" Then sPak = sDatum & ": " & sPak & ", " & FmtNumTrim(dBedrag) & " " & Chr(8364)
+
+            ' Bijbestelling: losse groenten + weglatingen, twee join-varianten
+            sItemsA = "" : sItemsN = ""
+            For g = 0 To nGroenten - 1
+                q = oData.getCellByPosition(cdGroent0 + g, rr).getValue()
+                If q > 0 Then
+                    sItem = gName(g) & ": " & FmtNumTrim(q) & " " & gEenh(g) & _
+                            " aan " & FmtNumTrim(gPrice(g)) & Chr(8364)
+                    If sItemsA <> "" Then sItemsA = sItemsA & " & " : sItemsN = sItemsN & Chr(10)
+                    sItemsA = sItemsA & sItem
+                    sItemsN = sItemsN & sItem
+                End If
+            Next g
+            For w = 0 To nWeg - 1
+                If oAfr.getCellByPosition(caWeg0 + w, rr).getString() <> "" Then
+                    dVal = oAfr.getCellByPosition(caWeg0 + w, rr).getValue()
+                    If dVal > 0 Then
+                        sItem = "geen " & LCase(wName(w)) & ": -" & FmtNum2(dVal) & Chr(8364)
+                        If sItemsA <> "" Then sItemsA = sItemsA & " & " : sItemsN = sItemsN & Chr(10)
+                        sItemsA = sItemsA & sItem
+                        sItemsN = sItemsN & sItem
+                    End If
+                End If
+            Next w
+
+            dTot = oAfr.getCellByPosition(caTotaal, rr).getValue()
+
+            ' Klant opzoeken/aanmaken
+            kFound = -1
+            For ki = 0 To nKl - 1
+                If mKey(ki) = sKey Then kFound = ki : Exit For
+            Next ki
+            If kFound = -1 Then
+                kFound = nKl
+                mKey(nKl)   = sKey
+                mKid(nKl)   = sKid
+                mVoor(nKl)  = sVoor
+                mNaam(nKl)  = sNaam
+                mEmail(nKl) = sEmail
+                mSaldo(nKl) = 0
+                nKl = nKl + 1
+            Else
+                If mEmail(kFound) = "" Then mEmail(kFound) = sEmail
+                If mVoor(kFound)  = "" Then mVoor(kFound)  = sVoor
+            End If
+            mSaldo(kFound) = mSaldo(kFound) + dTot
+            If sPak <> "" Then mPak(kFound, wi) = sPak
+            If sItemsA <> "" Then
+                mBijA(kFound, wi) = sDatum & ": " & sItemsA
+                mBijN(kFound, wi) = sDatum & ": " & sItemsN
+            End If
+
+            VolgendeRij:
+            rr = rr + 1
+        Loop
+
+        If bSluiten Then oWeek.close(True)
+        nVerwerkt = nVerwerkt + 1
+
+        VolgendeWeek:
+    Next wi
+
+    If nVerwerkt = 0 Then MsgBox "Geen weekbestanden gevonden voor " & sMaandNaam & " " & iJaar & _
+                                 "." & Chr(10) & "Verwacht in: " & SAVE_MAP, 48, "Maandafrekening" : Exit Sub
+
+    ' --- maandbestand opbouwen ---
+    Dim oOut As Object, oS As Object
+    Dim aOut(0) As New com.sun.star.beans.PropertyValue
+    aOut(0).Name = "Hidden" : aOut(0).Value = True
+    oOut = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aOut())
+    oS = oOut.Sheets.getByIndex(0)
+    oS.Name = "afrekening"
+
+    oS.getCellByPosition(0, 0).setString("klant_id")
+    oS.getCellByPosition(1, 0).setString("Voornaam")
+    oS.getCellByPosition(2, 0).setString("Voornaam familienaam")
+    oS.getCellByPosition(3, 0).setString("Email")
+    oS.getCellByPosition(4, 0).setString("Maand")
+    oS.getCellByPosition(5, 0).setString("Saldo")
+    Dim baseCol As Integer
+    For wi = 0 To nWk - 1
+        baseCol = 6 + wi * 3
+        oS.getCellByPosition(baseCol,     0).setString("Pakket " & (wi + 1) & " als")
+        oS.getCellByPosition(baseCol + 1, 0).setString("Bijb " & (wi + 1) & " als")
+        oS.getCellByPosition(baseCol + 2, 0).setString("Bijb " & (wi + 1) & " als (regeleindes)")
+    Next wi
+    Dim nKol As Integer : nKol = 6 + nWk * 3
+
+    ' Sorteren op naam (insertion sort op index-array)
+    Dim ord(600) As Integer, i2 As Integer, j2 As Integer, tmp As Integer
+    For i2 = 0 To nKl - 1 : ord(i2) = i2 : Next i2
+    For i2 = 1 To nKl - 1
+        tmp = ord(i2) : j2 = i2 - 1
+        Do While j2 >= 0
+            If LCase(mNaam(ord(j2))) > LCase(mNaam(tmp)) Then
+                ord(j2 + 1) = ord(j2) : j2 = j2 - 1
+            Else
+                Exit Do
+            End If
+        Loop
+        ord(j2 + 1) = tmp
+    Next i2
+
+    ' Rijen schrijven (enkel klanten met een saldo)
+    Dim ro As Integer : ro = 1
+    Dim idx As Integer
+    For i2 = 0 To nKl - 1
+        idx = ord(i2)
+        If Abs(mSaldo(idx)) < 0.005 Then GoTo VolgendeUit
+        oS.getCellByPosition(0, ro).setString(mKid(idx))
+        oS.getCellByPosition(1, ro).setString(mVoor(idx))
+        oS.getCellByPosition(2, ro).setString(mNaam(idx))
+        oS.getCellByPosition(3, ro).setString(mEmail(idx))
+        oS.getCellByPosition(4, ro).setString(sMaandNaam)
+        oS.getCellByPosition(5, ro).setString(FmtNum2(mSaldo(idx)))
+        For wi = 0 To nWk - 1
+            baseCol = 6 + wi * 3
+            If mPak(idx, wi)  <> "" Then oS.getCellByPosition(baseCol,     ro).setString(mPak(idx, wi))
+            If mBijA(idx, wi) <> "" Then oS.getCellByPosition(baseCol + 1, ro).setString(mBijA(idx, wi))
+            If mBijN(idx, wi) <> "" Then oS.getCellByPosition(baseCol + 2, ro).setString(mBijN(idx, wi))
+        Next wi
+        ro = ro + 1
+        VolgendeUit:
+    Next i2
+
+    ' Opmaak
+    Dim oHdr As Object
+    oHdr = oS.getCellRangeByPosition(0, 0, nKol - 1, 0)
+    oHdr.CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oHdr.CellBackColor = RGB(204, 204, 204)
+    oS.Columns.getByIndex(2).Width = 5000
+    oS.Columns.getByIndex(3).Width = 6000
+    For wi = 0 To nWk - 1
+        baseCol = 6 + wi * 3
+        oS.Columns.getByIndex(baseCol).Width     = 8000
+        oS.Columns.getByIndex(baseCol + 1).Width = 9000
+        oS.Columns.getByIndex(baseCol + 2).Width = 9000
+    Next wi
+    oOut.getCurrentController().freezeAtPosition(2, 1)
+
+    ' Opslaan + tonen
+    Dim sUit As String : sUit = SAVE_MAP & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
+    Dim sUrlUit As String : sUrlUit = ConvertToURL(sUit)
+    Dim aSave(0) As New com.sun.star.beans.PropertyValue
+    aSave(0).Name = "FilterName" : aSave(0).Value = "calc8"
+    oOut.storeToURL(sUrlUit, aSave())
+    oOut.close(True)
+
+    Dim aOpen(0) As New com.sun.star.beans.PropertyValue
+    aOpen(0).Name = "Hidden" : aOpen(0).Value = False
+    oDesktop.loadComponentFromURL(sUrlUit, "_blank", 0, aOpen())
+
+    MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
+           (ro - 1) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
+           sMaandNaam & " " & iJaar & ")." & Chr(10) & Chr(10) & _
+           "'Bijb n als' = items met ' & ' (Thunderbild)." & Chr(10) & _
+           "'Bijb n als (regeleindes)' = echte regeleindes (PHP/ZeptoMail).", _
+           64, "Maandafrekening"
+
+End Sub
+
+' =============================================
+' Helpers voor MaakMaandbestand
+' =============================================
+
+' Reeds-open spreadsheetdocument met deze URL teruggeven, anders Null.
+Function VindOpenDocument(sUrl As String) As Object
+    Dim oEnum As Object, oComp As Object
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oComp = oEnum.nextElement()
+        If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
+            If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                If oComp.getURL() = sUrl Then
+                    VindOpenDocument = oComp
+                    Exit Function
+                End If
+            End If
+        End If
+    Loop
+End Function
+
+' Bedrag als string met 2 decimalen en komma, bv. 51.3 -> "51,30".
+' Locale-onafhankelijk opgebouwd (geen Format), want Format hangt af van
+' de systeemtaal en gaf eerder mojibake/punt-komma-verwarring.
+Function FmtNum2(dValue As Double) As String
+    Dim dAbs As Double, lCents As Long, lWhole As Long, iFrac As Integer, sOut As String
+    dAbs   = Abs(dValue)
+    lCents = Int(dAbs * 100 + 0.5)
+    lWhole = lCents \ 100
+    iFrac  = lCents Mod 100
+    sOut   = CStr(lWhole) & "," & Right("0" & CStr(iFrac), 2)
+    If dValue < 0 Then sOut = "-" & sOut
+    FmtNum2 = sOut
+End Function
+
+' Als FmtNum2, maar ronde bedragen zonder ",00": 7 -> "7", 2,25 -> "2,25".
+Function FmtNumTrim(dValue As Double) As String
+    Dim s As String
+    s = FmtNum2(dValue)
+    If Right(s, 3) = ",00" Then s = Left(s, Len(s) - 3)
+    FmtNumTrim = s
+End Function
+
+' Eerste letter naar hoofdletter ("donderdag" -> "Donderdag").
+Function KapWoord(s As String) As String
+    If Len(s) = 0 Then
+        KapWoord = ""
+    Else
+        KapWoord = UCase(Left(s, 1)) & Mid(s, 2)
+    End If
+End Function
