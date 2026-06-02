@@ -32,20 +32,22 @@ def main():
     try:
         ctx = connect()
         smgr = ctx.ServiceManager
-        libs = smgr.createInstanceWithContext(
-            "com.sun.star.script.ApplicationScriptLibrary", ctx)
+        from com.sun.star.beans import PropertyValue
+        p = PropertyValue(); p.Name = "Hidden"; p.Value = True
+        desktop = smgr.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
+        doc = desktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, (p,))
+
+        libs = doc.BasicLibraries
         if libs.hasByName("CT"):
             libs.removeLibrary("CT")
         libs.createLibrary("CT")
         libs.loadLibrary("CT")
         lib = libs.getByName("CT")
-        lib.replaceByName("Module1", code) if lib.hasByName("Module1") else lib.insertByName("Module1", code)
+        lib.insertByName("Module1", code)
 
         # forceer compilatie door een onschuldige Function aan te roepen
-        mspf = smgr.createInstanceWithContext(
-            "com.sun.star.script.provider.MasterScriptProviderFactory", ctx)
-        sp = mspf.createScriptProvider("")
-        url = "vnd.sun.star.script:CT.Module1.KolomLetter?language=Basic&location=application"
+        sp = doc.getScriptProvider()
+        url = "vnd.sun.star.script:CT.Module1.KolomLetter?language=Basic&location=document"
         script = sp.getScript(url)
         try:
             res = script.invoke((5,), (), ())
