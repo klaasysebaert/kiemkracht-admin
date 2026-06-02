@@ -1668,7 +1668,7 @@ Sub MaakWeekbestand()
                     "TEXT(" & sData & "." & sGCol & asr & "*" & sData & "." & sGCol & "$3;""0,00"")&"" " & Chr(8364) & """)"
             Next gd
             sDetail = sDetail & ")"
-            oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setFormula(sDetail)
+            oAfr.getCellByPosition(cSamenv, ar).setFormula(sDetail)
             ' Weglatingen: per groente de in-pakket-waarde, maar enkel als de
             ' klant ze weglaat (cel in databstblad niet leeg). Opzoeken in
             ' 'pakketwaardes' met de juiste formaatkolom (1=KG..4=MINI). Een
