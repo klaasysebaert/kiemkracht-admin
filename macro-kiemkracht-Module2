@@ -1050,7 +1050,7 @@ Sub MaakMaandbestand()
             gName(g)  = oData.getCellByPosition(cdGroent0 + g, 1).getString()
             gPrice(g) = oData.getCellByPosition(cdGroent0 + g, 2).getValue()
             gEenh(g)  = ""
-            If Not IsNull(oBlad2) Then gEenh(g) = oBlad2.getCellByPosition(8, g).getString()
+            If bBlad2 Then gEenh(g) = oBlad2.getCellByPosition(8, g).getString()
         Next g
 
         ' Weglating-namen (koprij afrekening, vanaf AZ)
