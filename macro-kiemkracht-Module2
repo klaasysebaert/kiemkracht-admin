@@ -1003,7 +1003,7 @@ Sub MaakMaandbestand()
     ' Alle lus-variabelen vooraan (LO Basic struikelt op Dim binnen een lus)
     Dim wi As Integer, sPad As String, sUrlW As String
     Dim oWeek As Object, bSluiten As Boolean
-    Dim oData As Object, oAfr As Object, oBlad2 As Object
+    Dim oData As Object, oAfr As Object, oBlad2 As Object, bBlad2 As Boolean
     Dim nGroenten As Integer, nWeg As Integer
     Dim gName(80) As String, gPrice(80) As Double, gEenh(80) As String
     Dim wName(40) As String

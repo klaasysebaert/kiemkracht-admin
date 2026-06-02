@@ -80,6 +80,11 @@ Sub StartBereidMailmergeVoor()
     BereidMailmergeVoor()
 End Sub
 
+Sub StartMaakMaandbestand()
+    ReloadKiemkracht()
+    MaakMaandbestand()
+End Sub
+
 Sub StartBereidKoffieMailmergeVoor()
     ReloadKiemkracht()
     BereidKoffieMailmergeVoor()
