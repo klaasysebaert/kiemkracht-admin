@@ -1251,9 +1251,9 @@ Sub MaakMaandbestand()
         oS.Columns.getByIndex(baseCol + 1).Width = 9000
         oS.Columns.getByIndex(baseCol + 2).Width = 9000
     Next wi
-    oOut.getCurrentController().freezeAtPosition(2, 1)
 
-    ' Opslaan + tonen
+    ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
+    ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
     Dim sUit As String : sUit = SAVE_MAP & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
     Dim sUrlUit As String : sUrlUit = ConvertToURL(sUit)
     Dim aSave(0) As New com.sun.star.beans.PropertyValue
@@ -1263,7 +1263,9 @@ Sub MaakMaandbestand()
 
     Dim aOpen(0) As New com.sun.star.beans.PropertyValue
     aOpen(0).Name = "Hidden" : aOpen(0).Value = False
-    oDesktop.loadComponentFromURL(sUrlUit, "_blank", 0, aOpen())
+    Dim oOut2 As Object
+    oOut2 = oDesktop.loadComponentFromURL(sUrlUit, "_blank", 0, aOpen())
+    oOut2.getCurrentController().freezeAtPosition(2, 1)
 
     MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
            (ro - 1) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
