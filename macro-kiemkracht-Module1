@@ -1812,6 +1812,14 @@ Sub MaakWeekbestand()
 VerbindingsFout:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
+    Exit Sub
+
+' [DIAGNOSE — tijdelijk] toont exact welke stap faalde + de UNO-melding
+MaakWeekFout:
+    MsgBox "DIAGNOSE MaakWeekbestand" & Chr(10) & Chr(10) & _
+           "Stap: " & sStap & Chr(10) & _
+           "Foutnr: " & Err & Chr(10) & _
+           "Melding: " & Error$, 16, "Diagnose"
 
 End Sub
 
