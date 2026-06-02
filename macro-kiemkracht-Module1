@@ -1679,6 +1679,19 @@ Sub MaakWeekbestand()
                 ' Vast weglatingen-totaal in kolom D = som van de detailkolommen.
                 oAfr.getCellByPosition(3, ar).setFormula( _
                     "=SUM(" & KolomLetter(cWeg0) & asr & ":" & KolomLetter(cWeg0 + nWeg - 1) & asr & ")")
+                ' Detail weglatingen als tekst (kolom AY), pendant van "detail losse
+                ' groenten" in kolom W. Per actieve weglating één regel
+                '   "Geen <naam>: -<waarde> €"
+                ' Voorwaarde-bereik = de weg-cellen op het databstblad (leeg = niet
+                ' weggelaten); naam uit de afrekening-koprij (rij 6), waarde uit de
+                ' detailcel op deze rij (AZ+). à/€ via Chr() tegen mojibake.
+                Dim sWegF As String, sWegL As String
+                sWegF = KolomLetter(cWeg0)
+                sWegL = KolomLetter(cWeg0 + nWeg - 1)
+                oAfr.getCellRangeByName(KolomLetter(cGeen) & asr).setArrayFormula( _
+                    "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sWegF & asr & ":" & sWegL & asr & "="""";"""";" & _
+                    """Geen ""&" & sWegF & "$6:" & sWegL & "$6&"": -""&" & _
+                    "TEXT(" & sWegF & asr & ":" & sWegL & asr & ";""0,00"")&"" " & Chr(8364) & """))")
             Else
                 oAfr.getCellByPosition(3, ar).setValue(0)
             End If
