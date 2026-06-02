@@ -1581,7 +1581,8 @@ Sub MaakWeekbestand()
     oAfr.getCellByPosition(0, 5).setString("klant / afhaalpunt")
     oAfr.getCellByPosition(1, 5).setString("pakket")
     oAfr.getCellByPosition(2, 5).setString("losse groenten")
-    oAfr.getCellByPosition(3, 5).setString("TOTAAL")
+    oAfr.getCellByPosition(3, 5).setString("weglatingen (-)")
+    oAfr.getCellByPosition(4, 5).setString("TOTAAL")
     oAfr.getCellByPosition(cSamenv, 5).setString("detail losse groenten")
     For g = 0 To nGroenten - 1
         oAfr.getCellByPosition(cGroent0 + g, 5).setFormula( _
