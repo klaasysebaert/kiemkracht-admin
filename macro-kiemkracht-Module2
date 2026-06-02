@@ -943,6 +943,7 @@ Sub MaakMaandbestand()
     Const caBedrag  = 1    ' B = pakket-bedrag
     Const caTotaal  = 4    ' E = TOTAAL
     Const caWeg0    = 51   ' AZ = eerste weglating-detailkolom (vast: 24+24+3)
+    Const NWEKEN    = 5    ' vaste leverweek-slots (max donderdagen in een maand)
 
     Dim saMaanden(12) As String
     saMaanden(1)="januari"  : saMaanden(2)="februari" : saMaanden(3)="maart"
