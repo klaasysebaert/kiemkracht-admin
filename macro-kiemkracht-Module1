@@ -1737,6 +1737,7 @@ Sub MaakWeekbestand()
     oAfr.getCellByPosition(3, arTot).setFormula("=SUM(D7:D" & iLaatste & ")")
     oAfr.getCellByPosition(4, arTot).setFormula("=SUM(E7:E" & iLaatste & ")")
 
+    sStap = "afrekening: opmaak (NumberFormat/breedtes)"
     ' Opmaak afrekeningstabblad
     oAfr.getCellRangeByName("B7:E" & (arTot + 1)).NumberFormat = nCur
     oAfr.getCellRangeByName(KolomLetter(cGroent0) & "7:" & sLG & iLaatste).NumberFormat = nCur
