@@ -32,6 +32,14 @@ def run(label, m1code, probe_mod, probe_fn, probe_args):
     try:
         ctx = connect()
         smgr = ctx.ServiceManager
+        # macrobeveiliging op laag, anders draait/compileert de doc-macro niet
+        from com.sun.star.beans import NamedValue
+        cp = smgr.createInstanceWithContext("com.sun.star.configuration.ConfigurationProvider", ctx)
+        upd = cp.createInstanceWithArguments(
+            "com.sun.star.configuration.ConfigurationUpdateAccess",
+            (NamedValue("nodepath", "/org.openoffice.Office.Common/Security/Scripting"),))
+        upd.setPropertyValue("MacroSecurityLevel", 0)
+        upd.commitChanges()
         p = PropertyValue(); p.Name = "Hidden"; p.Value = True
         desktop = smgr.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
         doc = desktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, (p,))
