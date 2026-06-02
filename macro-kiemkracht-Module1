@@ -1094,6 +1094,10 @@ Sub MaakWeekbestand()
             sFmlSv = sFmlSv & "&IF(" & sgCol & iSamRij & "="""";"""";CHAR(10)&" & _
                 sgCol & "$2&"": ""&" & sgCol & iSamRij & "&"" ""&Blad2.I" & (g + 1) & ")"
         Next g
+        ' "ander"-kolom (AW) als losse regel "ander/opmerking: <inhoud>",
+        ' onder de groenten en vóór de weglatingen. Enkel als AW gevuld is.
+        sFmlSv = sFmlSv & "&IF(" & KolomLetter(cAnder) & iSamRij & "="""";"""";CHAR(10)&" & _
+            """ander/opmerking: ""&" & KolomLetter(cAnder) & iSamRij & ")"
         Dim swCol As String
         For w = 0 To nWeg - 1
             swCol = KolomLetter(cWeg0 + w)
