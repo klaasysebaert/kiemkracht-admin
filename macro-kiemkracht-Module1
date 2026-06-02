@@ -1632,10 +1632,6 @@ Sub MaakWeekbestand()
             Dim sFG As String
             sFG = KolomLetter(cGroent0)   ' eerste groente-kolom in afrekening
             oAfr.getCellByPosition(2, ar).setFormula("=SUM(" & sFG & asr & ":" & sLG & asr & ")")
-            Dim sTotaalFml As String
-            sTotaalFml = "=B" & asr & "+C" & asr
-            If nWeg > 0 Then sTotaalFml = sTotaalFml & "-" & KolomLetter(cWeg0 + nWeg) & asr
-            oAfr.getCellByPosition(3, ar).setFormula(sTotaalFml)
             ' detail losse groenten (levende formule, loopt mee met correcties)
             ' Format per groente:
             '   per_stuk    : "<naam>: <aantal> × <eenheid> à <prijs> € = <totaal> €"
