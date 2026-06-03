@@ -1238,7 +1238,7 @@ Sub MaakMaandbestand()
         oS.getCellByPosition(2, ro).setString(mNaam(idx))
         oS.getCellByPosition(3, ro).setString(mEmail(idx))
         oS.getCellByPosition(4, ro).setString(sMaandNaam)
-        oS.getCellByPosition(5, ro).setString(FmtNum2(mSaldo(idx)))
+        oS.getCellByPosition(5, ro).setValue(mSaldo(idx))
         For wi = 0 To NWEKEN - 1
             ' ruwe inhoud (enkel voor weken die deze maand bestaan)
             If wi < nWk Then

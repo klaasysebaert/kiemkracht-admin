@@ -406,11 +406,6 @@ Sub MaakWeekbestand()
     oConn = MaakDBVerbinding()
     On Error GoTo 0
 
-    ' [DIAGNOSE — tijdelijk] vang elke fout met een breadcrumb (sStap)
-    Dim sStap As String
-    On Error GoTo MaakWeekFout
-    sStap = "na DB-connect, data ophalen"
-
     Dim oStmt As Object
     Dim oRS   As Object
 
@@ -1550,7 +1545,6 @@ Sub MaakWeekbestand()
     oPW.getCellRangeByName("A1:E1").CharWeight = com.sun.star.awt.FontWeight.BOLD
     oPW.Columns.getByIndex(0).Width = 5000
 
-    sStap = "afrekening-tabblad opbouwen (koprij/prijzen)"
     ' --- Tabblad "afrekening" ---
     ' Spiegelt de klantrijen van het databstblad met levende formules en
     ' berekent per klant het te betalen bedrag. Manuele correcties van de
@@ -1618,12 +1612,8 @@ Sub MaakWeekbestand()
     Dim sLG As String
     sLG = KolomLetter(cGroent0 + nGroenten - 1)
     Dim ar As Integer, asr As Integer
-    ' Declaries voor de lus (LO Basic staat geen Dim binnen een lus toe)
-    Dim sDetail As String, gd As Integer, sGCol As String, sUnit As String
-    Dim sWegDet As String, wd As Integer, sWCol As String
     For ar = 6 To iLaatste - 1
         asr = ar + 1
-        sStap = "afrekening: klantrij ar=" & ar
         If oSheet.getCellByPosition(cAfh, ar).getString() = "afhaalpunt/dag" Then
             ' koprij: afhaalpuntlabel spiegelen
             oAfr.getCellByPosition(cNaam, ar).setFormula("=" & sData & ".A" & asr)
@@ -1661,23 +1651,14 @@ Sub MaakWeekbestand()
             ' MaakWeekbestand boven), dus we plakken hem hier zonder extra ×.
             ' à via Chr(224) ipv letterlijk, om UTF-8 → Latin-1 mojibake te
             ' vermijden bij de basic-source-encoding (zie ook Chr(215), Chr(8364)).
-            ' Eén scalair IF per groente-kolom als los TEXTJOIN-argument (i.p.v.
-            ' één IF over het hele bereik). Zo blijft het een gewone formule
-            ' (geen matrix) en is de cel sleepbaar met de vulgreep.
-            sDetail = "=TEXTJOIN(CHAR(10);1;"
-            For gd = 0 To nGroenten - 1
-                sGCol = KolomLetter(cGroent0 + gd)
-                sUnit = KolomLetter(gd)
-                If gd > 0 Then sDetail = sDetail & ";"
-                sDetail = sDetail & _
-                    "IF(" & sData & "." & sGCol & asr & "="""";"""";" & _
-                    sData & "." & sGCol & "$2&"": ""&" & sData & "." & sGCol & asr & _
-                    "&"" ""&Blad2." & sUnit & "$100&"" " & Chr(224) & " ""&" & _
-                    "TEXT(" & sData & "." & sGCol & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
-                    "TEXT(" & sData & "." & sGCol & asr & "*" & sData & "." & sGCol & "$3;""0,00"")&"" " & Chr(8364) & """)"
-            Next gd
-            sDetail = sDetail & ")"
-            oAfr.getCellByPosition(cSamenv, ar).setFormula(sDetail)
+            Dim sEenRng As String
+            sEenRng = "Blad2.A$100:" & KolomLetter(nGroenten - 1) & "$100"
+            oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
+                "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
+                sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
+                "&"" ""&" & sEenRng & "&"" " & Chr(224) & " ""&" & _
+                "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
+                "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
             ' Weglatingen: per groente de in-pakket-waarde, maar enkel als de
             ' klant ze weglaat (cel in databstblad niet leeg). Opzoeken in
             ' 'pakketwaardes' met de juiste formaatkolom (1=KG..4=MINI). Een
@@ -1708,19 +1689,13 @@ Sub MaakWeekbestand()
                 ' Voorwaarde-bereik = de weg-cellen op het databstblad (leeg = niet
                 ' weggelaten); naam uit de afrekening-koprij (rij 6), waarde uit de
                 ' detailcel op deze rij (AZ+). à/€ via Chr() tegen mojibake.
-                ' Eén scalair IF per weglatingskolom als los TEXTJOIN-argument,
-                ' zodat het een gewone (sleepbare) formule blijft i.p.v. matrix.
-                sWegDet = "=TEXTJOIN(CHAR(10);1;"
-                For wd = 0 To nWeg - 1
-                    sWCol = KolomLetter(cWeg0 + wd)
-                    If wd > 0 Then sWegDet = sWegDet & ";"
-                    sWegDet = sWegDet & _
-                        "IF(" & sData & "." & sWCol & asr & "="""";"""";" & _
-                        """Geen ""&LOWER(" & sWCol & "$6)&"": -""&" & _
-                        "TEXT(" & sWCol & asr & ";""0,00"")&"" " & Chr(8364) & """)"
-                Next wd
-                sWegDet = sWegDet & ")"
-                oAfr.getCellByPosition(cGeen, ar).setFormula(sWegDet)
+                Dim sWegF As String, sWegL As String
+                sWegF = KolomLetter(cWeg0)
+                sWegL = KolomLetter(cWeg0 + nWeg - 1)
+                oAfr.getCellRangeByName(KolomLetter(cGeen) & asr).setArrayFormula( _
+                    "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sWegF & asr & ":" & sWegL & asr & "="""";"""";" & _
+                    """Geen ""&LOWER(" & sWegF & "$6:" & sWegL & "$6)&"": -""&" & _
+                    "TEXT(" & sWegF & asr & ":" & sWegL & asr & ";""0,00"")&"" " & Chr(8364) & """))")
             Else
                 oAfr.getCellByPosition(3, ar).setValue(0)
             End If
@@ -1738,7 +1713,6 @@ Sub MaakWeekbestand()
     oAfr.getCellByPosition(3, arTot).setFormula("=SUM(D7:D" & iLaatste & ")")
     oAfr.getCellByPosition(4, arTot).setFormula("=SUM(E7:E" & iLaatste & ")")
 
-    sStap = "afrekening: opmaak (NumberFormat/breedtes)"
     ' Opmaak afrekeningstabblad
     oAfr.getCellRangeByName("B7:E" & (arTot + 1)).NumberFormat = nCur
     oAfr.getCellRangeByName(KolomLetter(cGroent0) & "7:" & sLG & iLaatste).NumberFormat = nCur
@@ -1762,7 +1736,6 @@ Sub MaakWeekbestand()
 
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
-    sStap = "opslaan/heropenen weekbestand"
     ' --- Opslaan ---
     Dim sUrl As String
     sUrl = ConvertToURL(sBestand)
@@ -1813,14 +1786,6 @@ Sub MaakWeekbestand()
 VerbindingsFout:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
-    Exit Sub
-
-' [DIAGNOSE — tijdelijk] toont exact welke stap faalde + de UNO-melding
-MaakWeekFout:
-    MsgBox "DIAGNOSE MaakWeekbestand" & Chr(10) & Chr(10) & _
-           "Stap: " & sStap & Chr(10) & _
-           "Foutnr: " & Err & Chr(10) & _
-           "Melding: " & Error$, 16, "Diagnose"
 
 End Sub
 
