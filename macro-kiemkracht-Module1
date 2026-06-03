@@ -1618,6 +1618,9 @@ Sub MaakWeekbestand()
     Dim sLG As String
     sLG = KolomLetter(cGroent0 + nGroenten - 1)
     Dim ar As Integer, asr As Integer
+    ' Declaries voor de lus (LO Basic staat geen Dim binnen een lus toe)
+    Dim sDetail As String, gd As Integer, sGCol As String, sUnit As String
+    Dim sWegDet As String, wd As Integer, sWCol As String
     For ar = 6 To iLaatste - 1
         asr = ar + 1
         sStap = "afrekening: klantrij ar=" & ar
