@@ -1664,7 +1664,6 @@ Sub MaakWeekbestand()
             ' Eén scalair IF per groente-kolom als los TEXTJOIN-argument (i.p.v.
             ' één IF over het hele bereik). Zo blijft het een gewone formule
             ' (geen matrix) en is de cel sleepbaar met de vulgreep.
-            Dim sDetail As String, gd As Integer, sGCol As String, sUnit As String
             sDetail = "=TEXTJOIN(CHAR(10);1;"
             For gd = 0 To nGroenten - 1
                 sGCol = KolomLetter(cGroent0 + gd)
