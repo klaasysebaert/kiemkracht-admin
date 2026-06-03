@@ -1257,6 +1257,16 @@ Sub MaakMaandbestand()
         VolgendeUit:
     Next i2
 
+    ' Getalopmaak kolom F (Saldo) zodat =SOM() werkt en het leesbaar is
+    Dim oFmtsMb As Object : oFmtsMb = oOut.getNumberFormats()
+    Dim oLocMb As New com.sun.star.lang.Locale
+    oLocMb.Language = "nl" : oLocMb.Country = "BE"
+    Dim nFmtMb As Long, sFmtMb As String
+    sFmtMb = "0,00"
+    nFmtMb = oFmtsMb.queryKey(sFmtMb, oLocMb, False)
+    If nFmtMb = -1 Then nFmtMb = oFmtsMb.addNew(sFmtMb, oLocMb)
+    If ro > 1 Then oS.getCellRangeByPosition(5, 1, 5, ro - 1).NumberFormat = nFmtMb
+
     ' Opmaak
     Dim oHdr As Object
     oHdr = oS.getCellRangeByPosition(0, 0, nKol - 1, 0)
