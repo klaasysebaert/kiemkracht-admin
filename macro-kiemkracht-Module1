@@ -1710,7 +1710,6 @@ Sub MaakWeekbestand()
                 ' detailcel op deze rij (AZ+). à/€ via Chr() tegen mojibake.
                 ' Eén scalair IF per weglatingskolom als los TEXTJOIN-argument,
                 ' zodat het een gewone (sleepbare) formule blijft i.p.v. matrix.
-                Dim sWegDet As String, wd As Integer, sWCol As String
                 sWegDet = "=TEXTJOIN(CHAR(10);1;"
                 For wd = 0 To nWeg - 1
                     sWCol = KolomLetter(cWeg0 + wd)
