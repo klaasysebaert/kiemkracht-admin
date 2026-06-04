@@ -1590,9 +1590,14 @@ Sub MaakWeekbestand()
     oAfr.getCellByPosition(5, 5).setString("klant_id")            ' kolom F
     oAfr.getCellByPosition(cGeen, 5).setString("detail weglatingen") ' kolom AY
     oAfr.getCellByPosition(cSamenv, 5).setString("detail losse groenten")
-    For g = 0 To nGroenten - 1
+    ' Alle 24 gereserveerde groente-slots (Y..AV) spiegelen, niet enkel de
+    ' groenten uit de DB: zo wordt een handmatig in rij 2 van het databstblad
+    ' toegevoegde losse groente automatisch overgenomen. IF-wrap houdt een nog
+    ' lege slot leeg i.p.v. een storende "0" in de koprij.
+    For g = 0 To nGroentSlots - 1
         oAfr.getCellByPosition(cGroent0 + g, 5).setFormula( _
-            "=" & sData & "." & KolomLetter(cGroent0 + g) & "2")
+            "=IF(" & sData & "." & KolomLetter(cGroent0 + g) & "2="""";"""";" & _
+            sData & "." & KolomLetter(cGroent0 + g) & "2)")
     Next g
 
     ' Weglatings-DETAILkolommen (vanaf AZ, uitgelijnd op het databstblad): per
