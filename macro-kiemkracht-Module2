@@ -1237,6 +1237,7 @@ Sub MaakMaandbestand()
     ' Rijen schrijven (enkel klanten met een saldo)
     Dim ro As Integer : ro = 1
     Dim idx As Integer
+    Dim sSaldoRaw As String
     For i2 = 0 To nKl - 1
         idx = ord(i2)
         If Abs(mSaldo(idx)) < 0.005 Then GoTo VolgendeUit
