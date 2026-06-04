@@ -1615,7 +1615,7 @@ Sub MaakWeekbestand()
 
     ' Spiegel: één rij per databstblad-rij (klantrijen krijgen formules)
     Dim sLG As String
-    sLG = KolomLetter(cGroent0 + nGroenten - 1)
+    sLG = KolomLetter(cGroent0 + nGroentSlots - 1)   ' laatste groente-slot (AV), incl. handmatige
     Dim ar As Integer, asr As Integer
     For ar = 6 To iLaatste - 1
         asr = ar + 1
