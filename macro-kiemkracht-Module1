@@ -1659,7 +1659,7 @@ Sub MaakWeekbestand()
             ' à via Chr(224) ipv letterlijk, om UTF-8 → Latin-1 mojibake te
             ' vermijden bij de basic-source-encoding (zie ook Chr(215), Chr(8364)).
             Dim sEenRng As String
-            sEenRng = "Blad2.A$100:" & KolomLetter(nGroenten - 1) & "$100"
+            sEenRng = "Blad2.A$100:" & KolomLetter(nGroentSlots - 1) & "$100"
             oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
                 "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
                 sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
