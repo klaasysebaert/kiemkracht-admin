@@ -1110,7 +1110,7 @@ Sub MaakWeekbestand()
         sFmlSv = sFmlSv & "&IF(" & KolomLetter(cAnder) & iSamRij & "="""";"""";CHAR(10)&" & _
             """ander/opmerking: ""&" & KolomLetter(cAnder) & iSamRij & ")"
         Dim swCol As String
-        For w = 0 To nWeg - 1
+        For w = 0 To nWegSlots - 1
             swCol = KolomLetter(cWeg0 + w)
             sFmlSv = sFmlSv & "&IF(" & swCol & iSamRij & "="""";"""";CHAR(10)&""Geen: ""&" & swCol & "$3)"
         Next w
