@@ -886,7 +886,8 @@ Sub MaakWeekbestand()
     oSheet.getCellByPosition(cAnder,  r).setString("ander")
     oSheet.getCellByPosition(cAangep, r).setString("")
     oSheet.getCellByPosition(cGeen,   r).setString("geen (synthese)")
-    For w = 0 To nWeg - 1
+    ' Kolomlabel "geen" voor alle 12 slots, ook de nog lege (klaar voor manueel)
+    For w = 0 To nWegSlots - 1
         oSheet.getCellByPosition(cWeg0 + w, r).setString("geen")
     Next w
 
