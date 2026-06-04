@@ -1200,9 +1200,9 @@ Sub MaakMaandbestand()
     oS.Name = "afrekening"
 
     oS.getCellByPosition(0, 0).setString("klant_id")
-    oS.getCellByPosition(1, 0).setString("Voornaam")
-    oS.getCellByPosition(2, 0).setString("Voornaam familienaam")
-    oS.getCellByPosition(3, 0).setString("Email")
+    oS.getCellByPosition(1, 0).setString("Voornaam familienaam")
+    oS.getCellByPosition(2, 0).setString("Email")
+    oS.getCellByPosition(3, 0).setString("Voornaam")
     oS.getCellByPosition(4, 0).setString("Maand")
     oS.getCellByPosition(5, 0).setString("Saldo")
     ' Per week 2 ruwe inhoud-kolommen (G..P) + 2 mailmerge-kolommen (Q..Z).
