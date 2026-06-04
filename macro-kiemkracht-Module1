@@ -1089,7 +1089,10 @@ Sub MaakWeekbestand()
             "IF(" & KolomLetter(cEGG) & iSamRij & ">0;""extra groot"";" & _
             "IF(" & KolomLetter(cMINI) & iSamRij & ">0;""mini"";""geen pakket""))))"
         Dim sgCol As String
-        For g = 0 To nGroenten - 1
+        ' Alle 24 slots (Y..AV), niet enkel de DB-groenten: zo verschijnt een
+        ' handmatig toegevoegde losse groente ook in de samenvatting-kolom W.
+        ' Een leeg slot levert "" en voegt niets toe tot het ingevuld wordt.
+        For g = 0 To nGroentSlots - 1
             sgCol = KolomLetter(cGroent0 + g)
             sFmlSv = sFmlSv & "&IF(" & sgCol & iSamRij & "="""";"""";CHAR(10)&" & _
                 sgCol & "$2&"": ""&" & sgCol & iSamRij & "&"" ""&Blad2.I" & (g + 1) & ")"
