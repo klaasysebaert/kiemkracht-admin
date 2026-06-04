@@ -1301,8 +1301,8 @@ Sub MaakWeekbestand()
     oSheet.Columns.getByIndex(cAnder).Width  = 2300   ' ander
     oSheet.Columns.getByIndex(cAangep).Width = 3344   ' aangepast pakket
     oSheet.Columns.getByIndex(cGeen).Width   = 5000   ' synthese weglatingen
-    ' Weglatingen: 2260 elk
-    For ci = 0 To nWeg - 1
+    ' Weglatingen: 2260 elk (alle 12 slots)
+    For ci = 0 To nWegSlots - 1
         oSheet.Columns.getByIndex(cWeg0 + ci).Width = 2260
     Next ci
 
