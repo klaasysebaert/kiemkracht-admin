@@ -1240,9 +1240,9 @@ Sub MaakMaandbestand()
         idx = ord(i2)
         If Abs(mSaldo(idx)) < 0.005 Then GoTo VolgendeUit
         oS.getCellByPosition(0, ro).setString(mKid(idx))
-        oS.getCellByPosition(1, ro).setString(mVoor(idx))
-        oS.getCellByPosition(2, ro).setString(mNaam(idx))
-        oS.getCellByPosition(3, ro).setString(mEmail(idx))
+        oS.getCellByPosition(1, ro).setString(mNaam(idx))
+        oS.getCellByPosition(2, ro).setString(mEmail(idx))
+        oS.getCellByPosition(3, ro).setString(mVoor(idx))
         oS.getCellByPosition(4, ro).setString(sMaandNaam)
         oS.getCellByPosition(5, ro).setValue(mSaldo(idx))
         For wi = 0 To NWEKEN - 1
