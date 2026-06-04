@@ -1017,6 +1017,7 @@ Sub MaakMaandbestand()
     Dim sItemsA As String, sItemsN As String, sItem As String
     Dim sKey As String, ki As Integer, kFound As Integer
     Dim nVerwerkt As Integer : nVerwerkt = 0
+    Dim sEmailWijzigingen As String : sEmailWijzigingen = ""
 
     For wi = 0 To nWk - 1
         ' Bestand zoeken: de exacte naam kan variëren (bv. _definitief-suffix).
