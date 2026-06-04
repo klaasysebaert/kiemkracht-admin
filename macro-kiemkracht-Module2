@@ -1163,7 +1163,12 @@ Sub MaakMaandbestand()
                 mSaldo(nKl) = 0
                 nKl = nKl + 1
             Else
-                If mEmail(kFound) = "" Then mEmail(kFound) = sEmail
+                If sEmail <> "" Then
+                    If mEmail(kFound) <> "" And LCase(sEmail) <> LCase(mEmail(kFound)) Then
+                        sEmailWijzigingen = sEmailWijzigingen & "  " & mNaam(kFound) & ": " & mEmail(kFound) & " -> " & sEmail & Chr(10)
+                    End If
+                    mEmail(kFound) = sEmail
+                End If
                 If mVoor(kFound)  = "" Then mVoor(kFound)  = sVoor
             End If
             mSaldo(kFound) = mSaldo(kFound) + dTot
