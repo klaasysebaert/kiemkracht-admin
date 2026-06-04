@@ -1799,6 +1799,151 @@ VerbindingsFout:
 
 End Sub
 
+' =============================================
+' Kiemkracht - Losse groente handmatig toevoegen
+' Uitvoeren terwijl een weekbestand open is (eerste tabblad = databstblad).
+' Vult het eerste vrije groente-slot (Y..AV) met:
+'   - naam in rij 2
+'   - prijs in rij 3, opgemaakt als "0,00 EUR / <eenheid>"
+'   - eenheid-metadata in Blad2 (kolom I + rij 100), identiek aan
+'     MaakWeekbestand, met "x "/"Chr(215) "-prefix voor per-stuk-groenten.
+' Daardoor lopen afrekening, samenvatting-kolom en overzichten meteen mee.
+' Werkt op weekbestanden gemaakt met de 24-slot-versie van MaakWeekbestand;
+' oudere bestanden worden gedetecteerd en gemeld.
+' =============================================
+Sub VoegLosseGroenteToe()
+    On Error GoTo Fout
+
+    Const cGroent0     = 24   ' eerste groente-kolom (Y)
+    Const nGroentSlots = 24   ' slots Y..AV
+
+    ' --- Actief weekbestand ophalen + controleren ---
+    Dim oDoc As Object, oWk As Object
+    oDoc = ThisComponent
+    If IsNull(oDoc) Then Exit Sub
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then
+        MsgBox "Geen rekenblad actief.", 16, "Losse groente toevoegen"
+        Exit Sub
+    End If
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+        MsgBox "Geen rekenblad actief.", 16, "Losse groente toevoegen"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName("Blad2") Then
+        MsgBox "Dit lijkt geen weekbestand (geen Blad2-tabblad). Open het " & _
+               "weekbestand en start de macro vanuit dat venster.", 16, "Losse groente toevoegen"
+        Exit Sub
+    End If
+    oWk = oDoc.Sheets.getByIndex(0)
+
+    ' --- Eerste vrij groente-slot zoeken in rij 2 (index 1) ---
+    Dim iSlot As Integer, iVrij As Integer
+    iVrij = -1
+    For iSlot = 0 To nGroentSlots - 1
+        If Trim(oWk.getCellByPosition(cGroent0 + iSlot, 1).getString()) = "" Then
+            iVrij = iSlot
+            Exit For
+        End If
+    Next iSlot
+    If iVrij = -1 Then
+        MsgBox "Alle 24 groente-slots (Y t/m AV) zijn al gevuld; geen plaats " & _
+               "voor een extra losse groente.", 16, "Losse groente toevoegen"
+        Exit Sub
+    End If
+
+    ' --- Oude-structuur-controle: heeft de afrekening al een formule voor dit slot? ---
+    Dim bOud As Boolean : bOud = False
+    If oDoc.Sheets.hasByName("afrekening") Then
+        If oDoc.Sheets.getByName("afrekening").getCellByPosition(cGroent0 + iVrij, 5).getFormula() = "" Then
+            bOud = True
+        End If
+    End If
+    If bOud Then
+        If MsgBox("Dit weekbestand is met een oudere versie gemaakt: de afrekening " & _
+            "en samenvatting dekken dit slot niet automatisch." & Chr(10) & _
+            "Genereer het weekbestand opnieuw voor volledige ondersteuning." & Chr(10) & Chr(10) & _
+            "Toch naam en prijs invullen?", 4 + 48, "Losse groente toevoegen") <> 6 Then
+            Exit Sub
+        End If
+    End If
+
+    ' --- Invoer ---
+    Dim sNaam As String, sEenheid As String, sPrijsRuw As String
+    sNaam = Trim(InputBox("Naam van de losse groente:", "Losse groente toevoegen"))
+    If sNaam = "" Then Exit Sub
+
+    ' Dubbele naam? (al aanwezig in een ander slot)
+    For iSlot = 0 To nGroentSlots - 1
+        If LCase(Trim(oWk.getCellByPosition(cGroent0 + iSlot, 1).getString())) = LCase(sNaam) Then
+            If MsgBox("'" & sNaam & "' staat al in kolom " & KolomLetter(cGroent0 + iSlot) & _
+                ". Toch een tweede kolom toevoegen?", 4 + 48, "Losse groente toevoegen") <> 6 Then
+                Exit Sub
+            End If
+            Exit For
+        End If
+    Next iSlot
+
+    sEenheid = Trim(InputBox("Eenheid (bv. kg, 300g, bussel) - mag leeg:", "Losse groente toevoegen"))
+
+    sPrijsRuw = Trim(InputBox("Prijs per eenheid (bv. 5,00):", "Losse groente toevoegen"))
+    If sPrijsRuw = "" Then Exit Sub
+    Dim dPrijs As Double, bPrijsOk As Boolean
+    dPrijs = 0
+    On Error Resume Next
+    dPrijs = CDbl(Replace(sPrijsRuw, ".", ","))
+    bPrijsOk = (Err = 0)
+    On Error GoTo Fout
+    If Not bPrijsOk Then
+        MsgBox "Ongeldige prijs: " & sPrijsRuw, 16, "Losse groente toevoegen"
+        Exit Sub
+    End If
+
+    Dim bPerStuk As Boolean : bPerStuk = False
+    If sEenheid <> "" Then
+        bPerStuk = (MsgBox("Wordt deze groente per stuk verkocht?" & Chr(10) & _
+            "(Ja = per stuk, bv. 'x " & sEenheid & "';  Nee = per " & sEenheid & ")", _
+            4 + 32, "Losse groente toevoegen") = 6)
+    End If
+
+    ' --- Wegschrijven ---
+    ' Naam in rij 2 (index 1)
+    oWk.getCellByPosition(cGroent0 + iVrij, 1).setString(sNaam)
+
+    ' Prijs in rij 3 (index 2), opgemaakt als "0,00 EUR / <eenheid>"
+    Dim oCel As Object : oCel = oWk.getCellByPosition(cGroent0 + iVrij, 2)
+    oCel.setValue(dPrijs)
+    Dim oFmts As Object, nFmt As Long, sFmt As String
+    Dim oLoc As New com.sun.star.lang.Locale
+    oLoc.Language = "nl" : oLoc.Country = "BE"
+    oFmts = oDoc.getNumberFormats()
+    If sEenheid = "" Then
+        sFmt = "0,00"" " & Chr(8364) & """"
+    Else
+        sFmt = "0,00"" " & Chr(8364) & " / " & sEenheid & """"
+    End If
+    nFmt = oFmts.queryKey(sFmt, oLoc, False)
+    If nFmt = -1 Then nFmt = oFmts.addNew(sFmt, oLoc)
+    oCel.NumberFormat = nFmt
+
+    ' Eenheid-metadata in Blad2 (identiek aan MaakWeekbestand):
+    '   kolom I (index 8), rij = slot   -> "x "-prefix     (samenvatting, maandafrekening, overzichten)
+    '   rij 100 (index 99), kolom = slot -> Chr(215)-prefix (afrekening-detail)
+    Dim oBlad2 As Object : oBlad2 = oDoc.Sheets.getByName("Blad2")
+    oBlad2.getCellByPosition(8, iVrij).setString(IIf(bPerStuk, "x ", "") & sEenheid)
+    oBlad2.getCellByPosition(iVrij, 99).setString(IIf(bPerStuk, Chr(215) & " ", "") & sEenheid)
+
+    oDoc.calculateAll()
+
+    MsgBox "Losse groente toegevoegd in kolom " & KolomLetter(cGroent0 + iVrij) & ":" & Chr(10) & _
+           "   " & sNaam & " - " & oCel.getString() & Chr(10) & Chr(10) & _
+           "Vul nu bij de klanten de hoeveelheden in; afrekening en samenvatting lopen mee.", _
+           64, "Losse groente toevoegen"
+    Exit Sub
+
+Fout:
+    MsgBox "Fout: " & Err & " - " & Error, 16, "Losse groente toevoegen"
+End Sub
+
 Sub PasRijOpmaakToe(oSheet As Object, rIdx As Integer, _
                     clBG As Long, bVet As Boolean, _
                     cGroent0 As Integer, cAangep As Integer, _
