@@ -1319,11 +1319,16 @@ Sub MaakMaandbestand()
     oOut2 = oDesktop.loadComponentFromURL(sUrlUit, "_blank", 0, aOpen())
     oOut2.getCurrentController().freezeAtPosition(2, 1)
 
+    Dim sMsgWijz As String : sMsgWijz = ""
+    If sEmailWijzigingen <> "" Then
+        sMsgWijz = Chr(10) & Chr(10) & "Let op - gewijzigde e-mailadressen (meest recente gebruikt):" & Chr(10) & sEmailWijzigingen
+    End If
     MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
            (ro - 1) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
            sMaandNaam & " " & iJaar & ")." & Chr(10) & Chr(10) & _
            "Ruwe kolommen 'Pakket week n'/'Bijbestellingen week n' + " & _
-           "mailmerge-kolommen 'Pakket n als'/'Bijb n als' (lege week -> ""|"").", _
+           "mailmerge-kolommen 'Pakket n als'/'Bijb n als' (lege week -> ""|"")." & _
+           sMsgWijz, _
            64, "Maandafrekening"
 
 End Sub
