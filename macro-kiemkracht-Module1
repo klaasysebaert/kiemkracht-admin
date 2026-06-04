@@ -522,6 +522,13 @@ Sub MaakWeekbestand()
     Loop
     oRS.close() : oStmt.close()
 
+    ' Aantal weglating-slots: altijd minstens 12 kolommen klaar (zoals de 24
+    ' groente-slots), zodat een handmatig toegevoegde weglating-groente meteen
+    ' meeloopt. nWeg blijft het aantal ECHTE weglatingen (namen + markeringen).
+    Dim nWegSlots As Integer
+    nWegSlots = nWeg
+    If nWegSlots < 12 Then nWegSlots = 12
+
     ' --- Stap 3: bestellingen + abonnees zonder bestelling deze week ---
     Dim sPareFilter As String
     Dim sTak3Types  As String
