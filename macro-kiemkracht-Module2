@@ -1287,6 +1287,41 @@ Sub MaakMaandbestand()
         oS.Columns.getByIndex(16 + wi * 2 + 1).Width = 9000
     Next wi
 
+    ' Tabblad "opvolgen betalingen"
+    oOut.Sheets.insertNewByName("opvolgen betalingen", 1)
+    Dim oOp As Object : oOp = oOut.Sheets.getByName("opvolgen betalingen")
+    oOp.getCellByPosition(0, 0).setString("klant_id")
+    oOp.getCellByPosition(1, 0).setString("Voornaam familienaam")
+    oOp.getCellByPosition(2, 0).setString("Saldo")
+    oOp.getCellByPosition(3, 0).setString("Betaling 1")
+    oOp.getCellByPosition(4, 0).setString("Betaling 2")
+    oOp.getCellByPosition(5, 0).setString("Totaal betaald")
+    oOp.getCellByPosition(6, 0).setString("Nog te betalen")
+    Dim oHdrOp As Object : oHdrOp = oOp.getCellRangeByPosition(0, 0, 6, 0)
+    oHdrOp.CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oHdrOp.CellBackColor = RGB(204, 204, 204)
+    Dim roOp As Integer, sRij As String
+    For roOp = 1 To ro - 1
+        sRij = CStr(roOp + 1)
+        oOp.getCellByPosition(0, roOp).setFormula("=afrekening.A" & sRij)
+        oOp.getCellByPosition(1, roOp).setFormula("=afrekening.B" & sRij)
+        oOp.getCellByPosition(2, roOp).setFormula("=afrekening.F" & sRij)
+        oOp.getCellByPosition(5, roOp).setFormula("=D" & sRij & "+E" & sRij)
+        oOp.getCellByPosition(6, roOp).setFormula("=C" & sRij & "-F" & sRij)
+    Next roOp
+    ' Getalopmaak C, F, G (saldo en betalingen)
+    Dim oFmtsOp As Object : oFmtsOp = oOut.getNumberFormats()
+    Dim oLocOp As New com.sun.star.lang.Locale
+    oLocOp.Language = "nl" : oLocOp.Country = "BE"
+    Dim nFmtOp As Long
+    nFmtOp = oFmtsOp.queryKey("0,00", oLocOp, False)
+    If nFmtOp = -1 Then nFmtOp = oFmtsOp.addNew("0,00", oLocOp)
+    If ro > 1 Then
+        oOp.getCellRangeByPosition(2, 1, 2, ro - 1).NumberFormat = nFmtOp
+        oOp.getCellRangeByPosition(5, 1, 6, ro - 1).NumberFormat = nFmtOp
+    End If
+    oOp.Columns.getByIndex(1).Width = 5000
+
     ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
     ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
     Dim sUit As String : sUit = SAVE_MAP & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
