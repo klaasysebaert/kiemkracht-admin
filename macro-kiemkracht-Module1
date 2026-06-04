@@ -1637,7 +1637,9 @@ Sub MaakWeekbestand()
                       sData & "." & KolomLetter(cEGG)  & asr & "*$B$4+" & _
                       sData & "." & KolomLetter(cMINI) & asr & "*$B$5")
             ' per groente: geleverde hoeveelheid × prijs/eenheid (rij 3)
-            For g = 0 To nGroenten - 1
+            ' Alle 24 slots (Y..AV) zodat handmatig toegevoegde losse groenten
+            ' meetellen; lege slots leveren "" en tellen niet mee in de SUM.
+            For g = 0 To nGroentSlots - 1
                 Dim sCol As String
                 sCol = KolomLetter(cGroent0 + g)
                 oAfr.getCellByPosition(cGroent0 + g, ar).setFormula( _
