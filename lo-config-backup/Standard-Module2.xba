@@ -65,6 +65,11 @@ Sub StartMaakWeekbestand()
     MaakWeekbestand()
 End Sub
 
+Sub StartVoegLosseGroenteToe()
+    ReloadKiemkracht()
+    VoegLosseGroenteToe()
+End Sub
+
 Sub StartKoffieWeekbestand()
     ReloadKiemkracht()
     KoffieWeekbestand()
