@@ -1066,21 +1066,18 @@ Sub MaakWeekbestand()
             End If
         Next w
 
-        ' Synthese weglatingen (AU)
-        Dim sGeen As String
-        sGeen = ""
-        For w = 0 To nWeg - 1
-            If bWeg(b, w) Then
-                If sGeen <> "" Then sGeen = sGeen & Chr(10)
-                sGeen = sGeen & "Geen: " & wegNaam(w)
-            End If
-        Next w
-        If sGeen <> "" Then
-            Dim oCelGeen As Object
-            oCelGeen = oSheet.getCellByPosition(cGeen, r)
-            oCelGeen.setString(sGeen)
-            oCelGeen.IsTextWrapped = True
-        End If
+        ' Synthese weglatingen (kolom AY) als levende formule over alle 12
+        ' weglating-slots: per slot met een ingevulde cel "Geen: <naam>" (naam
+        ' uit koprij 3), samengevoegd met TEXTJOIN (lege slots vallen weg, geen
+        ' beginnende witregel). Zo wordt een handmatige weglating ná aanmaak —
+        ' ook in een tot nog toe leeg slot — meteen bijgewerkt, net als kolom W.
+        Dim oCelGeen As Object
+        oCelGeen = oSheet.getCellByPosition(cGeen, r)
+        oSheet.getCellRangeByName(KolomLetter(cGeen) & (r + 1)).setArrayFormula( _
+            "=TEXTJOIN(CHAR(10);1;IF(" & KolomLetter(cWeg0) & (r + 1) & ":" & _
+            KolomLetter(cWeg0 + nWegSlots - 1) & (r + 1) & "="""";"""";""Geen: ""&" & _
+            KolomLetter(cWeg0) & "$3:" & KolomLetter(cWeg0 + nWegSlots - 1) & "$3))")
+        oCelGeen.IsTextWrapped = True
 
         ' Samenvatting als levende formule (kolom V): trekt naam+afhaalpunt+
         ' pakketformaat live uit dezelfde rij, per groente met aantal>0 een
