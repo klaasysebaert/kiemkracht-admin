@@ -1617,12 +1617,15 @@ Sub MaakWeekbestand()
     ' weggelaten wordt). Het vaste TOTAAL staat daarom in kolom D — dáár naar
     ' verwijzen voor maandoverzichten, niet naar deze detailkolommen.
     ' De waarde wordt opgezocht in 'pakketwaardes' o.b.v. (formaat, groentenaam).
-    If nWeg > 0 Then
-        Dim wHdr As Integer
-        For wHdr = 0 To nWeg - 1
-            oAfr.getCellByPosition(cWeg0 + wHdr, 5).setString(wegNaam(wHdr))
-        Next wHdr
-    End If
+    ' Weglating-koprij (rij 6): spiegel de groentenaam uit rij 3 van het
+    ' databstblad voor alle nWegSlots kolommen. Zo verschijnt een handmatig
+    ' toegevoegde weglating-groente automatisch, en blijft een lege slot leeg.
+    Dim wHdr As Integer
+    For wHdr = 0 To nWegSlots - 1
+        oAfr.getCellByPosition(cWeg0 + wHdr, 5).setFormula( _
+            "=IF(" & sData & "." & KolomLetter(cWeg0 + wHdr) & "3="""";"""";" & _
+            sData & "." & KolomLetter(cWeg0 + wHdr) & "3)")
+    Next wHdr
 
     ' Spiegel: één rij per databstblad-rij (klantrijen krijgen formules)
     Dim sLG As String
