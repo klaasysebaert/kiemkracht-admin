@@ -64,12 +64,14 @@ Sub MaakOverzichten()
     ' Weglatingen uit rij 2
     Dim nWeg    As Integer
     Dim wegNaam(99) As String
+    ' Scan een vaste reeks (0..39) en onthoud de LAATSTE niet-lege kolom, zodat een
+    ' handmatig toegevoegde weglating in een niet-aansluitende kolom (gat ertussen)
+    ' toch meetelt. De cel-loops verderop checken elke kolom apart.
     nWeg = 0
-    Do While oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString() <> ""
-        wegNaam(nWeg) = oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString()
-        nWeg = nWeg + 1
-        If nWeg >= 100 Then Exit Do
-    Loop
+    For w = 0 To 39
+        wegNaam(w) = oWkSheet.getCellByPosition(cWeg0 + w, 2).getString()
+        If wegNaam(w) <> "" Then nWeg = w + 1
+    Next w
 
     ' Laatste rij weekblad
     Dim oCalcCursor As Object
@@ -1936,12 +1938,14 @@ Sub VulWeglatingen()
     ' Weglatingsnamen uit weekblad rij 3 (index 2) vanaf kolom AX
     Dim wegNaam(99) As String
     Dim nWeg        As Integer
+    ' Scan een vaste reeks (0..39) en onthoud de LAATSTE niet-lege kolom, zodat een
+    ' handmatig toegevoegde weglating in een niet-aansluitende kolom (gat ertussen)
+    ' toch meetelt. De cel-loops verderop checken elke kolom apart.
     nWeg = 0
-    Do While oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString() <> ""
-        wegNaam(nWeg) = oWkSheet.getCellByPosition(cWeg0 + nWeg, 2).getString()
-        nWeg = nWeg + 1
-        If nWeg >= 100 Then Exit Do
-    Loop
+    For w = 0 To 39
+        wegNaam(w) = oWkSheet.getCellByPosition(cWeg0 + w, 2).getString()
+        If wegNaam(w) <> "" Then nWeg = w + 1
+    Next w
 
     ' Loop over rijen tweede tabblad (vanaf rij 3 = index 2), kolom C niet leeg
     Dim r        As Integer : r = 2
