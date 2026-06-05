@@ -542,7 +542,7 @@ Sub MaakWeekbestand()
         For iWg = 0 To nWeg - 1
             If wegNaam(iWg) = sWgChk Then bWgIn = True : Exit For
         Next iWg
-        If Not bWgIn And nWeg < 200 Then
+        If Not bWgIn And nWeg < 20 Then
             wegNaam(nWeg) = sWgChk
             nWeg = nWeg + 1
         End If
