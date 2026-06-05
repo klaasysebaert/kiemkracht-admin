@@ -1557,9 +1557,9 @@ Sub MaakWeekbestand()
     oPW.Columns.getByIndex(0).Width = 5000
 
     ' --- Tabblad "afrekening" ---
-    ' Spiegelt de klantrijen van het databstblad met levende formules en
+    ' Spiegelt de klantrijen van het datablad met levende formules en
     ' berekent per klant het te betalen bedrag. Manuele correcties van de
-    ' geleverde hoeveelheden (kolom W+ op het databstblad) rekenen meteen door.
+    ' geleverde hoeveelheden (kolom W+ op het datablad) rekenen meteen door.
     Dim oAfr As Object
     If oNieuwDoc.Sheets.hasByName("afrekening") Then
         oAfr = oNieuwDoc.Sheets.getByName("afrekening")
@@ -1602,7 +1602,7 @@ Sub MaakWeekbestand()
     oAfr.getCellByPosition(cGeen, 5).setString("detail weglatingen") ' kolom AY
     oAfr.getCellByPosition(cSamenv, 5).setString("detail losse groenten")
     ' Alle 24 gereserveerde groente-slots (Y..AV) spiegelen, niet enkel de
-    ' groenten uit de DB: zo wordt een handmatig in rij 2 van het databstblad
+    ' groenten uit de DB: zo wordt een handmatig in rij 2 van het datablad
     ' toegevoegde losse groente automatisch overgenomen. IF-wrap houdt een nog
     ' lege slot leeg i.p.v. een storende "0" in de koprij.
     For g = 0 To nGroentSlots - 1
@@ -1611,14 +1611,14 @@ Sub MaakWeekbestand()
             sData & "." & KolomLetter(cGroent0 + g) & "2)")
     Next g
 
-    ' Weglatings-DETAILkolommen (vanaf AZ, uitgelijnd op het databstblad): per
+    ' Weglatings-DETAILkolommen (vanaf AZ, uitgelijnd op het datablad): per
     ' weglatingsgroente de waarde die de klant in mindering krijgt. Er staan nu
     ' vast nWegSlots (>=12) kolommen klaar, ook lege, zodat een handmatig
     ' toegevoegde weglating meteen meeloopt. Het vaste TOTAAL staat in kolom D —
     ' daar naar verwijzen voor maandoverzichten, niet naar deze detailkolommen.
     ' De waarde wordt opgezocht in 'pakketwaardes' o.b.v. (formaat, groentenaam).
     ' Weglating-koprij (rij 6): spiegel de groentenaam uit rij 3 van het
-    ' databstblad voor alle nWegSlots kolommen. Zo verschijnt een handmatig
+    ' datablad voor alle nWegSlots kolommen. Zo verschijnt een handmatig
     ' toegevoegde weglating-groente automatisch, en blijft een lege slot leeg.
     Dim wHdr As Integer
     For wHdr = 0 To nWegSlots - 1
@@ -1627,7 +1627,7 @@ Sub MaakWeekbestand()
             sData & "." & KolomLetter(cWeg0 + wHdr) & "3)")
     Next wHdr
 
-    ' Spiegel: één rij per databstblad-rij. De formules lopen op ELKE rij mee —
+    ' Spiegel: één rij per datablad-rij. De formules lopen op ELKE rij mee —
     ' ook op witregels, afhaalpunt-koprijen en de extra lege rijen onderaan — en
     ' geven "" als de bron leeg is of het een afhaalpunt-/witregel is, zodat er
     ' nergens een storende 0 verschijnt. Onderaan staan standaard nExtra lege
@@ -1804,7 +1804,7 @@ End Sub
 
 ' =============================================
 ' Kiemkracht - Losse groente handmatig toevoegen
-' Uitvoeren terwijl een weekbestand open is (eerste tabblad = databstblad).
+' Uitvoeren terwijl een weekbestand open is (eerste tabblad = datablad).
 ' Vult het eerste vrije groente-slot (Y..AV) met:
 '   - naam in rij 2
 '   - prijs in rij 3, opgemaakt als "0,00 EUR / <eenheid>"
