@@ -1612,10 +1612,10 @@ Sub MaakWeekbestand()
     Next g
 
     ' Weglatings-DETAILkolommen (vanaf AZ, uitgelijnd op het databstblad): per
-    ' weglatingsgroente de waarde die de klant in mindering krijgt. Deze
-    ' kolommen verschuiven elke week (één extra zodra een (groente×formaat)
-    ' weggelaten wordt). Het vaste TOTAAL staat daarom in kolom D — dáár naar
-    ' verwijzen voor maandoverzichten, niet naar deze detailkolommen.
+    ' weglatingsgroente de waarde die de klant in mindering krijgt. Er staan nu
+    ' vast nWegSlots (>=12) kolommen klaar, ook lege, zodat een handmatig
+    ' toegevoegde weglating meteen meeloopt. Het vaste TOTAAL staat in kolom D —
+    ' daar naar verwijzen voor maandoverzichten, niet naar deze detailkolommen.
     ' De waarde wordt opgezocht in 'pakketwaardes' o.b.v. (formaat, groentenaam).
     ' Weglating-koprij (rij 6): spiegel de groentenaam uit rij 3 van het
     ' databstblad voor alle nWegSlots kolommen. Zo verschijnt een handmatig
