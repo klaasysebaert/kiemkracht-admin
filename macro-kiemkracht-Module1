@@ -483,7 +483,7 @@ Sub MaakWeekbestand()
         "SELECT p.sleutel, pi.groente_naam, pi.waarde " & _
         "FROM pakket_inhoud pi JOIN pakketten p ON p.id = pi.pakket_id " & _
         "WHERE pi.weeknummer = " & iWeek & " AND pi.jaar = " & iJaar & _
-        " ORDER BY pi.groente_naam")
+        " ORDER BY pi.id")
     Do While oRS.next()
         sPwSleutel = oRS.getString(1)
         sPwNaam    = oRS.getString(2)
