@@ -510,19 +510,40 @@ Sub MaakWeekbestand()
     Loop
     oRS.close() : oStmt.close()
 
-    ' --- Stap 2: unieke weglatingen deze week ---
+    ' --- Stap 2: weglating-slots = alle potentieel weg te laten groenten ---
+    ' De koprij (rij 3) van de weglating-kolommen (AZ+) krijgt ALLE groenten die
+    ' deze week in een pakket (kunnen) zitten — bron 'pakketwaardes' (pwNaam), in
+    ' DB-/Sheets-volgorde — ook als geen enkele klant ze weglaat. Zo staan de
+    ' juiste namen meteen klaar voor (handmatige) markering. De markeringen per
+    ' klant (bWeg) komen nog steeds uit bestelling_weglatingen, op naam gematcht.
+    Dim wegNaam(200) As String
+    Dim nWeg As Integer
+    Dim iWg As Integer
+    nWeg = 0
+    For iWg = 0 To nPW - 1
+        wegNaam(nWeg) = pwNaam(iWg)
+        nWeg = nWeg + 1
+    Next iWg
+    ' Vangnet: een effectief weggelaten groente die (door een data-afwijking) niet
+    ' in pakketwaardes zit, achteraan toevoegen zodat ze niet wegvalt.
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT DISTINCT bw.groente_naam FROM bestelling_weglatingen bw " & _
         "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
         " ORDER BY bw.groente_naam")
-    Dim wegNaam(20) As String
-    Dim nWeg As Integer
-    nWeg = 0
+    Dim sWgChk As String
+    Dim bWgIn  As Boolean
     Do While oRS.next()
-        wegNaam(nWeg) = oRS.getString(1)
-        nWeg = nWeg + 1
+        sWgChk = oRS.getString(1)
+        bWgIn = False
+        For iWg = 0 To nWeg - 1
+            If wegNaam(iWg) = sWgChk Then bWgIn = True : Exit For
+        Next iWg
+        If Not bWgIn And nWeg < 200 Then
+            wegNaam(nWeg) = sWgChk
+            nWeg = nWeg + 1
+        End If
     Loop
     oRS.close() : oStmt.close()
 
