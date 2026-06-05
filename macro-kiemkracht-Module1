@@ -516,7 +516,9 @@ Sub MaakWeekbestand()
     ' DB-/Sheets-volgorde — ook als geen enkele klant ze weglaat. Zo staan de
     ' juiste namen meteen klaar voor (handmatige) markering. De markeringen per
     ' klant (bWeg) komen nog steeds uit bestelling_weglatingen, op naam gematcht.
-    Dim wegNaam(200) As String
+    ' Bovengrens: max. 12 verschillende pakketgroenten per week (= 12 weglating-
+    ' kolommen); 20 geeft wat marge voor het vangnet hieronder.
+    Dim wegNaam(20) As String
     Dim nWeg As Integer
     Dim iWg As Integer
     nWeg = 0
