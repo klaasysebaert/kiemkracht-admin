@@ -1485,7 +1485,7 @@ Sub MaakWeekbestand()
             End If
             ' Koprijlijn = geel, vet
             PasRijOpmaakToe(oSheet, rLoop, clGeel, True, _
-                            cGroent0, cAangep, cGeen, cWeg0, nWeg, clGeel, clGeel)
+                            cGroent0, cAangep, cGeen, cWeg0, nWegSlots, clGeel, clGeel)
             rLoop = rLoop + 1
             sVorigAfh2 = bAfh(b)
             sVorigDag2 = bDag(b)
