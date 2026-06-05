@@ -1719,14 +1719,14 @@ Sub MaakWeekbestand()
             "=IF(" & sGuard & ";"""";B" & asr & "+C" & asr & "-D" & asr & ")")
     Next ar
 
-    ' Algemeen totaal onderaan
+    ' Algemeen totaal onderaan (na de extra lege formule-rijen)
     Dim arTot As Integer
-    arTot = iLaatste + 1
+    arTot = nLaatsteForm + 1
     oAfr.getCellByPosition(0, arTot).setString("ALGEMEEN TOTAAL")
-    oAfr.getCellByPosition(1, arTot).setFormula("=SUM(B7:B" & iLaatste & ")")
-    oAfr.getCellByPosition(2, arTot).setFormula("=SUM(C7:C" & iLaatste & ")")
-    oAfr.getCellByPosition(3, arTot).setFormula("=SUM(D7:D" & iLaatste & ")")
-    oAfr.getCellByPosition(4, arTot).setFormula("=SUM(E7:E" & iLaatste & ")")
+    oAfr.getCellByPosition(1, arTot).setFormula("=SUM(B7:B" & nLaatsteForm & ")")
+    oAfr.getCellByPosition(2, arTot).setFormula("=SUM(C7:C" & nLaatsteForm & ")")
+    oAfr.getCellByPosition(3, arTot).setFormula("=SUM(D7:D" & nLaatsteForm & ")")
+    oAfr.getCellByPosition(4, arTot).setFormula("=SUM(E7:E" & nLaatsteForm & ")")
 
     ' Opmaak afrekeningstabblad
     oAfr.getCellRangeByName("B7:E" & (arTot + 1)).NumberFormat = nCur
