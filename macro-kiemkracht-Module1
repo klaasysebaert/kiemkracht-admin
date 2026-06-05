@@ -1492,7 +1492,7 @@ Sub MaakWeekbestand()
         End If
         ' Klantdata rij = wit, normaal
         PasRijOpmaakToe(oSheet, rLoop, clWit, False, _
-                        cGroent0, cAangep, cGeen, cWeg0, nWeg, clCyan, clOranje)
+                        cGroent0, cAangep, cGeen, cWeg0, nWegSlots, clCyan, clOranje)
         rLoop = rLoop + 1
     Next b
     ' Witregel na laatste groep: geen opmaak nodig
