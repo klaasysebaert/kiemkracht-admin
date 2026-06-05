@@ -68,10 +68,11 @@ Sub MaakOverzichten()
     ' handmatig toegevoegde weglating in een niet-aansluitende kolom (gat ertussen)
     ' toch meetelt. De cel-loops verderop checken elke kolom apart.
     nWeg = 0
-    For w = 0 To 39
-        wegNaam(w) = oWkSheet.getCellByPosition(cWeg0 + w, 2).getString()
-        If wegNaam(w) <> "" Then nWeg = w + 1
-    Next w
+    Dim wScan As Integer
+    For wScan = 0 To 39
+        wegNaam(wScan) = oWkSheet.getCellByPosition(cWeg0 + wScan, 2).getString()
+        If wegNaam(wScan) <> "" Then nWeg = wScan + 1
+    Next wScan
 
     ' Laatste rij weekblad
     Dim oCalcCursor As Object
@@ -1942,10 +1943,11 @@ Sub VulWeglatingen()
     ' handmatig toegevoegde weglating in een niet-aansluitende kolom (gat ertussen)
     ' toch meetelt. De cel-loops verderop checken elke kolom apart.
     nWeg = 0
-    For w = 0 To 39
-        wegNaam(w) = oWkSheet.getCellByPosition(cWeg0 + w, 2).getString()
-        If wegNaam(w) <> "" Then nWeg = w + 1
-    Next w
+    Dim wScan As Integer
+    For wScan = 0 To 39
+        wegNaam(wScan) = oWkSheet.getCellByPosition(cWeg0 + wScan, 2).getString()
+        If wegNaam(wScan) <> "" Then nWeg = wScan + 1
+    Next wScan
 
     ' Loop over rijen tweede tabblad (vanaf rij 3 = index 2), kolom C niet leeg
     Dim r        As Integer : r = 2
