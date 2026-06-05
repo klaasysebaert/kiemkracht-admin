@@ -792,7 +792,9 @@ Sub MaakWeekbestand()
     oRS.close() : oStmt.close()
 
     ' --- Stap 6: weglatingen per bestelling ---
-    Dim bWeg(500, 20) As Boolean
+    ' 2e dimensie ruim genoeg voor alle pakketgroenten (wegNaam-slots), niet enkel
+    ' de effectief weggelaten groenten.
+    Dim bWeg(500, 200) As Boolean
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT bw.bestelling_id, bw.groente_naam " & _
