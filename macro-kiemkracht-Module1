@@ -466,6 +466,10 @@ Sub MaakWeekbestand()
     ' Komt uit pakket_inhoud.waarde (gesynct vanuit Sheets "€ in pakket").
     ' Belandt in een bewerkbaar tabblad "pakketwaardes"; de afrekening verwijst
     ' ernaar zodat manuele bijsturing in het weekbestand meteen doorwerkt.
+    ' ORDER BY pi.id (= invoeg-/Sheets-volgorde) i.p.v. alfabetisch: de groenten
+    ' verschijnen in de volgorde van de Google Sheet (eerste voorkomen wint bij
+    ' de dedup hieronder). Deze volgorde stuurt zowel het pakketwaardes-tabblad
+    ' als de koprij van de weglating-kolommen aan.
     Dim pwNaam(200) As String
     Dim pwKG(200)   As Double, pwGG(200) As Double
     Dim pwEGG(200)  As Double, pwMINI(200) As Double
