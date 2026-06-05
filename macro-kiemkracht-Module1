@@ -1627,102 +1627,96 @@ Sub MaakWeekbestand()
             sData & "." & KolomLetter(cWeg0 + wHdr) & "3)")
     Next wHdr
 
-    ' Spiegel: één rij per databstblad-rij (klantrijen krijgen formules)
-    Dim sLG As String
-    sLG = KolomLetter(cGroent0 + nGroentSlots - 1)   ' laatste groente-slot (AV), incl. handmatige
+    ' Spiegel: één rij per databstblad-rij. De formules lopen op ELKE rij mee —
+    ' ook op witregels, afhaalpunt-koprijen en de extra lege rijen onderaan — en
+    ' geven "" als de bron leeg is of het een afhaalpunt-/witregel is, zodat er
+    ' nergens een storende 0 verschijnt. Onderaan staan standaard nExtra lege
+    ' rijen mét formules klaar zodat een handmatig toegevoegde klant meteen telt.
+    Dim sLG As String : sLG = KolomLetter(cGroent0 + nGroentSlots - 1)  ' laatste groente-slot (AV)
+    Dim sFG As String : sFG = KolomLetter(cGroent0)                     ' eerste groente-slot (Y)
+    Dim sEenRng As String
+    sEenRng = "Blad2.A$100:" & KolomLetter(nGroentSlots - 1) & "$100"
+    Dim sWegF As String, sWegL As String, sPwVal As String, sPwKey As String
+    Dim nPwRijen As Integer : nPwRijen = nPW : If nPwRijen < 1 Then nPwRijen = 1
+    sWegF  = KolomLetter(cWeg0)
+    sWegL  = KolomLetter(cWeg0 + nWegSlots - 1)
+    sPwVal = "pakketwaardes.$B$2:$E$" & (nPwRijen + 1)
+    sPwKey = "pakketwaardes.$A$2:$A$" & (nPwRijen + 1)
+
+    Const nExtra = 10                       ' extra lege rijen met formules klaar
+    Dim nLaatsteForm As Integer
+    nLaatsteForm = iLaatste + nExtra        ' laatste rij (1-based) met formules
+
     Dim ar As Integer, asr As Integer
-    For ar = 6 To iLaatste - 1
+    Dim sGuard As String, sCol As String, sFmtCol As String
+    Dim wAfr As Integer, sWegColA As String
+    For ar = 6 To nLaatsteForm - 1
         asr = ar + 1
-        If oSheet.getCellByPosition(cAfh, ar).getString() = "afhaalpunt/dag" Then
-            ' koprij: afhaalpuntlabel spiegelen
-            oAfr.getCellByPosition(cNaam, ar).setFormula("=" & sData & ".A" & asr)
-        ElseIf Trim(oSheet.getCellByPosition(cNaam, ar).getString()) <> "" Then
-            ' klantrij
-            oAfr.getCellByPosition(cNaam, ar).setFormula("=" & sData & ".A" & asr)
-            ' klant_id (kolom F) gespiegeld uit kolom P van het databstblad;
-            ' lege bron → leeg (niet 0) zodat maandbestanden er proper op kunnen matchen.
-            oAfr.getCellByPosition(5, ar).setFormula( _
-                "=IF(" & sData & "." & KolomLetter(cWBest) & asr & "="""";"""";" & _
-                sData & "." & KolomLetter(cWBest) & asr & ")")
-            ' pakket-bedrag = pakkettype × pakketprijs-cel bovenaan
-            oAfr.getCellByPosition(1, ar).setFormula( _
-                "=" & sData & "." & KolomLetter(cKG)   & asr & "*$B$2+" & _
-                      sData & "." & KolomLetter(cGG)   & asr & "*$B$3+" & _
-                      sData & "." & KolomLetter(cEGG)  & asr & "*$B$4+" & _
-                      sData & "." & KolomLetter(cMINI) & asr & "*$B$5")
-            ' per groente: geleverde hoeveelheid × prijs/eenheid (rij 3)
-            ' Alle 24 slots (Y..AV) zodat handmatig toegevoegde losse groenten
-            ' meetellen; lege slots leveren "" en tellen niet mee in de SUM.
-            For g = 0 To nGroentSlots - 1
-                Dim sCol As String
-                sCol = KolomLetter(cGroent0 + g)
-                oAfr.getCellByPosition(cGroent0 + g, ar).setFormula( _
-                    "=IF(" & sData & "." & sCol & asr & "="""";"""";" & _
-                    sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3)")
-            Next g
-            ' losse-groenten-totaal en eindtotaal
-            Dim sFG As String
-            sFG = KolomLetter(cGroent0)   ' eerste groente-kolom in afrekening
-            oAfr.getCellByPosition(2, ar).setFormula("=SUM(" & sFG & asr & ":" & sLG & asr & ")")
-            ' detail losse groenten (levende formule, loopt mee met correcties)
-            ' Format per groente:
-            '   per_stuk    : "<naam>: <aantal> × <eenheid> à <prijs> € = <totaal> €"
-            '   niet per_stuk: "<naam>: <aantal> <eenheid> à <prijs> € = <totaal> €"
-            ' De "× "-prefix zit al in de Blad2-cel voor per_stuk-groenten (zie
-            ' MaakWeekbestand boven), dus we plakken hem hier zonder extra ×.
-            ' à via Chr(224) ipv letterlijk, om UTF-8 → Latin-1 mojibake te
-            ' vermijden bij de basic-source-encoding (zie ook Chr(215), Chr(8364)).
-            Dim sEenRng As String
-            sEenRng = "Blad2.A$100:" & KolomLetter(nGroentSlots - 1) & "$100"
-            oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
-                "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
-                sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
-                "&"" ""&" & sEenRng & "&"" " & Chr(224) & " ""&" & _
-                "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
-                "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
-            ' Weglatingen: per groente de in-pakket-waarde, maar enkel als de
-            ' klant ze weglaat (cel in databstblad niet leeg). Opzoeken in
-            ' 'pakketwaardes' met de juiste formaatkolom (1=KG..4=MINI). Een
-            ' niet-gevonden naam of "geen pakket" levert 0 op (IFERROR).
-            If nWeg > 0 Then
-                Dim sFmtCol As String
-                sFmtCol = "IF(" & sData & "." & KolomLetter(cKG)   & asr & ">0;1;" & _
-                          "IF(" & sData & "." & KolomLetter(cGG)   & asr & ">0;2;" & _
-                          "IF(" & sData & "." & KolomLetter(cEGG)  & asr & ">0;3;" & _
-                          "IF(" & sData & "." & KolomLetter(cMINI) & asr & ">0;4;0))))"
-                Dim sPwVal As String, sPwKey As String
-                sPwVal = "pakketwaardes.$B$2:$E$" & (nPW + 1)
-                sPwKey = "pakketwaardes.$A$2:$A$" & (nPW + 1)
-                Dim wAfr As Integer, sWegColA As String
-                For wAfr = 0 To nWeg - 1
-                    sWegColA = KolomLetter(cWeg0 + wAfr)
-                    oAfr.getCellByPosition(cWeg0 + wAfr, ar).setFormula( _
-                        "=IF(" & sData & "." & sWegColA & asr & "="""";"""";" & _
-                        "IFERROR(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
-                        sFmtCol & ");0))")
-                Next wAfr
-                ' Vast weglatingen-totaal in kolom D = som van de detailkolommen.
-                oAfr.getCellByPosition(3, ar).setFormula( _
-                    "=SUM(" & KolomLetter(cWeg0) & asr & ":" & KolomLetter(cWeg0 + nWeg - 1) & asr & ")")
-                ' Detail weglatingen als tekst (kolom AY), pendant van "detail losse
-                ' groenten" in kolom W. Per actieve weglating één regel
-                '   "Geen <naam>: -<waarde> €"
-                ' Voorwaarde-bereik = de weg-cellen op het databstblad (leeg = niet
-                ' weggelaten); naam uit de afrekening-koprij (rij 6), waarde uit de
-                ' detailcel op deze rij (AZ+). à/€ via Chr() tegen mojibake.
-                Dim sWegF As String, sWegL As String
-                sWegF = KolomLetter(cWeg0)
-                sWegL = KolomLetter(cWeg0 + nWeg - 1)
-                oAfr.getCellRangeByName(KolomLetter(cGeen) & asr).setArrayFormula( _
-                    "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sWegF & asr & ":" & sWegL & asr & "="""";"""";" & _
-                    """Geen ""&LOWER(" & sWegF & "$6:" & sWegL & "$6)&"": -""&" & _
-                    "TEXT(" & sWegF & asr & ":" & sWegL & asr & ";""0,00"")&"" " & Chr(8364) & """))")
-            Else
-                oAfr.getCellByPosition(3, ar).setValue(0)
-            End If
-            ' TOTAAL (vaste kolom E) = pakket + losse - weglatingen
-            oAfr.getCellByPosition(4, ar).setFormula("=B" & asr & "+C" & asr & "-D" & asr)
-        End If
+        ' Echte klantrij = naam-bron niet leeg én geen afhaalpunt-koprij. Anders
+        ' (witregel, afhaalpunt-rij, extra lege rij) geven de bedrag-kolommen "".
+        sGuard = "OR(" & sData & ".A" & asr & "="""";" & _
+                 sData & "." & KolomLetter(cAfh) & asr & "=""afhaalpunt/dag"")"
+
+        ' A: naam/afhaalpunt spiegelen (leeg → leeg, niet 0)
+        oAfr.getCellByPosition(cNaam, ar).setFormula( _
+            "=IF(" & sData & ".A" & asr & "="""";"""";" & sData & ".A" & asr & ")")
+        ' F: klant_id uit kolom P; lege bron → leeg (matcht in maandbestand)
+        oAfr.getCellByPosition(5, ar).setFormula( _
+            "=IF(" & sData & "." & KolomLetter(cWBest) & asr & "="""";"""";" & _
+            sData & "." & KolomLetter(cWBest) & asr & ")")
+        ' B: pakket-bedrag = pakkettype x pakketprijs-cel bovenaan
+        oAfr.getCellByPosition(1, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";" & _
+            sData & "." & KolomLetter(cKG)   & asr & "*$B$2+" & _
+            sData & "." & KolomLetter(cGG)   & asr & "*$B$3+" & _
+            sData & "." & KolomLetter(cEGG)  & asr & "*$B$4+" & _
+            sData & "." & KolomLetter(cMINI) & asr & "*$B$5)")
+        ' per groente Y..AV: geleverde hoeveelheid x prijs/eenheid (rij 3); leeg -> ""
+        For g = 0 To nGroentSlots - 1
+            sCol = KolomLetter(cGroent0 + g)
+            oAfr.getCellByPosition(cGroent0 + g, ar).setFormula( _
+                "=IF(" & sData & "." & sCol & asr & "="""";"""";" & _
+                sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3)")
+        Next g
+        ' C: losse-groenten-totaal
+        oAfr.getCellByPosition(2, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";SUM(" & sFG & asr & ":" & sLG & asr & "))")
+        ' W: detail losse groenten (levende formule), per groente
+        '   "<naam>: <aantal> <eenheid> a <prijs> EUR = <totaal> EUR"
+        ' De "x "-prefix voor per_stuk zit al in de Blad2-cel; a via Chr(224),
+        ' EUR via Chr(8364) tegen UTF-8 -> Latin-1 mojibake.
+        oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
+            "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
+            sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
+            "&"" ""&" & sEenRng & "&"" " & Chr(224) & " ""&" & _
+            "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
+            "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
+        ' Weglating-detailkolommen (AZ+): per groente de in-pakket-waarde, maar enkel
+        ' als de klant ze weglaat. Opzoeken in 'pakketwaardes' o.b.v. (formaat
+        ' 1=KG..4=MINI, naam). Niet-gevonden/"geen pakket" -> 0 (IFERROR). 12 slots.
+        sFmtCol = "IF(" & sData & "." & KolomLetter(cKG)   & asr & ">0;1;" & _
+                  "IF(" & sData & "." & KolomLetter(cGG)   & asr & ">0;2;" & _
+                  "IF(" & sData & "." & KolomLetter(cEGG)  & asr & ">0;3;" & _
+                  "IF(" & sData & "." & KolomLetter(cMINI) & asr & ">0;4;0))))"
+        For wAfr = 0 To nWegSlots - 1
+            sWegColA = KolomLetter(cWeg0 + wAfr)
+            oAfr.getCellByPosition(cWeg0 + wAfr, ar).setFormula( _
+                "=IF(" & sData & "." & sWegColA & asr & "="""";"""";" & _
+                "IFERROR(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
+                sFmtCol & ");0))")
+        Next wAfr
+        ' D: vast weglatingen-totaal = som van de detailkolommen
+        oAfr.getCellByPosition(3, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";SUM(" & sWegF & asr & ":" & sWegL & asr & "))")
+        ' AY: detail weglatingen als tekst, pendant van W. Per actieve weglating
+        '   "Geen <naam>: -<waarde> EUR"  (naam uit koprij 6, waarde uit AZ+).
+        oAfr.getCellRangeByName(KolomLetter(cGeen) & asr).setArrayFormula( _
+            "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sWegF & asr & ":" & sWegL & asr & "="""";"""";" & _
+            """Geen ""&LOWER(" & sWegF & "$6:" & sWegL & "$6)&"": -""&" & _
+            "TEXT(" & sWegF & asr & ":" & sWegL & asr & ";""0,00"")&"" " & Chr(8364) & """))")
+        ' E: TOTAAL (vaste kolom E) = pakket + losse - weglatingen
+        oAfr.getCellByPosition(4, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";B" & asr & "+C" & asr & "-D" & asr & ")")
     Next ar
 
     ' Algemeen totaal onderaan
