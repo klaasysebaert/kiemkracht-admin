@@ -1062,11 +1062,14 @@ Sub MaakMaandbestand()
         Next g
 
         ' Weglating-namen (koprij afrekening, vanaf AZ)
+        ' Scan een vaste reeks (0..39) en onthoud de LAATSTE niet-lege kolom, zodat
+        ' een handmatig toegevoegde weglating in een niet-aansluitende kolom (gat
+        ' ertussen) toch meetelt. De klantloop hieronder checkt elke cel apart.
         nWeg = 0
-        Do While oAfr.getCellByPosition(caWeg0 + nWeg, 5).getString() <> "" And nWeg < 40
-            wName(nWeg) = oAfr.getCellByPosition(caWeg0 + nWeg, 5).getString()
-            nWeg = nWeg + 1
-        Loop
+        For w = 0 To 39
+            wName(w) = oAfr.getCellByPosition(caWeg0 + w, 5).getString()
+            If wName(w) <> "" Then nWeg = w + 1
+        Next w
 
         ' Klantrijen (vanaf rij 7 = index 6)
         blanks = 0 : rr = 6
