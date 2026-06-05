@@ -1347,7 +1347,7 @@ Sub MaakWeekbestand()
     Dim rIdx As Integer
 
     ' --- RIJ 0: metadata (#99FFFF, wit tekst, vet, 16pt, midden/midden) ---
-    For cIdx = 0 To cWeg0 + nWeg - 1
+    For cIdx = 0 To cWeg0 + nWegSlots - 1
         oC = oSheet.getCellByPosition(cIdx, 0)
         oC.CellBackColor   = clCyan
         oC.CharWeight      = com.sun.star.awt.FontWeight.BOLD
@@ -1362,7 +1362,7 @@ Sub MaakWeekbestand()
     Next cIdx
 
     ' --- RIJ 1: kolomhoofden (#CCCCCC, vet, 10pt, links/boven, tekstomloop) ---
-    For cIdx = 0 To cWeg0 + nWeg - 1
+    For cIdx = 0 To cWeg0 + nWegSlots - 1
         oC = oSheet.getCellByPosition(cIdx, 1)
         oC.CellBackColor = clGrijs
         oC.CharWeight    = com.sun.star.awt.FontWeight.BOLD
@@ -1394,7 +1394,7 @@ Sub MaakWeekbestand()
     ' Synthese weglatingen rij1: oranje
     oSheet.getCellByPosition(cGeen, 1).CellBackColor = clOranje
     ' Weglatingen rij1: oranje
-    For cIdx = cWeg0 To cWeg0 + nWeg - 1
+    For cIdx = cWeg0 To cWeg0 + nWegSlots - 1
         oSheet.getCellByPosition(cIdx, 1).CellBackColor = clOranje
     Next cIdx
     ' Samenvatting rij1: grijs kolomhoofd
@@ -1408,7 +1408,7 @@ Sub MaakWeekbestand()
     oCsamHoofd.IsTextWrapped = True
 
     ' --- RIJ 2: eenheden (#DDDDDD voor datum/pakket, #99FFFF voor groenten) ---
-    For cIdx = 0 To cWeg0 + nWeg - 1
+    For cIdx = 0 To cWeg0 + nWegSlots - 1
         oC = oSheet.getCellByPosition(cIdx, 2)
         oC.CharWeight    = com.sun.star.awt.FontWeight.BOLD
         oC.CharHeight    = 10
@@ -1441,7 +1441,7 @@ Sub MaakWeekbestand()
 
     ' --- RIJEN 3-5: totaal/donderdag/vrijdag (#DDDDDD, vet) ---
     For rIdx = 3 To 5
-        For cIdx = 0 To cWeg0 + nWeg - 1
+        For cIdx = 0 To cWeg0 + nWegSlots - 1
             oC = oSheet.getCellByPosition(cIdx, rIdx)
             oC.CharWeight    = com.sun.star.awt.FontWeight.BOLD
             oC.CharHeight    = 10
@@ -1457,7 +1457,7 @@ Sub MaakWeekbestand()
             oSheet.getCellByPosition(cIdx, rIdx).CellBackColor = clGeel
         Next cIdx
         oSheet.getCellByPosition(cGeen, rIdx).CellBackColor = clGeel
-        For cIdx = cWeg0 To cWeg0 + nWeg - 1
+        For cIdx = cWeg0 To cWeg0 + nWegSlots - 1
             oSheet.getCellByPosition(cIdx, rIdx).CellBackColor = clGeel
         Next cIdx
     Next rIdx
@@ -1510,7 +1510,7 @@ Sub MaakWeekbestand()
     oTB.HorizontalLine     = oBL : oTB.IsHorizontalLineValid = True
     oTB.VerticalLine       = oBL : oTB.IsVerticalLineValid   = True
     Dim oRandBereik As Object
-    oRandBereik = oSheet.getCellRangeByPosition(0, 0, cWeg0 + nWeg - 1, nTotRijen - 1)
+    oRandBereik = oSheet.getCellRangeByPosition(0, 0, cWeg0 + nWegSlots - 1, nTotRijen - 1)
     oRandBereik.TableBorder2 = oTB
 
     ' --- Rijen/kolommen vastzetten bij B7 ---
