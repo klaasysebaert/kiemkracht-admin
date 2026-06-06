@@ -1497,6 +1497,19 @@ End Sub
 ' Helpers voor MaakMaandbestand
 ' =============================================
 
+' Kolomindex (0-based) van een kop in rij 0, of -1 als niet gevonden.
+' Maakt het inlezen van een vorig bestand robuust tegen kolomverschuivingen.
+Function ZoekKolomKop(oSheet As Object, sKop As String) As Integer
+    Dim c As Integer
+    ZoekKolomKop = -1
+    For c = 0 To 60
+        If oSheet.getCellByPosition(c, 0).getString() = sKop Then
+            ZoekKolomKop = c
+            Exit Function
+        End If
+    Next c
+End Function
+
 ' Reeds-open spreadsheetdocument met deze URL teruggeven, anders Null.
 Function VindOpenDocument(sUrl As String) As Object
     Dim oEnum As Object, oComp As Object
