@@ -1204,6 +1204,77 @@ Sub MaakMaandbestand()
     If nVerwerkt = 0 Then MsgBox "Geen weekbestanden gevonden voor " & sMaandNaam & " " & iJaar & _
                                  "." & Chr(10) & "Verwacht in: " & JaarMap(iJaar), 48, "Maandafrekening" : Exit Sub
 
+    ' --- vorige maand inlezen: Vorig saldo (G) + Ontvangen (H) per klant ---
+    ' Exact bestand: afrekening_<vorige maand>_<jaar><omg>_definitief.ods in de jaarmap
+    ' van het VORIGE jaar (klopt automatisch over de jaarwisseling). Niet gevonden ->
+    ' melden en doorgaan met lege G/H. Klanten die vorige maand nog openstonden maar
+    ' deze maand niets bestelden, worden als losse rij overgedragen (herinnering).
+    iVM = iTM - 1 : iVJaar = iJaar
+    If iVM < 1 Then iVM = 12 : iVJaar = iVJaar - 1
+    sVorigNaam = "afrekening_" & saMaanden(iVM) & "_" & iVJaar & sOmg & "_definitief.ods"
+    sVorigPad  = JaarMap(iVJaar) & sVorigNaam
+    If FileExists(sVorigPad) Then
+        sVorigUrl = ConvertToURL(sVorigPad)
+        oVorig = VindOpenDocument(sVorigUrl)          ' hergebruik als al open
+        If IsNull(oVorig) Then
+            oVorig = oDesktop.loadComponentFromURL(sVorigUrl, "_blank", 0, aHidden())
+            bVorigSluiten = True
+        Else
+            bVorigSluiten = False
+        End If
+        If Not IsNull(oVorig) Then
+            If oVorig.Sheets.hasByName("afrekening") And oVorig.Sheets.hasByName("opvolgen betalingen") Then
+                oVorig.calculateAll()
+                oVAfr = oVorig.Sheets.getByName("afrekening")
+                oVOp  = oVorig.Sheets.getByName("opvolgen betalingen")
+                bVorigGevonden = True
+                ' Identiteit + Saldo uit het afrekening-tabblad (kolom F = Saldo, dezelfde
+                ' waarde als "opvolgen betalingen".C). Totaal betaald enkel uit "opvolgen
+                ' betalingen" (kolom F). Beide tabbladen zijn rij-aligned (niet apart
+                ' sorteren!). Klantrijen vanaf rij 2 = index 1.
+                pBlanks = 0 : pr = 1
+                Do While pBlanks < 10 And pr < 5000
+                    sPNaam = oVAfr.getCellByPosition(1, pr).getString()
+                    If sPNaam = "" Then
+                        pBlanks = pBlanks + 1
+                        GoTo VolgendeVorigeRij
+                    End If
+                    pBlanks = 0
+                    sPKid   = Trim(oVAfr.getCellByPosition(0, pr).getString())
+                    sPEmail = oVAfr.getCellByPosition(2, pr).getString()
+                    sPVoor  = oVAfr.getCellByPosition(3, pr).getString()
+                    dPSaldo = oVAfr.getCellByPosition(5, pr).getValue()   ' Saldo -> Vorig saldo
+                    dPOntv  = oVOp.getCellByPosition(5, pr).getValue()    ' Totaal betaald -> Ontvangen
+                    ' Sleutel identiek aan de maand-aggregatie (klant_id, anders e-mail, anders naam)
+                    If sPKid <> "" Then
+                        sPKey = "K:" & sPKid
+                    ElseIf sPEmail <> "" Then
+                        sPKey = "E:" & LCase(sPEmail)
+                    Else
+                        sPKey = "N:" & LCase(sPNaam)
+                    End If
+                    kFound = -1
+                    For ki = 0 To nKl - 1
+                        If mKey(ki) = sPKey Then kFound = ki : Exit For
+                    Next ki
+                    If kFound >= 0 Then
+                        mVorig(kFound) = dPSaldo : mOntv(kFound) = dPOntv : mHist(kFound) = True
+                    ElseIf Abs(dPSaldo - dPOntv) >= 0.005 Then
+                        ' Deze maand niets besteld, maar nog openstaand -> overdragen als herinnering
+                        mKey(nKl)   = sPKey  : mKid(nKl)   = sPKid
+                        mVoor(nKl)  = sPVoor : mNaam(nKl)  = sPNaam : mEmail(nKl) = sPEmail
+                        mSaldo(nKl) = 0
+                        mVorig(nKl) = dPSaldo : mOntv(nKl) = dPOntv : mHist(nKl) = True
+                        nKl = nKl + 1 : nOvergedragen = nOvergedragen + 1
+                    End If
+                    VolgendeVorigeRij:
+                    pr = pr + 1
+                Loop
+            End If
+            If bVorigSluiten Then oVorig.close(True)
+        End If
+    End If
+
     ' --- maandbestand opbouwen ---
     Dim oOut As Object, oS As Object
     Dim aOut(0) As New com.sun.star.beans.PropertyValue
