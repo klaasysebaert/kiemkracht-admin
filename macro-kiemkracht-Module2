@@ -1229,23 +1229,29 @@ Sub MaakMaandbestand()
                 oVAfr = oVorig.Sheets.getByName("afrekening")
                 oVOp  = oVorig.Sheets.getByName("opvolgen betalingen")
                 bVorigGevonden = True
-                ' Identiteit + Saldo uit het afrekening-tabblad (kolom F = Saldo, dezelfde
-                ' waarde als "opvolgen betalingen".C). Totaal betaald enkel uit "opvolgen
-                ' betalingen" (kolom F). Beide tabbladen zijn rij-aligned (niet apart
-                ' sorteren!). Klantrijen vanaf rij 2 = index 1.
+                ' Robuust tegen kolomwijzigingen: klant_id / naam / Saldo / Totaal betaald
+                ' komen uit "opvolgen betalingen" (stabiele layout A=klant_id, B=naam,
+                ' C=Saldo, F=Totaal betaald — die formules wijzen altijd naar de juiste
+                ' afrekening-kolom, ongeacht de versie van het bestand). E-mail/Voornaam
+                ' (enkel nodig voor overgedragen klanten) via kop-opzoeking in het
+                ' afrekening-tabblad. Beide tabbladen zijn rij-aligned (niet apart sorteren!).
+                Dim cVEmail As Integer, cVVoor As Integer
+                cVEmail = ZoekKolomKop(oVAfr, "Email")
+                cVVoor  = ZoekKolomKop(oVAfr, "Voornaam")
                 pBlanks = 0 : pr = 1
                 Do While pBlanks < 10 And pr < 5000
-                    sPNaam = oVAfr.getCellByPosition(1, pr).getString()
+                    sPNaam = oVOp.getCellByPosition(1, pr).getString()
                     If sPNaam = "" Then
                         pBlanks = pBlanks + 1
                         GoTo VolgendeVorigeRij
                     End If
                     pBlanks = 0
-                    sPKid   = Trim(oVAfr.getCellByPosition(0, pr).getString())
-                    sPEmail = oVAfr.getCellByPosition(2, pr).getString()
-                    sPVoor  = oVAfr.getCellByPosition(3, pr).getString()
-                    dPSaldo = oVAfr.getCellByPosition(5, pr).getValue()   ' Saldo -> Vorig saldo
-                    dPOntv  = oVOp.getCellByPosition(5, pr).getValue()    ' Totaal betaald -> Ontvangen
+                    sPKid   = Trim(oVOp.getCellByPosition(0, pr).getString())
+                    dPSaldo = oVOp.getCellByPosition(2, pr).getValue()   ' Saldo -> Vorig saldo
+                    dPOntv  = oVOp.getCellByPosition(5, pr).getValue()   ' Totaal betaald -> Ontvangen
+                    sPEmail = "" : sPVoor = ""
+                    If cVEmail >= 0 Then sPEmail = oVAfr.getCellByPosition(cVEmail, pr).getString()
+                    If cVVoor  >= 0 Then sPVoor  = oVAfr.getCellByPosition(cVVoor, pr).getString()
                     ' Sleutel identiek aan de maand-aggregatie (klant_id, anders e-mail, anders naam)
                     If sPKid <> "" Then
                         sPKey = "K:" & sPKid
