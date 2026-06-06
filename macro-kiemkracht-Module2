@@ -1389,6 +1389,13 @@ Sub MaakMaandbestand()
     oHdr.CharWeight = com.sun.star.awt.FontWeight.BOLD
     oHdr.CellBackColor = RGB(204, 204, 204)
     oS.getCellRangeByPosition(0, 1, nKol - 1, 5).CellBackColor = RGB(242, 242, 242)
+    Dim oHint As Object
+    oHint = oS.getCellRangeByPosition(0, 1, 0, 3)   ' A2:A4
+    oHint.CharHeight = 8
+    oHint.CharPosture = com.sun.star.awt.FontSlant.ITALIC
+    oS.getCellByPosition(0, 1).setString("sneltoetsen: Ctrl + F = zoeken op naam in kolom A")
+    oS.getCellByPosition(0, 2).setString("Ctrl + A = alle rijen tonen")
+    oS.getCellByPosition(0, 3).setString("Ctrl + 0 (nul) = cursor bovenaan met begin zichtbaar")
     oS.Columns.getByIndex(0).Width = 5260   ' A Voornaam Familienaam = 5,26 cm
     oS.Columns.getByIndex(1).Width = 1500   ' B klant_id = 1,50 cm
     oS.Columns.getByIndex(2).Width = 5260   ' C Voornaam2 Familienaam2 = 5,26 cm
