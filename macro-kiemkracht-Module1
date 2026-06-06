@@ -2020,6 +2020,18 @@ Function KolomLetter(iCol As Integer) As String
     End If
 End Function
 
+' Basismap voor een gegeven jaar: <SAVE_MAP>\Samenstelling en bestellingen <jaar>\
+' Sinds 2026 worden week-submappen en maandafrekeningen per jaar gegroepeerd.
+' Maakt de jaarmap aan als ze nog niet bestaat (MkDir doet maar één niveau,
+' dus dit moet gebeuren vóór het aanmaken van <jaar>_week_<wk>-submappen erin).
+Function JaarMap(iJaar As Integer) As String
+    Const SAVE_MAP As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
+    Dim sMap As String
+    sMap = SAVE_MAP & "Samenstelling en bestellingen " & iJaar & "\"
+    If Not FileExists(sMap) Then MkDir(sMap)
+    JaarMap = sMap
+End Function
+
 ' =============================================
 ' Kolomindex in klanten_beheer voor veldindex vi (0-15).
 ' Kolom K (index 10) is gereserveerd voor gebruikersformules.
