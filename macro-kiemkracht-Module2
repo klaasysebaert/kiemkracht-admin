@@ -1336,7 +1336,6 @@ Sub MaakMaandbestand()
     ' Rijen 1-5 (index 1-5) leeg laten; data start op index 6 (rij 7 in het blad).
     Dim ro As Integer : ro = 6
     Dim idx As Integer
-    Dim sSaldoRaw As String
     For i2 = 0 To nKl - 1
         idx = ord(i2)
         ' Tonen zodra het totaal (deze maand + overgedragen saldo) niet ~0 is
@@ -1347,28 +1346,28 @@ Sub MaakMaandbestand()
         oS.getCellByPosition(3, ro).setString(mEmail(idx))
         oS.getCellByPosition(4, ro).setString(mVoor(idx))
         oS.getCellByPosition(5, ro).setString(sMaandNaam)
-        sSaldoRaw = Replace(CStr(mSaldo(idx)), ",", ".")
-        oS.getCellByPosition(6, ro).setFormula("=" & sSaldoRaw & "+H" & (ro + 1) & "-I" & (ro + 1))
+        oS.getCellByPosition(10, ro).setValue(mSaldo(idx))  ' K = Besteld in maand (hardgetal)
+        oS.getCellByPosition(6, ro).setFormula("=K" & (ro + 1) & "+J" & (ro + 1))  ' G Saldo = Besteld + Verschil
         If mHist(idx) Then
             oS.getCellByPosition(7, ro).setValue(mVorig(idx))   ' Vorig saldo (uit vorige maand)
             oS.getCellByPosition(8, ro).setValue(mOntv(idx))    ' Ontvangen (Totaal betaald vorige maand)
         End If
-        oS.getCellByPosition(9, ro).setFormula("=H" & (ro + 1) & "-I" & (ro + 1))   ' Verschil
+        oS.getCellByPosition(9, ro).setFormula("=H" & (ro + 1) & "-I" & (ro + 1))   ' J Verschil
         If Trim(mKid(idx)) = "" Then sGeenKid = sGeenKid & "  - " & mNaam(idx) & Chr(10)
         If Trim(mEmail(idx)) = "" Then sGeenEmail = sGeenEmail & "  - " & mNaam(idx) & Chr(10)
         For wi = 0 To NWEKEN - 1
             ' ruwe inhoud (enkel voor weken die deze maand bestaan)
             If wi < nWk Then
-                If mPak(idx, wi)  <> "" Then oS.getCellByPosition(10 + wi * 2,     ro).setString(mPak(idx, wi))
-                If mBijA(idx, wi) <> "" Then oS.getCellByPosition(10 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
+                If mPak(idx, wi)  <> "" Then oS.getCellByPosition(11 + wi * 2,     ro).setString(mPak(idx, wi))
+                If mBijA(idx, wi) <> "" Then oS.getCellByPosition(11 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
             End If
             ' "als"-formules: lege ruwe cel -> "|"
-            oS.getCellByPosition(20 + wi * 2, ro).setFormula( _
-                "=IF(" & KolomLetter(10 + wi * 2) & (ro + 1) & "="""";""|"";" & _
-                KolomLetter(10 + wi * 2) & (ro + 1) & ")")
-            oS.getCellByPosition(20 + wi * 2 + 1, ro).setFormula( _
-                "=IF(" & KolomLetter(10 + wi * 2 + 1) & (ro + 1) & "="""";""|"";" & _
-                KolomLetter(10 + wi * 2 + 1) & (ro + 1) & ")")
+            oS.getCellByPosition(21 + wi * 2, ro).setFormula( _
+                "=IF(" & KolomLetter(11 + wi * 2) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(11 + wi * 2) & (ro + 1) & ")")
+            oS.getCellByPosition(21 + wi * 2 + 1, ro).setFormula( _
+                "=IF(" & KolomLetter(11 + wi * 2 + 1) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(11 + wi * 2 + 1) & (ro + 1) & ")")
         Next wi
         ro = ro + 1
         VolgendeUit:
