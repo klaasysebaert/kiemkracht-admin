@@ -1404,26 +1404,29 @@ Sub MaakMaandbestand()
     ' Tabblad "opvolgen betalingen"
     oOut.Sheets.insertNewByName("opvolgen betalingen", 1)
     Dim oOp As Object : oOp = oOut.Sheets.getByName("opvolgen betalingen")
-    oOp.getCellByPosition(0, 0).setString("klant_id")
-    oOp.getCellByPosition(1, 0).setString("Voornaam familienaam")
-    oOp.getCellByPosition(2, 0).setString("Saldo")
-    oOp.getCellByPosition(3, 0).setString("Betaling 1")
-    oOp.getCellByPosition(4, 0).setString("Betaling 2")
-    oOp.getCellByPosition(5, 0).setString("Totaal betaald")
-    oOp.getCellByPosition(6, 0).setString("Nog te betalen")
-    Dim oHdrOp As Object : oHdrOp = oOp.getCellRangeByPosition(0, 0, 6, 0)
+    ' Zelfde kolomvolgorde als afrekening: A naam, B klant_id, C Voornaam2 Familienaam2.
+    oOp.getCellByPosition(0, 0).setString("Voornaam Familienaam")
+    oOp.getCellByPosition(1, 0).setString("klant_id")
+    oOp.getCellByPosition(2, 0).setString("Voornaam2 Familienaam2")
+    oOp.getCellByPosition(3, 0).setString("Saldo")
+    oOp.getCellByPosition(4, 0).setString("Betaling 1")
+    oOp.getCellByPosition(5, 0).setString("Betaling 2")
+    oOp.getCellByPosition(6, 0).setString("Totaal betaald")
+    oOp.getCellByPosition(7, 0).setString("Nog te betalen")
+    Dim oHdrOp As Object : oHdrOp = oOp.getCellRangeByPosition(0, 0, 7, 0)
     oHdrOp.CharWeight = com.sun.star.awt.FontWeight.BOLD
     oHdrOp.CellBackColor = RGB(204, 204, 204)
     Dim roOp As Integer, sRij As String
     For roOp = 1 To ro - 1
         sRij = CStr(roOp + 1)
-        oOp.getCellByPosition(0, roOp).setFormula("=afrekening.B" & sRij)   ' klant_id
-        oOp.getCellByPosition(1, roOp).setFormula("=afrekening.A" & sRij)   ' Voornaam Familienaam
-        oOp.getCellByPosition(2, roOp).setFormula("=afrekening.G" & sRij)   ' Saldo
-        oOp.getCellByPosition(5, roOp).setFormula("=D" & sRij & "+E" & sRij)
-        oOp.getCellByPosition(6, roOp).setFormula("=C" & sRij & "-F" & sRij)
+        oOp.getCellByPosition(0, roOp).setFormula("=afrekening.A" & sRij)   ' Voornaam Familienaam
+        oOp.getCellByPosition(1, roOp).setFormula("=afrekening.B" & sRij)   ' klant_id
+        oOp.getCellByPosition(2, roOp).setFormula("=afrekening.C" & sRij)   ' Voornaam2 Familienaam2
+        oOp.getCellByPosition(3, roOp).setFormula("=afrekening.G" & sRij)   ' Saldo
+        oOp.getCellByPosition(6, roOp).setFormula("=E" & sRij & "+F" & sRij)   ' Totaal betaald
+        oOp.getCellByPosition(7, roOp).setFormula("=D" & sRij & "-G" & sRij)   ' Nog te betalen
     Next roOp
-    ' Getalopmaak C, F, G (saldo en betalingen)
+    ' Getalopmaak D (Saldo), G (Totaal betaald), H (Nog te betalen)
     Dim oFmtsOp As Object : oFmtsOp = oOut.getNumberFormats()
     Dim oLocOp As New com.sun.star.lang.Locale
     oLocOp.Language = "nl" : oLocOp.Country = "BE"
@@ -1431,10 +1434,10 @@ Sub MaakMaandbestand()
     nFmtOp = oFmtsOp.queryKey("0,00", oLocOp, False)
     If nFmtOp = -1 Then nFmtOp = oFmtsOp.addNew("0,00", oLocOp)
     If ro > 1 Then
-        oOp.getCellRangeByPosition(2, 1, 2, ro - 1).NumberFormat = nFmtOp
-        oOp.getCellRangeByPosition(5, 1, 6, ro - 1).NumberFormat = nFmtOp
+        oOp.getCellRangeByPosition(3, 1, 3, ro - 1).NumberFormat = nFmtOp
+        oOp.getCellRangeByPosition(6, 1, 7, ro - 1).NumberFormat = nFmtOp
     End If
-    oOp.Columns.getByIndex(1).Width = 5000
+    oOp.Columns.getByIndex(0).Width = 5000   ' Voornaam Familienaam
 
     ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
     ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
