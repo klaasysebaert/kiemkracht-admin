@@ -3327,7 +3327,7 @@ End Function
 Sub KoffieWeekbestand()
     ' Alle Dim's vooraan, één per regel — LO Basic is gevoelig voor
     ' gemixte types/groottes op één Dim-regel en voor Dim's binnen loops.
-    Const SAVE_MAP As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
+    ' Bestandslocatie: zie JaarMap() — week-submappen zitten per jaar gegroepeerd.
 
     Dim oCallerDoc As Object
     Dim dVandaag   As Date
