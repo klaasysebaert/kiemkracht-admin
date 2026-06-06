@@ -1418,7 +1418,7 @@ Sub MaakMaandbestand()
     oHdrOp.CharWeight = com.sun.star.awt.FontWeight.BOLD
     oHdrOp.CellBackColor = RGB(204, 204, 204)
     Dim roOp As Integer, sRij As String
-    For roOp = 1 To ro - 1
+    For roOp = 6 To ro - 1
         sRij = CStr(roOp + 1)
         oOp.getCellByPosition(0, roOp).setFormula("=afrekening.A" & sRij)   ' Voornaam Familienaam
         oOp.getCellByPosition(1, roOp).setFormula("=afrekening.B" & sRij)   ' klant_id
