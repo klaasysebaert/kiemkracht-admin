@@ -1023,7 +1023,7 @@ Sub MaakMaandbestand()
         ' Strategie: zoek in de weekmap het eerste .ods-bestand waarvan de naam
         ' begint met "week_<wk>_<jaar>" en de omgevingssuffix bevat.
         Dim sWeekMap As String
-        sWeekMap = SAVE_MAP & iJaar & "_week_" & wkNr(wi) & "\"
+        sWeekMap = JaarMap(iJaar) & iJaar & "_week_" & wkNr(wi) & "\"
         sPad = ZoekWeekbestand(sWeekMap, wkNr(wi), iJaar, sOmg)
         If sPad = "" Then GoTo VolgendeWeek
         sUrlW = ConvertToURL(sPad)
