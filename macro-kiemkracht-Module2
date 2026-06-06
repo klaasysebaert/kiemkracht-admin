@@ -1425,7 +1425,7 @@ Sub MaakMaandbestand()
         sRij = CStr(roOp + 1)
         oOp.getCellByPosition(0, roOp).setFormula("=afrekening.A" & sRij)   ' Voornaam Familienaam
         oOp.getCellByPosition(1, roOp).setFormula("=afrekening.B" & sRij)   ' klant_id
-        oOp.getCellByPosition(2, roOp).setFormula("=afrekening.C" & sRij)   ' Voornaam2 Familienaam2
+        oOp.getCellByPosition(2, roOp).setFormula("=IF(afrekening.C" & sRij & "="""";"""";afrekening.C" & sRij & ")")   ' Voornaam2 Familienaam2
         oOp.getCellByPosition(3, roOp).setFormula("=afrekening.G" & sRij)   ' Saldo
         oOp.getCellByPosition(6, roOp).setFormula("=E" & sRij & "+F" & sRij)   ' Totaal betaald
         oOp.getCellByPosition(7, roOp).setFormula("=D" & sRij & "-G" & sRij)   ' Nog te betalen
