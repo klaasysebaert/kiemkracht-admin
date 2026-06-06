@@ -922,7 +922,7 @@ End Sub
 '   Weglatingen worden per groente getoond ("geen rabarber: -3,00 €"),
 '   met de waarde uit de afrekening-detailkolommen (AZ+).
 '
-' Output: <SAVE_MAP>\afrekening_<maand>_<jaar>[-dev].ods, 1 rij per klant,
+' Output: <jaarmap>\afrekening_<maand>_<jaar>[-dev].ods, 1 rij per klant,
 ' kolomhoofden = de mailmerge-placeholders ({{Voornaam}}, {{Saldo}}, ...).
 ' =============================================
 Sub MaakMaandbestand()
