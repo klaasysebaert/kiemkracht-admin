@@ -1388,6 +1388,7 @@ Sub MaakMaandbestand()
     oHdr = oS.getCellRangeByPosition(0, 0, nKol - 1, 0)
     oHdr.CharWeight = com.sun.star.awt.FontWeight.BOLD
     oHdr.CellBackColor = RGB(204, 204, 204)
+    oS.getCellRangeByPosition(0, 1, nKol - 1, 5).CellBackColor = RGB(242, 242, 242)
     oS.Columns.getByIndex(0).Width = 5260   ' A Voornaam Familienaam = 5,26 cm
     oS.Columns.getByIndex(1).Width = 1500   ' B klant_id = 1,50 cm
     oS.Columns.getByIndex(2).Width = 5260   ' C Voornaam2 Familienaam2 = 5,26 cm
