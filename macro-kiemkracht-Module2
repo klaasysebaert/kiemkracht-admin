@@ -1329,18 +1329,19 @@ Sub MaakMaandbestand()
         idx = ord(i2)
         ' Tonen zodra het totaal (deze maand + overgedragen saldo) niet ~0 is
         If Abs(mSaldo(idx) + mVorig(idx) - mOntv(idx)) < 0.005 Then GoTo VolgendeUit
-        oS.getCellByPosition(0, ro).setString(mKid(idx))
-        oS.getCellByPosition(1, ro).setString(mNaam(idx))
-        oS.getCellByPosition(2, ro).setString(mEmail(idx))
-        oS.getCellByPosition(3, ro).setString(mVoor(idx))
-        oS.getCellByPosition(4, ro).setString(sMaandNaam)
+        oS.getCellByPosition(0, ro).setString(mNaam(idx))   ' Voornaam Familienaam
+        oS.getCellByPosition(1, ro).setString(mKid(idx))    ' klant_id
+        ' kolom 2 = "Voornaam2 Familienaam2": leeg (manueel in te vullen)
+        oS.getCellByPosition(3, ro).setString(mEmail(idx))
+        oS.getCellByPosition(4, ro).setString(mVoor(idx))
+        oS.getCellByPosition(5, ro).setString(sMaandNaam)
         sSaldoRaw = Replace(CStr(mSaldo(idx)), ",", ".")
-        oS.getCellByPosition(5, ro).setFormula("=" & sSaldoRaw & "+G" & (ro + 1) & "-H" & (ro + 1))
+        oS.getCellByPosition(6, ro).setFormula("=" & sSaldoRaw & "+H" & (ro + 1) & "-I" & (ro + 1))
         If mHist(idx) Then
-            oS.getCellByPosition(6, ro).setValue(mVorig(idx))   ' Vorig saldo (uit vorige maand)
-            oS.getCellByPosition(7, ro).setValue(mOntv(idx))    ' Ontvangen (Totaal betaald vorige maand)
+            oS.getCellByPosition(7, ro).setValue(mVorig(idx))   ' Vorig saldo (uit vorige maand)
+            oS.getCellByPosition(8, ro).setValue(mOntv(idx))    ' Ontvangen (Totaal betaald vorige maand)
         End If
-        oS.getCellByPosition(8, ro).setFormula("=G" & (ro + 1) & "-H" & (ro + 1))   ' Verschil
+        oS.getCellByPosition(9, ro).setFormula("=H" & (ro + 1) & "-I" & (ro + 1))   ' Verschil
         If Trim(mKid(idx)) = "" Then sGeenKid = sGeenKid & "  - " & mNaam(idx) & Chr(10)
         If Trim(mEmail(idx)) = "" Then sGeenEmail = sGeenEmail & "  - " & mNaam(idx) & Chr(10)
         For wi = 0 To NWEKEN - 1
