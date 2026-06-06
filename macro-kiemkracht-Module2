@@ -1334,7 +1334,12 @@ Sub MaakMaandbestand()
         oS.getCellByPosition(4, ro).setString(sMaandNaam)
         sSaldoRaw = Replace(CStr(mSaldo(idx)), ",", ".")
         oS.getCellByPosition(5, ro).setFormula("=" & sSaldoRaw & "+G" & (ro + 1) & "-H" & (ro + 1))
+        If mHist(idx) Then
+            oS.getCellByPosition(6, ro).setValue(mVorig(idx))   ' Vorig saldo (uit vorige maand)
+            oS.getCellByPosition(7, ro).setValue(mOntv(idx))    ' Ontvangen (Totaal betaald vorige maand)
+        End If
         oS.getCellByPosition(8, ro).setFormula("=G" & (ro + 1) & "-H" & (ro + 1))   ' Verschil
+        If Trim(mKid(idx)) = "" Then sGeenKid = sGeenKid & "  - " & mNaam(idx) & Chr(10)
         For wi = 0 To NWEKEN - 1
             ' ruwe inhoud (enkel voor weken die deze maand bestaan)
             If wi < nWk Then
