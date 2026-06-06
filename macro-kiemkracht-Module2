@@ -1325,7 +1325,8 @@ Sub MaakMaandbestand()
     Dim sSaldoRaw As String
     For i2 = 0 To nKl - 1
         idx = ord(i2)
-        If Abs(mSaldo(idx)) < 0.005 Then GoTo VolgendeUit
+        ' Tonen zodra het totaal (deze maand + overgedragen saldo) niet ~0 is
+        If Abs(mSaldo(idx) + mVorig(idx) - mOntv(idx)) < 0.005 Then GoTo VolgendeUit
         oS.getCellByPosition(0, ro).setString(mKid(idx))
         oS.getCellByPosition(1, ro).setString(mNaam(idx))
         oS.getCellByPosition(2, ro).setString(mEmail(idx))
