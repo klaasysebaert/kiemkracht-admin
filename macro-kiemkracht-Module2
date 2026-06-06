@@ -1335,7 +1335,7 @@ Sub MaakMaandbestand()
 
     ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
     ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
-    Dim sUit As String : sUit = SAVE_MAP & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
+    Dim sUit As String : sUit = JaarMap(iJaar) & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
     Dim sUrlUit As String : sUrlUit = ConvertToURL(sUit)
 
     ' Sluit het doelbestand als het nog open staat (bv. van een vorige run),
