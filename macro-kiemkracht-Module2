@@ -1209,7 +1209,7 @@ Sub MaakMaandbestand()
     oS.getCellByPosition(4, 0).setString("Maand")
     oS.getCellByPosition(5, 0).setString("Saldo")
     oS.getCellByPosition(6, 0).setString("Vorig saldo")
-    oS.getCellByPosition(7, 0).setString("Betalingen ontvangen")
+    oS.getCellByPosition(7, 0).setString("Ontvangen")
     oS.getCellByPosition(8, 0).setString("Verschil")    ' I = vorig saldo - betalingen
     ' I = Verschil (G - H); per week 2 ruwe inhoud-kolommen (J..S) + 2 mailmerge-kolommen (T..AC).
     ' G en H zijn invoerkolommen (vorig saldo / betalingen); weekkolommen starten nu op J.
