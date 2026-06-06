@@ -1286,8 +1286,11 @@ Sub MaakMaandbestand()
     oHdr = oS.getCellRangeByPosition(0, 0, nKol - 1, 0)
     oHdr.CharWeight = com.sun.star.awt.FontWeight.BOLD
     oHdr.CellBackColor = RGB(204, 204, 204)
+    oS.Columns.getByIndex(1).Width = 5260   ' B = 5,26 cm
     oS.Columns.getByIndex(2).Width = 5000
-    oS.Columns.getByIndex(3).Width = 6000
+    oS.Columns.getByIndex(3).Width = 2400   ' D = 2,40 cm
+    oS.Columns.getByIndex(4).Width = 1750   ' E = 1,75 cm
+    oS.Columns.getByIndex(5).Width = 1300   ' F = 1,30 cm
     For wi = 0 To NWEKEN - 1
         oS.Columns.getByIndex(9 + wi * 2).Width      = 8000
         oS.Columns.getByIndex(9 + wi * 2 + 1).Width  = 9000
