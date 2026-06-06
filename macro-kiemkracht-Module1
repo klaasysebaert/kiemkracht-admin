@@ -395,7 +395,7 @@ Sub MaakWeekbestand()
     If BepaalOmgeving() = "dev" Then sOmgSuffix = "-dev" Else sOmgSuffix = ""
 
     Dim sWeekMap As String
-    sWeekMap = SAVE_MAP & iJaar & "_week_" & iWeek & "\"
+    sWeekMap = JaarMap(iJaar) & iJaar & "_week_" & iWeek & "\"
     If Not FileExists(sWeekMap) Then MkDir(sWeekMap)
 
     sBestand = sWeekMap & "week_" & iWeek & "_" & iJaar & sOmgSuffix & ".ods"
