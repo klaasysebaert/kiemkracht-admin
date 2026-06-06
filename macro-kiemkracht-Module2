@@ -927,8 +927,7 @@ End Sub
 ' =============================================
 Sub MaakMaandbestand()
 
-    Const SAVE_MAP As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
-
+    ' Bestandslocatie: zie JaarMap() — weken én maandafrekening per jaar gegroepeerd.
     ' Databstblad-kolommen (0-based), exact zoals MaakWeekbestand ze schrijft
     Const cdNaam    = 0    ' voornaam + familienaam
     Const cdEmail   = 6
