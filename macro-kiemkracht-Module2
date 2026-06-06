@@ -1418,6 +1418,7 @@ Sub MaakMaandbestand()
     Dim oHdrOp As Object : oHdrOp = oOp.getCellRangeByPosition(0, 0, 7, 0)
     oHdrOp.CharWeight = com.sun.star.awt.FontWeight.BOLD
     oHdrOp.CellBackColor = RGB(204, 204, 204)
+    oOp.getCellRangeByPosition(0, 1, 7, 5).CellBackColor = RGB(242, 242, 242)
     Dim roOp As Integer, sRij As String
     For roOp = 6 To ro - 1
         sRij = CStr(roOp + 1)
