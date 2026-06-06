@@ -1279,7 +1279,7 @@ Sub MaakMaandbestand()
     sFmtMb = "0,00"
     nFmtMb = oFmtsMb.queryKey(sFmtMb, oLocMb, False)
     If nFmtMb = -1 Then nFmtMb = oFmtsMb.addNew(sFmtMb, oLocMb)
-    If ro > 1 Then oS.getCellRangeByPosition(5, 1, 7, ro - 1).NumberFormat = nFmtMb
+    If ro > 1 Then oS.getCellRangeByPosition(5, 1, 8, ro - 1).NumberFormat = nFmtMb
 
     ' Opmaak
     Dim oHdr As Object
