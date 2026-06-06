@@ -1028,6 +1028,7 @@ Sub MaakMaandbestand()
     Dim dPSaldo As Double, dPOntv As Double
     Dim nOvergedragen As Integer : nOvergedragen = 0
     Dim sGeenKid As String : sGeenKid = ""
+    Dim sGeenEmail As String : sGeenEmail = ""
 
     For wi = 0 To nWk - 1
         ' Bestand zoeken: de exacte naam kan variëren (bv. _definitief-suffix).
