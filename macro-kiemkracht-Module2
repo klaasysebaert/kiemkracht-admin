@@ -995,6 +995,7 @@ Sub MaakMaandbestand()
     Dim mKey(600) As String, mKid(600) As String, mVoor(600) As String
     Dim mNaam(600) As String, mEmail(600) As String, mSaldo(600) As Double
     Dim mPak(600, 8) As String, mBijA(600, 8) As String, mBijN(600, 8) As String
+    Dim mVorig(600) As Double, mOntv(600) As Double, mHist(600) As Boolean
     Dim nKl As Integer : nKl = 0
 
     Dim oDesktop As Object : oDesktop = createUnoService("com.sun.star.frame.Desktop")
