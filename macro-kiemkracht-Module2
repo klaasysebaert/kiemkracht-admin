@@ -1289,10 +1289,10 @@ Sub MaakMaandbestand()
     oS.Columns.getByIndex(2).Width = 5000
     oS.Columns.getByIndex(3).Width = 6000
     For wi = 0 To NWEKEN - 1
-        oS.Columns.getByIndex(8 + wi * 2).Width      = 8000
-        oS.Columns.getByIndex(8 + wi * 2 + 1).Width  = 9000
-        oS.Columns.getByIndex(18 + wi * 2).Width     = 8000
-        oS.Columns.getByIndex(18 + wi * 2 + 1).Width = 9000
+        oS.Columns.getByIndex(9 + wi * 2).Width      = 8000
+        oS.Columns.getByIndex(9 + wi * 2 + 1).Width  = 9000
+        oS.Columns.getByIndex(19 + wi * 2).Width     = 8000
+        oS.Columns.getByIndex(19 + wi * 2 + 1).Width = 9000
     Next wi
 
     ' Tabblad "opvolgen betalingen"
