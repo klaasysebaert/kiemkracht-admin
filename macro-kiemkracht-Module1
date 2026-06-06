@@ -335,7 +335,7 @@ Sub MaakWeekbestand()
     End If
 
     ' DB-verbinding en SSH-tunnel: zie MaakDBVerbinding()
-    Const SAVE_MAP  As String = "C:\Users\klaas\Documents\Zaak\Afzet\Samenstelling en bestellingen\"
+    ' Bestandslocatie: zie JaarMap() — week-submappen zitten per jaar gegroepeerd.
 
     ' Weeknummer en datums: vanaf zaterdag → komende week, anders huidige week
     Dim dVandaag   As Date
