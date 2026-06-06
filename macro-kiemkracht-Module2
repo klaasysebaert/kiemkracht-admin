@@ -1471,6 +1471,9 @@ Sub MaakMaandbestand()
     If sGeenKid <> "" Then
         sMsgKid = Chr(10) & Chr(10) & "Klanten zonder klant_id (gematcht op e-mail/naam, minder betrouwbaar):" & Chr(10) & sGeenKid
     End If
+    If sGeenEmail <> "" Then
+        sMsgKid = sMsgKid & Chr(10) & Chr(10) & "Klanten zonder e-mail (kunnen geen mail ontvangen):" & Chr(10) & sGeenEmail
+    End If
     MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
            (ro - 1) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
            sMaandNaam & " " & iJaar & ")." & Chr(10) & Chr(10) & _
