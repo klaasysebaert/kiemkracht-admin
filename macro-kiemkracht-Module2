@@ -1480,7 +1480,7 @@ Sub MaakMaandbestand()
         sMsgVorig = Chr(10) & Chr(10) & "Vorige maand verrekend uit: " & sVorigNaam & Chr(10) & _
                     nOvergedragen & " klant(en) zonder " & sMaandNaam & "-bestelling overgedragen (openstaand saldo)."
     Else
-        sMsgVorig = Chr(10) & Chr(10) & "LET OP: vorige-maandbestand niet gevonden:" & Chr(10) & "  " & sVorigNaam & Chr(10) & _
+        sMsgVorig = Chr(10) & Chr(10) & "LET OP: vorige-maandbestand niet gevonden of kolomkoppen niet herkend:" & Chr(10) & "  " & sVorigNaam & Chr(10) & _
                     "'Vorig saldo' en 'Ontvangen' zijn leeg gelaten."
     End If
     Dim sMsgKid As String : sMsgKid = ""
