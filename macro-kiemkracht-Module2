@@ -1284,26 +1284,27 @@ Sub MaakMaandbestand()
     oS = oOut.Sheets.getByIndex(0)
     oS.Name = "afrekening"
 
-    oS.getCellByPosition(0, 0).setString("klant_id")
-    oS.getCellByPosition(1, 0).setString("Voornaam familienaam")
-    oS.getCellByPosition(2, 0).setString("Email")
-    oS.getCellByPosition(3, 0).setString("Voornaam")
-    oS.getCellByPosition(4, 0).setString("Maand")
-    oS.getCellByPosition(5, 0).setString("Saldo")
-    oS.getCellByPosition(6, 0).setString("Vorig saldo")
-    oS.getCellByPosition(7, 0).setString("Ontvangen")
-    oS.getCellByPosition(8, 0).setString("Verschil")    ' I = vorig saldo - betalingen
-    ' I = Verschil (G - H); per week 2 ruwe inhoud-kolommen (J..S) + 2 mailmerge-kolommen (T..AC).
-    ' G en H zijn invoerkolommen (vorig saldo / betalingen); weekkolommen starten nu op J.
+    oS.getCellByPosition(0, 0).setString("Voornaam Familienaam")
+    oS.getCellByPosition(1, 0).setString("klant_id")
+    oS.getCellByPosition(2, 0).setString("Voornaam2 Familienaam2")
+    oS.getCellByPosition(3, 0).setString("Email")
+    oS.getCellByPosition(4, 0).setString("Voornaam")
+    oS.getCellByPosition(5, 0).setString("Maand")
+    oS.getCellByPosition(6, 0).setString("Saldo")
+    oS.getCellByPosition(7, 0).setString("Vorig saldo")
+    oS.getCellByPosition(8, 0).setString("Ontvangen")
+    oS.getCellByPosition(9, 0).setString("Verschil")    ' J = Vorig saldo - Ontvangen
+    ' Saldo=G, Vorig saldo=H, Ontvangen=I, Verschil=J (=H-I). Per week 2 ruwe
+    ' inhoud-kolommen (K..T) + 2 mailmerge-kolommen (U..AD). Weekkolommen starten op K.
     Dim n As Integer
     For wi = 0 To NWEKEN - 1
         n = wi + 1
-        oS.getCellByPosition(9 + wi * 2,      0).setString("Pakket week " & n)
-        oS.getCellByPosition(9 + wi * 2 + 1,  0).setString("Bijbestellingen week " & n)
-        oS.getCellByPosition(19 + wi * 2,     0).setString("Pakket " & n & " als")
-        oS.getCellByPosition(19 + wi * 2 + 1, 0).setString("Bijb " & n & " als")
+        oS.getCellByPosition(10 + wi * 2,      0).setString("Pakket week " & n)
+        oS.getCellByPosition(10 + wi * 2 + 1,  0).setString("Bijbestellingen week " & n)
+        oS.getCellByPosition(20 + wi * 2,      0).setString("Pakket " & n & " als")
+        oS.getCellByPosition(20 + wi * 2 + 1,  0).setString("Bijb " & n & " als")
     Next wi
-    Dim nKol As Integer : nKol = 9 + NWEKEN * 4
+    Dim nKol As Integer : nKol = 10 + NWEKEN * 4
 
     ' Sorteren op naam (insertion sort op index-array)
     Dim ord(600) As Integer, i2 As Integer, j2 As Integer, tmp As Integer
