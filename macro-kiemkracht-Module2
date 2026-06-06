@@ -905,7 +905,7 @@ End Sub
 '
 ' Welke weekbestanden? Alle ISO-weken waarvan de donderdag in de
 ' doelmaand valt (zelfde logica als MaakWeekbestand: de week "hoort"
-' bij de maand van zijn donderdag). Zoekt in <SAVE_MAP>\<jaar>_week_<wk>\
+' bij de maand van zijn donderdag). Zoekt in <jaarmap>\<jaar>_week_<wk>\
 ' het eerste .ods dat begint met "week_<wk>_<jaar>" (extra suffixen zoals
 ' _definitief worden transparant herkend via ZoekWeekbestand).
 '
