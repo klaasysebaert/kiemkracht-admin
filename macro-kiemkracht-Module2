@@ -1191,7 +1191,7 @@ Sub MaakMaandbestand()
     Next wi
 
     If nVerwerkt = 0 Then MsgBox "Geen weekbestanden gevonden voor " & sMaandNaam & " " & iJaar & _
-                                 "." & Chr(10) & "Verwacht in: " & SAVE_MAP, 48, "Maandafrekening" : Exit Sub
+                                 "." & Chr(10) & "Verwacht in: " & JaarMap(iJaar), 48, "Maandafrekening" : Exit Sub
 
     ' --- maandbestand opbouwen ---
     Dim oOut As Object, oS As Object
