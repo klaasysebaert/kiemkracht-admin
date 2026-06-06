@@ -1341,6 +1341,7 @@ Sub MaakMaandbestand()
         End If
         oS.getCellByPosition(8, ro).setFormula("=G" & (ro + 1) & "-H" & (ro + 1))   ' Verschil
         If Trim(mKid(idx)) = "" Then sGeenKid = sGeenKid & "  - " & mNaam(idx) & Chr(10)
+        If Trim(mEmail(idx)) = "" Then sGeenEmail = sGeenEmail & "  - " & mNaam(idx) & Chr(10)
         For wi = 0 To NWEKEN - 1
             ' ruwe inhoud (enkel voor weken die deze maand bestaan)
             If wi < nWk Then
