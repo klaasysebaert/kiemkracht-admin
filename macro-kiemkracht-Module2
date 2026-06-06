@@ -1503,7 +1503,7 @@ Function ZoekKolomKop(oSheet As Object, sKop As String) As Integer
     Dim c As Integer
     ZoekKolomKop = -1
     For c = 0 To 60
-        If oSheet.getCellByPosition(c, 0).getString() = sKop Then
+        If LCase(oSheet.getCellByPosition(c, 0).getString()) = LCase(sKop) Then
             ZoekKolomKop = c
             Exit Function
         End If
