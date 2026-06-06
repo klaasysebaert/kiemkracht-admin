@@ -1335,7 +1335,7 @@ Sub MaakMaandbestand()
     ' Rijen schrijven (enkel klanten met een saldo)
     ' Rijen 1-5 (index 1-5) leeg laten; data start op index 6 (rij 7 in het blad).
     Dim ro As Integer : ro = 6
-    Dim idx As Integer
+    Dim idx As Integer, sSaldoRaw As String
     For i2 = 0 To nKl - 1
         idx = ord(i2)
         ' Tonen zodra het totaal (deze maand + overgedragen saldo) niet ~0 is
