@@ -1332,7 +1332,8 @@ Sub MaakMaandbestand()
     Next i2
 
     ' Rijen schrijven (enkel klanten met een saldo)
-    Dim ro As Integer : ro = 1
+    ' Rijen 1-5 (index 1-5) leeg laten; data start op index 6 (rij 7 in het blad).
+    Dim ro As Integer : ro = 6
     Dim idx As Integer
     Dim sSaldoRaw As String
     For i2 = 0 To nKl - 1
