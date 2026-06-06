@@ -1434,9 +1434,9 @@ Sub MaakMaandbestand()
     Dim nFmtOp As Long
     nFmtOp = oFmtsOp.queryKey("0,00", oLocOp, False)
     If nFmtOp = -1 Then nFmtOp = oFmtsOp.addNew("0,00", oLocOp)
-    If ro > 1 Then
-        oOp.getCellRangeByPosition(3, 1, 3, ro - 1).NumberFormat = nFmtOp
-        oOp.getCellRangeByPosition(6, 1, 7, ro - 1).NumberFormat = nFmtOp
+    If ro > 6 Then
+        oOp.getCellRangeByPosition(3, 6, 3, ro - 1).NumberFormat = nFmtOp
+        oOp.getCellRangeByPosition(6, 6, 7, ro - 1).NumberFormat = nFmtOp
     End If
     oOp.Columns.getByIndex(0).Width = 5000   ' Voornaam Familienaam
 
