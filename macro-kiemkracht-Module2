@@ -1252,19 +1252,20 @@ Sub MaakMaandbestand()
         oS.getCellByPosition(4, ro).setString(sMaandNaam)
         sSaldoRaw = Replace(CStr(mSaldo(idx)), ",", ".")
         oS.getCellByPosition(5, ro).setFormula("=" & sSaldoRaw & "+G" & (ro + 1) & "-H" & (ro + 1))
+        oS.getCellByPosition(8, ro).setFormula("=G" & (ro + 1) & "-H" & (ro + 1))   ' Verschil
         For wi = 0 To NWEKEN - 1
             ' ruwe inhoud (enkel voor weken die deze maand bestaan)
             If wi < nWk Then
-                If mPak(idx, wi)  <> "" Then oS.getCellByPosition(8 + wi * 2,     ro).setString(mPak(idx, wi))
-                If mBijA(idx, wi) <> "" Then oS.getCellByPosition(8 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
+                If mPak(idx, wi)  <> "" Then oS.getCellByPosition(9 + wi * 2,     ro).setString(mPak(idx, wi))
+                If mBijA(idx, wi) <> "" Then oS.getCellByPosition(9 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
             End If
             ' "als"-formules: lege ruwe cel -> "|"
-            oS.getCellByPosition(18 + wi * 2, ro).setFormula( _
-                "=IF(" & KolomLetter(8 + wi * 2) & (ro + 1) & "="""";""|"";" & _
-                KolomLetter(8 + wi * 2) & (ro + 1) & ")")
-            oS.getCellByPosition(18 + wi * 2 + 1, ro).setFormula( _
-                "=IF(" & KolomLetter(8 + wi * 2 + 1) & (ro + 1) & "="""";""|"";" & _
-                KolomLetter(8 + wi * 2 + 1) & (ro + 1) & ")")
+            oS.getCellByPosition(19 + wi * 2, ro).setFormula( _
+                "=IF(" & KolomLetter(9 + wi * 2) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(9 + wi * 2) & (ro + 1) & ")")
+            oS.getCellByPosition(19 + wi * 2 + 1, ro).setFormula( _
+                "=IF(" & KolomLetter(9 + wi * 2 + 1) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(9 + wi * 2 + 1) & (ro + 1) & ")")
         Next wi
         ro = ro + 1
         VolgendeUit:
