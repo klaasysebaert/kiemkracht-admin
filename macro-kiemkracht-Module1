@@ -1102,23 +1102,32 @@ Sub MaakWeekbestand()
             oSheet.getCellByPosition(cWijzig, r).setString(bWijzig(b))
         End If
 
-        ' Vooruitbestellingen: week_start
+        ' Vooruitbestellingen: week_start — match op klant_id (leidend), met
+        ' e-mail enkel als terugval voor klantloze (weekperweek-)bestellingen.
         Dim vi As Integer
+        Dim bVbMatch As Boolean
         For vi = 0 To nVB - 1
-            If vbEmail(vi) = bEmail(b) Then
-                If vbStart(vi) > 0 Then
-                    oSheet.getCellByPosition(cStart, r).setValue(vbStart(vi))
-                End If
+            If Trim(bKlantId(b)) <> "" And vbKlant(vi) <> "" Then
+                bVbMatch = (vbKlant(vi) = bKlantId(b))
+            Else
+                bVbMatch = (LCase(vbEmail(vi)) = LCase(bEmail(b)))
+            End If
+            If bVbMatch And vbStart(vi) > 0 Then
+                oSheet.getCellByPosition(cStart, r).setValue(vbStart(vi))
             End If
         Next vi
 
-        ' Annulaties: week_stop
+        ' Annulaties: week_stop — zelfde klant_id-eerst logica.
         Dim ai As Integer
+        Dim bAnnMatch As Boolean
         For ai = 0 To nAnn - 1
-            If annEmail(ai) = bEmail(b) Then
-                If annStop(ai) > 0 Then
-                    oSheet.getCellByPosition(cStop, r).setValue(annStop(ai))
-                End If
+            If Trim(bKlantId(b)) <> "" And annKlant(ai) <> "" Then
+                bAnnMatch = (annKlant(ai) = bKlantId(b))
+            Else
+                bAnnMatch = (LCase(annEmail(ai)) = LCase(bEmail(b)))
+            End If
+            If bAnnMatch And annStop(ai) > 0 Then
+                oSheet.getCellByPosition(cStop, r).setValue(annStop(ai))
             End If
         Next ai
 
