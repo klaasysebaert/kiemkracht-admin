@@ -594,19 +594,25 @@ Sub MaakWeekbestand()
         "  WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek & _
         "    AND formaat IS NOT NULL" & _
         ") " & _
-        "SELECT b.id, b.voornaam, b.familienaam, b.klant_email, " & _
-        "b.afhaalpunt, b.leverdag, b.pakket, b.pakket_inhoud, " & _
+        "SELECT b.id, " & _
+        "COALESCE(NULLIF(k.voornaam,''), b.voornaam) AS voornaam, " & _
+        "COALESCE(NULLIF(k.familienaam,''), b.familienaam) AS familienaam, " & _
+        "b.klant_email, " & _
+        "COALESCE(kap.naam, b.afhaalpunt) AS afhaalpunt, " & _
+        "COALESCE(kap.dag_klaarmaken, b.leverdag) AS leverdag, " & _
+        "b.pakket, b.pakket_inhoud, " & _
         "b.abonnement_wijziging, b.vragen_opmerkingen, " & _
         "COALESCE(k.klant_type,'') AS klant_type, " & _
         "COALESCE(k.formaat,'') AS formaat, " & _
         "COALESCE(k.telefoon,'') AS telefoon, " & _
         "COALESCE(k.id::text,'') AS klant_id, " & _
         "COALESCE(k.type,'') AS type, " & _
-        "COALESCE(bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
-        "COALESCE(bap.id_intern, 9999) AS id_intern_sort, " & _
+        "COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
+        "COALESCE(kap.id_intern, bap.id_intern, 9999) AS id_intern_sort, " & _
         "COALESCE(k.id, 999999) AS klant_id_sort " & _
         "FROM bestellingen b " & _
         "LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL AND k.email1 = b.klant_email)) " & _
+        "LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
         "LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt " & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
         " AND b.klant_email NOT IN (" & _
