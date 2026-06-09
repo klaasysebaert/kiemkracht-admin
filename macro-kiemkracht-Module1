@@ -735,7 +735,7 @@ Sub MaakWeekbestand()
         " AND b.klant_email NOT IN (" & _
         "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
         " AND ( (kap.naam IS NOT NULL AND kap.naam <> b.afhaalpunt) " & _
-        "    OR (kap.dag_klaarmaken IS NOT NULL AND kap.dag_klaarmaken <> b.leverdag) " & _
+        "    OR (kap.dag_afhaling IS NOT NULL AND kap.dag_afhaling <> b.leverdag) " & _
         "    OR (COALESCE(k.voornaam,'')    <> COALESCE(b.voornaam,'')) " & _
         "    OR (COALESCE(k.familienaam,'') <> COALESCE(b.familienaam,'')) ) " & _
         "ORDER BY k.familienaam, k.voornaam")
