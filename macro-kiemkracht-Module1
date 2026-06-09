@@ -709,6 +709,48 @@ Sub MaakWeekbestand()
     Loop
     oRS.close() : oStmt.close()
 
+    ' --- Stap 3b: DB-correcties t.o.v. de bestelling (URL) ---
+    ' Een klant bestelt via een gepersonaliseerde URL (afhaalpunt erin verwerkt).
+    ' Wijzigt het afhaalpunt/leverdag/naam daarna in de database (klanten_beheer),
+    ' dan is de database leidend: het weekbestand hierboven volgt nu kap.* (DB)
+    ' i.p.v. b.* (URL). Deze lijst toont wat daardoor afwijkt van wat de klant
+    ' oorspronkelijk doorgaf, zodat het zichtbaar is in de eindpopup.
+    Dim sDbCorr As String : sDbCorr = ""
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT b.voornaam, b.familienaam, " & _
+        "b.afhaalpunt, COALESCE(kap.naam,''), " & _
+        "b.leverdag, COALESCE(kap.dag_klaarmaken,''), " & _
+        "k.voornaam, k.familienaam " & _
+        "FROM bestellingen b " & _
+        "JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL AND k.email1 = b.klant_email)) " & _
+        "LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
+        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
+        " AND b.klant_email NOT IN (" & _
+        "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
+        " AND ( (kap.naam IS NOT NULL AND kap.naam <> b.afhaalpunt) " & _
+        "    OR (kap.dag_klaarmaken IS NOT NULL AND kap.dag_klaarmaken <> b.leverdag) " & _
+        "    OR (COALESCE(k.voornaam,'')    <> COALESCE(b.voornaam,'')) " & _
+        "    OR (COALESCE(k.familienaam,'') <> COALESCE(b.familienaam,'')) ) " & _
+        "ORDER BY k.familienaam, k.voornaam")
+    Do While oRS.next()
+        Dim sBestelNaam As String, sDbNaam As String, sRegel As String
+        sBestelNaam = Trim(oRS.getString(1) & " " & oRS.getString(2))
+        sDbNaam     = Trim(oRS.getString(7) & " " & oRS.getString(8))
+        sRegel = "• " & sDbNaam
+        If oRS.getString(4) <> "" And oRS.getString(4) <> oRS.getString(3) Then
+            sRegel = sRegel & Chr(10) & "    afhaalpunt: " & oRS.getString(3) & " -> " & oRS.getString(4)
+        End If
+        If oRS.getString(6) <> "" And oRS.getString(6) <> oRS.getString(5) Then
+            sRegel = sRegel & Chr(10) & "    leverdag: " & oRS.getString(5) & " -> " & oRS.getString(6)
+        End If
+        If sDbNaam <> "" And sDbNaam <> sBestelNaam Then
+            sRegel = sRegel & Chr(10) & "    naam volgens bestelling: " & sBestelNaam
+        End If
+        sDbCorr = sDbCorr & sRegel & Chr(10)
+    Loop
+    oRS.close() : oStmt.close()
+
     ' --- Stap 4: vooruitbestellingen voor stop/annulatie/start-kolommen ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
