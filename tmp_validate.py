@@ -69,8 +69,8 @@ def run(label, m1code, probe_mod, probe_fn, probe_args):
 with open(PATHS[0], encoding="utf-8") as f:
     orig = f.read()
 broken = orig.replace("Sub MaakWeekbestand()",
-                      "Sub MaakWeekbestand()\n    If 1 = 1 Then\n        Dim zzz As Integer", 1)
-run("MET structurele fout (If zonder End If)", broken, "Module1", "KolomLetter", (5,))
+                      "Sub MaakWeekbestand()\n    zzz_ongedefinieerd = 1", 1)
+run("MET opzettelijke fout", broken, "Module1", "KolomLetter", (5,))
 
 # 2) de echte huidige Module1 (KolomLetter forceert compilatie van de hele module)
 run("ECHTE Module1", None, "Module1", "KolomLetter", (5,))
