@@ -726,7 +726,7 @@ Sub MaakWeekbestand()
     oRS = oStmt.executeQuery( _
         "SELECT b.voornaam, b.familienaam, " & _
         "b.afhaalpunt, COALESCE(kap.naam,''), " & _
-        "b.leverdag, COALESCE(kap.dag_klaarmaken,''), " & _
+        "b.leverdag, COALESCE(kap.dag_afhaling,''), " & _
         "k.voornaam, k.familienaam " & _
         "FROM bestellingen b " & _
         "JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL AND k.email1 = b.klant_email)) " & _
