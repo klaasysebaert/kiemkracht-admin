@@ -615,8 +615,9 @@ Sub MaakWeekbestand()
         "LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
         "LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt " & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
-        " AND b.klant_email NOT IN (" & _
-        "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
+        " AND NOT EXISTS (SELECT 1 FROM annulaties a " & _
+        "   WHERE a.jaar = " & iJaar & " AND a.week_annulatie = " & iWeek & _
+        "     AND (a.klant_id = b.klant_id OR (b.klant_id IS NULL AND LOWER(a.klant_email) = LOWER(b.klant_email)))) " & _
         " UNION ALL " & _
         "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
         "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
