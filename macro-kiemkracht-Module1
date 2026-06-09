@@ -636,13 +636,16 @@ Sub MaakWeekbestand()
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
         "LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
         "WHERE " & sPareFilter & _
-        " AND k.email1 NOT IN (" & _
-        "SELECT klant_email FROM bestellingen WHERE weeknummer = " & iWeek & " AND jaar = " & iJaar & ") " & _
-        " AND k.email1 NOT IN (" & _
-        "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
-        " AND NOT EXISTS (" & _
-        "SELECT 1 FROM annulaties ann WHERE ann.klant_email = k.email1 AND ann.jaar = " & iJaar & _
-        " AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & ") " & _
+        " AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
+        "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
+        "     AND (bx.klant_id = k.id OR (bx.klant_id IS NULL AND LOWER(bx.klant_email) = LOWER(k.email1)))) " & _
+        " AND NOT EXISTS (SELECT 1 FROM annulaties a " & _
+        "   WHERE a.jaar = " & iJaar & " AND a.week_annulatie = " & iWeek & _
+        "     AND (a.klant_id = k.id OR (a.klant_id IS NULL AND LOWER(a.klant_email) = LOWER(k.email1)))) " & _
+        " AND NOT EXISTS (SELECT 1 FROM annulaties ann " & _
+        "   WHERE ann.jaar = " & iJaar & _
+        "     AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & _
+        "     AND (ann.klant_id = k.id OR (ann.klant_id IS NULL AND LOWER(ann.klant_email) = LOWER(k.email1)))) " & _
         " UNION ALL " & _
         "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
         "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
