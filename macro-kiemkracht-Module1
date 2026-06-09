@@ -1855,17 +1855,23 @@ Sub MaakWeekbestand()
     Dim bVanuitWeekbestand As Boolean
     bVanuitWeekbestand = (ConvertToURL(sBestand) = oCallerDoc.getURL())
 
+    Dim sCorrSuffix As String : sCorrSuffix = ""
+    If sDbCorr <> "" Then
+        sCorrSuffix = Chr(10) & Chr(10) & _
+            "Database-correcties t.o.v. de bestelling (URL):" & Chr(10) & sDbCorr
+    End If
+
     If bVanuitWeekbestand Then
         ' Kan het aanroepende document niet sluiten vanuit de lopende macro.
         ' Gebruiker sluit dit venster zelf; het bestand op schijf is al vervangen.
-        MsgBox "Weekbestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
+        MsgBox "Weekbestand aangemaakt:" & Chr(10) & sBestand & sCorrSuffix & Chr(10) & Chr(10) & _
                "Sluit dit venster zelf en open het bestand opnieuw.", 64, "Klaar"
     Else
         Dim aOpenProps(0) As New com.sun.star.beans.PropertyValue
         aOpenProps(0).Name  = "MacroExecutionMode"
         aOpenProps(0).Value = 4
         oDesktop.loadComponentFromURL(sUrl, "_blank", 0, aOpenProps())
-        MsgBox "Weekbestand aangemaakt:" & Chr(10) & sBestand, 64, "Klaar"
+        MsgBox "Weekbestand aangemaakt:" & Chr(10) & sBestand & sCorrSuffix, 64, "Klaar"
     End If
     SluitSSHTunnels()
     Exit Sub
