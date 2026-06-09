@@ -787,17 +787,19 @@ Sub MaakWeekbestand()
     ' Annulaties
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT klant_email, week_annulatie, week_stopzetten_abonnement " & _
+        "SELECT klant_email, week_annulatie, week_stopzetten_abonnement, COALESCE(klant_id::text,'') " & _
         "FROM annulaties " & _
         "WHERE jaar = " & iJaar & " AND week_annulatie >= " & iWeek)
     Dim annEmail(200)  As String
     Dim annWeek(200)   As Integer
     Dim annStop(200)   As Integer
+    Dim annKlant(200)  As String
     Dim nAnn As Integer
     nAnn = 0
     Do While oRS.next()
         annEmail(nAnn) = oRS.getString(1)
         annWeek(nAnn)  = CInt(oRS.getString(2))
+        annKlant(nAnn) = oRS.getString(4)
         Dim sStop As String
         sStop = oRS.getString(3)
         If oRS.wasNull() Or sStop = "" Then
