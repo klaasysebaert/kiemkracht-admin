@@ -1091,6 +1091,9 @@ Sub MaakWeekbestand()
         oSheet.getCellByPosition(cTel,    r).setString(bTel(b))
         oSheet.getCellByPosition(cEmail,  r).setString(bEmail(b))
         oSheet.getCellByPosition(cOpm,    r).setString(bOpm(b))
+        If Trim(bOpm(b)) <> "" Then
+            oSheet.getCellByPosition(cAnder, r).setString(bOpm(b))
+        End If
 
         ' klant_id (kolom P) — vaste kolom net voor de centrale datumkolom
         If Trim(bKlantId(b)) <> "" Then
