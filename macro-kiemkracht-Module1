@@ -2366,6 +2366,7 @@ Sub SchrijfWijzigingenTerug()
                    "afhaalpunt_id = "        & sAfhaalSql            & ", " & _
                    "type = "                 & SqlStr(sType)         & ", " & _
                    "formaat = "              & SqlStr(sFormaat)      & ", " & _
+                   "status = '"              & sStatusKlant & "', "          & _
                    "email1 = "               & SqlStr(sEmail1)       & ", " & _
                    "email2 = "               & SqlStr(sEmail2)       & ", " & _
                    "email3 = "               & SqlStr(sEmail3)       & ", " & _
