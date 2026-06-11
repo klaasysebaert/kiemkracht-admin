@@ -2380,6 +2380,26 @@ Sub SchrijfWijzigingenTerug()
 
             oStmt.executeUpdate(sSQL)
             nUpdates = nUpdates + 1
+
+            ' Primair abonnement synchroniseren met het bewerkte type/formaat.
+            ' Enkel bron='primair' wordt aangeraakt; handmatige combo-'extra'-rijen
+            ' blijven ongemoeid (klantenbeheer-tabblad is nog niet combo-bewerkbaar — backlog #22).
+            oStmt.executeUpdate("DELETE FROM abonnementen WHERE klant_id = " & CStr(nID) & " AND bron = 'primair'")
+            If Left(sType, 7) = "abonnee" And _
+               (sFormaat = "klein" Or sFormaat = "groot" Or sFormaat = "extra-groot" Or sFormaat = "mini") Then
+                Dim sRitmeBeh As String, sStatusBeh As String
+                If InStr(sType, "onpare-week") > 0 Then
+                    sRitmeBeh = "onpare-week"
+                ElseIf InStr(sType, "pare-week") > 0 Then
+                    sRitmeBeh = "pare-week"
+                Else
+                    sRitmeBeh = "wekelijks"
+                End If
+                If InStr(sType, "-toekomst") > 0 Then sStatusBeh = "toekomst" Else sStatusBeh = "actief"
+                oStmt.executeUpdate("INSERT INTO abonnementen " & _
+                    "(klant_id, ritme, formaat, status, bron) VALUES (" & _
+                    CStr(nID) & ", '" & sRitmeBeh & "', '" & sFormaat & "', '" & sStatusBeh & "', 'primair')")
+            End If
         End If
         r = r + 1
     Loop
