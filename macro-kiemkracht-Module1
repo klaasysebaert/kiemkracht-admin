@@ -2577,7 +2577,7 @@ Sub VoegNieuweKlantToe()
     Dim sSQL As String
     sSQL = "INSERT INTO klanten " & _
            "(voornaam, familienaam, aanspreking, klant_type, bedrijfsnaam, btw_nummer, " & _
-           "facturatie_adres, email1, email2, email3, email4, telefoon, type, formaat, " & _
+           "facturatie_adres, email1, email2, email3, email4, telefoon, type, formaat, status, " & _
            "afhaalpunt_id, nooit_groenten, klant_sinds, laatste_bestelling, " & _
            "opmerkingen, opmerkingen_volgend, opmerking_status, voornaam2, familienaam2) " & _
            "VALUES (" & _
@@ -2585,14 +2585,36 @@ Sub VoegNieuweKlantToe()
            SqlStr(sKlantType)     & ", " & SqlStr(sBedrijfsnaam) & ", " & SqlStr(sBtwNummer)   & ", " & _
            SqlStr(sFactAdres)     & ", " & SqlStr(sEmail1)       & ", " & SqlStr(sEmail2)       & ", " & _
            SqlStr(sEmail3)        & ", " & SqlStr(sEmail4)       & ", " & SqlStr(sTelefoon)     & ", " & _
-           SqlStr(sType)          & ", " & SqlStr(sFormaat)      & ", " & _
+           SqlStr(sType)          & ", " & SqlStr(sFormaat)      & ", '" & sStatusKlant & "', " & _
            sAfhaalpuntSql         & ", " & SqlStr(sNooitGroenten) & ", " & _
            sKlantSindsSql         & ", " & sLaatsteBestSql        & ", " & _
            SqlStr(sOpmerkingen)   & ", " & SqlStr(sOpmerkVolg)   & ", " & SqlStr(sOpmerkStat)  & ", " & _
            SqlStr(sVoornaam2)     & ", " & SqlStr(sFamilienaam2) & _
-           ")"
+           ") RETURNING id"
 
-    oStmt.executeUpdate(sSQL)
+    ' RETURNING id zodat we meteen het primaire abonnement kunnen aanmaken.
+    Dim oRSNew As Object : oRSNew = oStmt.executeQuery(sSQL)
+    Dim nNewId As Long : nNewId = 0
+    If oRSNew.next() Then nNewId = CLng(oRSNew.getString(1))
+    oRSNew.close()
+
+    ' Primair abonnement voor een nieuwe abonnee (formaat is hierboven verplicht gesteld).
+    If bIsAbonnee And nNewId > 0 And _
+       (sFormaat = "klein" Or sFormaat = "groot" Or sFormaat = "extra-groot" Or sFormaat = "mini") Then
+        Dim sRitmeNw As String, sStatusNw As String
+        If InStr(sTypeLC, "onpare-week") > 0 Then
+            sRitmeNw = "onpare-week"
+        ElseIf InStr(sTypeLC, "pare-week") > 0 Then
+            sRitmeNw = "pare-week"
+        Else
+            sRitmeNw = "wekelijks"
+        End If
+        If InStr(sTypeLC, "-toekomst") > 0 Then sStatusNw = "toekomst" Else sStatusNw = "actief"
+        oStmt.executeUpdate("INSERT INTO abonnementen " & _
+            "(klant_id, ritme, formaat, status, bron) VALUES (" & _
+            CStr(nNewId) & ", '" & sRitmeNw & "', '" & sFormaat & "', '" & sStatusNw & "', 'primair')")
+    End If
+
     oStmt.close()
     oConn.close()
     SluitSSHTunnels()
