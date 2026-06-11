@@ -2348,6 +2348,15 @@ Sub SchrijfWijzigingenTerug()
                 Case Else                      : sNooitSql = "NULL"
             End Select
 
+            ' Relatie-status (klant-niveau) afleiden uit het bewerkte type.
+            Dim sStatusKlant As String
+            Select Case sType
+                Case "stop-tijdelijk"  : sStatusKlant = "gepauzeerd"
+                Case "stop-definitief" : sStatusKlant = "gestopt"
+                Case "on_hold"         : sStatusKlant = "on_hold"
+                Case Else              : sStatusKlant = "actief"   ' abonnee* / weekperweek*
+            End Select
+
             Dim sSQL As String
             sSQL = "UPDATE klanten SET " & _
                    "voornaam = "             & SqlStr(sVoornaam)     & ", " & _
