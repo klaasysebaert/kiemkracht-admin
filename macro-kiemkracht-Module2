@@ -127,14 +127,27 @@ Sub BereidMailmergeVoor()
     ' --- Stap 1: klanten ophalen ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT k.voornaam, k.familienaam, k.email1, k.type, k.formaat, " & _
+        "SELECT k.voornaam, k.familienaam, k.email1, " & _
+        "COALESCE(ab.eff_type, k.type) AS type, " & _
+        "COALESCE(ab.eff_formaat, k.formaat) AS formaat, " & _
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
         "COALESCE(a.dag_afhaling, '') AS leverdag, " & _
         "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
         "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,'') " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
-        "WHERE k.type NOT IN ('stop-tijdelijk', 'stop-definitief') " & _
+        "LEFT JOIN LATERAL ( " & _
+        "  SELECT 'abonnee' " & _
+        "      || CASE x.ritme WHEN 'pare-week' THEN '-pare-week' " & _
+        "                      WHEN 'onpare-week' THEN '-onpare-week' ELSE '' END " & _
+        "      || CASE WHEN x.status = 'toekomst' THEN '-toekomst' ELSE '' END AS eff_type, " & _
+        "    x.formaat AS eff_formaat " & _
+        "  FROM abonnementen x " & _
+        "  WHERE x.klant_id = k.id AND x.status IN ('actief','toekomst') " & _
+        "  ORDER BY (CASE WHEN x.ritme = 'wekelijks' OR x.ritme = '" & sParRitme & "' THEN 0 ELSE 1 END), x.id " & _
+        "  LIMIT 1 " & _
+        ") ab ON true " & _
+        "WHERE k.status NOT IN ('gepauzeerd', 'gestopt') " & _
         "ORDER BY k.familienaam, k.voornaam")
 
     Dim kVoor(1000)    As String
