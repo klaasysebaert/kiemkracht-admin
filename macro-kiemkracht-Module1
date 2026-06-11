@@ -630,10 +630,10 @@ Sub MaakWeekbestand()
         "COALESCE(ap.dag_klaarmaken,''), " & _
         "COALESCE(ap.id_intern, 9999), " & _
         "COALESCE(k.id, 999999) " & _
-        "FROM klanten k " & _
+        "FROM abonnementen a JOIN klanten k ON k.id = a.klant_id " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
         "LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
-        "WHERE " & sPareFilter & _
+        "WHERE a.status = 'actief' AND a.ritme IN (" & sParRitmes & ") " & _
         " AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
         "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
         "     AND (bx.klant_id = k.id OR (bx.klant_id IS NULL AND LOWER(bx.klant_email) = LOWER(k.email1)))) " & _
