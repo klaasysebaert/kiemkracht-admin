@@ -2541,6 +2541,15 @@ Sub VoegNieuweKlantToe()
     If sAanspreking = "" Then sAanspreking = "jouw"
     If sKlantType   = "" Then sKlantType   = "particulier"
 
+    ' Relatie-status (klant-niveau) afleiden uit het type.
+    Dim sStatusKlant As String
+    Select Case sTypeLC
+        Case "stop-tijdelijk"  : sStatusKlant = "gepauzeerd"
+        Case "stop-definitief" : sStatusKlant = "gestopt"
+        Case "on_hold"         : sStatusKlant = "on_hold"
+        Case Else              : sStatusKlant = "actief"   ' abonnee* / weekperweek*
+    End Select
+
     ' afhaalpunt_id: integer of NULL
     Dim sAfhaalpuntSql As String
     If sAfhaalpuntId = "" Then
