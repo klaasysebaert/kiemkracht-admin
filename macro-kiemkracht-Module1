@@ -3157,8 +3157,25 @@ Sub VerwerkStopStart()
                     sDatum & "', " & w & ", " & w & ", " & iJaar & ")"
                 nItem = nItem + 1
                 ' Klant in toekomst-toestand zetten; de VPS-cron schakelt om op de startweek
+                ' (legacy klanten.type blijft transitie-mirror tot Fase F).
                 aSql(nItem) = "UPDATE klanten SET type = '" & riType(i) & "-toekomst', " & _
                     "formaat = '" & riFmt(i) & "' WHERE id = " & sKid
+                nItem = nItem + 1
+                ' Nieuw model: primair abonnement als toekomst-rij. Combo-'extra'-rijen
+                ' blijven ongemoeid (DELETE enkel bron='primair'). De flip-cron zet
+                ' status 'toekomst'->'actief' zodra (start_jaar,start_week) bereikt is.
+                Dim sRitmeStart As String
+                Select Case riType(i)
+                    Case "abonnee-pare-week"   : sRitmeStart = "pare-week"
+                    Case "abonnee-onpare-week" : sRitmeStart = "onpare-week"
+                    Case Else                  : sRitmeStart = "wekelijks"
+                End Select
+                aSql(nItem) = "DELETE FROM abonnementen WHERE klant_id = " & sKid & " AND bron = 'primair'"
+                nItem = nItem + 1
+                aSql(nItem) = "INSERT INTO abonnementen " & _
+                    "(klant_id, ritme, formaat, status, bron, start_jaar, start_week) VALUES (" & _
+                    sKid & ", '" & sRitmeStart & "', '" & riFmt(i) & "', 'toekomst', 'primair', " & _
+                    iJaar & ", " & w & ")"
                 nItem = nItem + 1
                 sBestVb = sBestVb & sSleutel & "|"
                 nStart = nStart + 1
