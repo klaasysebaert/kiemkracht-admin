@@ -362,6 +362,30 @@ Sub MaakWeekbestand()
     iWeek = DatePart("ww", dDonderdag, 2, 2)
     iJaar = Year(dDonderdag)
 
+    ' Dev-only: optioneel een andere (komende) week genereren om te testen,
+    ' bv. een onpare week terwijl het een pare week is. Op prod ongewijzigd.
+    ' ENTER (= de voorgevulde week) of Annuleren laat de berekende week staan.
+    ' WeekNaarDonderdag zoekt vooruit, dus kies een week >= de huidige.
+    If BepaalOmgeving() = "dev" Then
+        Dim sWeekIn As String
+        sWeekIn = InputBox("Weeknummer voor het weekbestand (ENTER = " & iWeek & "):" & Chr(10) & _
+                           "Enkel om te testen op dev — kies een komende week.", _
+                           "MaakWeekbestand (dev)", CStr(iWeek))
+        If IsNumeric(sWeekIn) Then
+            Dim iWeekIn As Integer : iWeekIn = CInt(sWeekIn)
+            If iWeekIn >= 1 And iWeekIn <= 53 And iWeekIn <> iWeek Then
+                Dim dDoOverride As Date : dDoOverride = WeekNaarDonderdag(iWeekIn)
+                If dDoOverride > 0 Then
+                    dDonderdag = dDoOverride
+                    dMaandag   = dDonderdag - 3
+                    dVrijdag   = dDonderdag + 1
+                    iWeek      = iWeekIn
+                    iJaar      = Year(dDonderdag)
+                End If
+            End If
+        End If
+    End If
+
     ' Pare of onpare week
     Dim sPareWeek As String
     If (iWeek Mod 2) = 0 Then
