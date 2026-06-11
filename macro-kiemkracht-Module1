@@ -619,13 +619,13 @@ Sub MaakWeekbestand()
         " UNION ALL " & _
         "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
         "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
-        "CASE COALESCE(vb.sleutel, k.formaat) " & _
+        "CASE COALESCE(vb.sleutel, a.formaat) " & _
         "  WHEN 'klein'       THEN 'klein pakket' " & _
         "  WHEN 'groot'       THEN 'groot pakket' " & _
         "  WHEN 'extra-groot' THEN 'extra groot pakket' " & _
         "  WHEN 'mini'        THEN 'mini pakket' ELSE '' END, " & _
         "'', '', '', " & _
-        "COALESCE(k.klant_type,''), COALESCE(vb.sleutel, k.formaat), COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
+        "COALESCE(k.klant_type,''), COALESCE(vb.sleutel, a.formaat), COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
         "COALESCE(k.type,''), " & _
         "COALESCE(ap.dag_klaarmaken,''), " & _
         "COALESCE(ap.id_intern, 9999), " & _
