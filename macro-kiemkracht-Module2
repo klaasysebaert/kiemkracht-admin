@@ -73,6 +73,8 @@ Sub BereidMailmergeVoor()
     ' (meerdere abonnementen) de juiste abonnement-lijn voor de URL te kiezen.
     Dim sParRitme As String
     If sPareOnpare = "pare" Then sParRitme = "pare-week" Else sParRitme = "onpare-week"
+    ' Weeknummer voor de pauze-conditie (een gepauzeerd abonnement telt deze week niet mee).
+    Dim iWeekNumMM As Long : iWeekNumMM = CLng(iJaar) * 100 + iWeek
 
     ' Default planned_at: eerstvolgende maandag 13u
     Dim sDefault As String
