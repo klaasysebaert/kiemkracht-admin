@@ -146,6 +146,7 @@ Sub BereidMailmergeVoor()
         "    x.formaat AS eff_formaat " & _
         "  FROM abonnementen x " & _
         "  WHERE x.klant_id = k.id AND x.status IN ('actief','toekomst') " & _
+        "    AND (x.pauze_vanaf_week IS NULL OR (x.pauze_vanaf_jaar * 100 + x.pauze_vanaf_week) > " & iWeekNumMM & ") " & _
         "  ORDER BY (CASE WHEN x.ritme = 'wekelijks' OR x.ritme = '" & sParRitme & "' THEN 0 ELSE 1 END), x.id " & _
         "  LIMIT 1 " & _
         ") ab ON true " & _
