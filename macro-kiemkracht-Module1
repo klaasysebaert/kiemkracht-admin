@@ -595,6 +595,12 @@ Sub MaakWeekbestand()
     Else
         sParRitmes = "'wekelijks','onpare-week'"
     End If
+    ' Weeknummer (jaar*100+week) voor de pauze-conditie: een abonnement levert
+    ' deze week zolang het niet gepauzeerd is vanaf een week <= deze.
+    Dim iWeekNum As Long : iWeekNum = CLng(iJaar) * 100 + iWeek
+    Dim sNietGepauzeerd As String
+    sNietGepauzeerd = " AND (a.pauze_vanaf_week IS NULL OR " & _
+                      "(a.pauze_vanaf_jaar * 100 + a.pauze_vanaf_week) > " & iWeekNum & ") "
     oStmt = oConn.createStatement()
     ' CTE vb_week: vooruitbestellingen voor deze week met naam→sleutel-mapping
     ' van het formaat-veld (DB slaat de pakketnaam op, bv. 'Groot pakket').
