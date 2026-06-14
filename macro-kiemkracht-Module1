@@ -3372,7 +3372,7 @@ Sub VerwerkStopStart()
                 Case "annulatie", "stopzetting"
                     Dim iWeekStop As Integer
                     If mType(m) = "stopzetting" Then iWeekStop = mWeek(m) Else iWeekStop = 0
-                    bOk = VerstuurAnnulatieMail(mEmail(m), mVoor(m), mWeek(m), mJaar(m), _
+                    bOk = VerstuurAnnulatieMail(mEmail(m), mVoor(m), mVoor2(m), mWeek(m), mJaar(m), _
                                                 mDatum(m), iWeekStop, mKlantId(m))
                 Case "vooruitbestelling", "abonnementsstart"
                     Dim iWeekStart As Integer
