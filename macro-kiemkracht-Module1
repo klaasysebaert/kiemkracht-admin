@@ -1426,6 +1426,8 @@ Sub MaakWeekbestand()
     For ci = 0 To nGroentSlots - 1
         oSheet.Columns.getByIndex(cGroent0 + ci).Width = 2300
     Next ci
+    ' Invoerhulp op de losse-groente-slots: wijs op de macro VoegLosseGroenteToe
+    ZetLosseGroenteTip(oSheet)
     oSheet.Columns.getByIndex(cAnder).Width  = 2300   ' ander
     oSheet.Columns.getByIndex(cAangep).Width = 3344   ' aangepast pakket
     oSheet.Columns.getByIndex(cGeen).Width   = 5000   ' synthese weglatingen
