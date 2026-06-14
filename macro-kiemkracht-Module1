@@ -3086,6 +3086,7 @@ Sub VerwerkStopStart()
     ' Worden later (optioneel, na bevestigingsdialoog) als HTTP-POST verstuurd.
     Dim mEmail(MAX_ITEM)    As String
     Dim mVoor(MAX_ITEM)     As String
+    Dim mVoor2(MAX_ITEM)    As String
     Dim mKlantId(MAX_ITEM)  As Long
     Dim mWeek(MAX_ITEM)     As Integer
     Dim mType(MAX_ITEM)     As String    ' "annulatie" / "stopzetting" / "vooruitbestelling" / "abonnementsstart"
