@@ -2083,6 +2083,25 @@ Fout:
     MsgBox "Fout: " & Err & " - " & Error, 16, "Losse groente toevoegen"
 End Sub
 
+' =============================================
+' Zet een invoerhulp-tooltip op de losse-groente-slots Y2:AV3, die de
+' gebruiker wijst op de macro VoegLosseGroenteToe. Beperkt de invoer niet.
+' Wordt aangeroepen door MaakWeekbestand zodat elk nieuw weekbestand de
+' hint heeft (handmatig instellen verdwijnt bij hergenereren).
+' =============================================
+Sub ZetLosseGroenteTip(oWk As Object)
+    Dim oCells As Object, oVal As Object
+    oCells = oWk.getCellRangeByName("Y2:AV3")
+    oVal = oCells.Validation
+    oVal.Type = com.sun.star.sheet.ValidationType.ANY   ' geen invoerbeperking, enkel hint
+    oVal.ShowInputMessage = True
+    oVal.InputTitle   = "Gebruik de macro"
+    oVal.InputMessage = "Typ losse groenten hier niet handmatig in." & Chr(10) & _
+        "Start de macro VoegLosseGroenteToe: die zet ook de prijsopmaak, " & _
+        "de eenheid-metadata in Blad2 en laat de afrekening/samenvatting meelopen."
+    oCells.Validation = oVal      ' terugzetten = verplicht, anders geen effect
+End Sub
+
 Sub PasRijOpmaakToe(oSheet As Object, rIdx As Integer, _
                     clBG As Long, bVet As Boolean, _
                     cGroent0 As Integer, cAangep As Integer, _
