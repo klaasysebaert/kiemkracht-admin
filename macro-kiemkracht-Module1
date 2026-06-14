@@ -3427,7 +3427,7 @@ End Sub
 ' iWeekStop = 0  -> gewone annulatie
 ' iWeekStop > 0  -> stopzetting (proxy kiest dan stopzet-template)
 ' =============================================
-Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, _
+Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, sVoornaam2 As String, _
                                 iWeek As Integer, iJaar As Integer, _
                                 sDatum As String, iWeekStop As Integer, _
                                 iKlantId As Long) As Boolean
@@ -3442,6 +3442,7 @@ Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, _
     sJson = "{""Sleutel"":""Kiemkracht2026BestelFormulierSleutel""," & _
             """KlantEmail"":""" & JsonEsc(sEmail) & """," & _
             """Voornaam"":""" & JsonEsc(sVoornaam) & """," & _
+            """Voornaam2"":""" & JsonEsc(sVoornaam2) & """," & _
             """KlantID"":" & iKlantId & "," & _
             """WeekAnnulatie"":" & iWeek & "," & _
             """Datum"":""" & sDatum & """," & _
