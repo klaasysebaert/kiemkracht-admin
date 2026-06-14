@@ -2106,10 +2106,8 @@ Sub ZetLosseGroenteTip(oWk As Object)
         oVal.Type = com.sun.star.sheet.ValidationType.ANY   ' geen invoerbeperking, enkel hint
         If bLeeg Then
             oVal.ShowInputMessage = True
-            oVal.InputTitle   = "Gebruik de macro"
-            oVal.InputMessage = "Typ losse groenten hier niet handmatig in." & Chr(10) & _
-                "Start de macro VoegLosseGroenteToe: die zet ook de prijsopmaak, " & _
-                "de eenheid-metadata in Blad2 en laat de afrekening/samenvatting meelopen."
+            oVal.InputTitle   = "Gebruik het menu"
+            oVal.InputMessage = "Voeg losse groente toe via ""Kiemkracht (weekbestand)"""
         Else
             oVal.ShowInputMessage = False
         End If
