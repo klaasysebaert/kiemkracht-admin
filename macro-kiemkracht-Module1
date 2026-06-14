@@ -3377,7 +3377,7 @@ Sub VerwerkStopStart()
                 Case "vooruitbestelling", "abonnementsstart"
                     Dim iWeekStart As Integer
                     If mType(m) = "abonnementsstart" Then iWeekStart = mWeek(m) Else iWeekStart = 0
-                    bOk = VerstuurVooruitbestellingMail(mEmail(m), mVoor(m), mWeek(m), mJaar(m), _
+                    bOk = VerstuurVooruitbestellingMail(mEmail(m), mVoor(m), mVoor2(m), mWeek(m), mJaar(m), _
                                                         mDatum(m), iWeekStart, mKlantId(m), mFormaat(m))
             End Select
             If bOk Then nMailOk = nMailOk + 1 Else nMailFout = nMailFout + 1
