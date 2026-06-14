@@ -2084,22 +2084,34 @@ Fout:
 End Sub
 
 ' =============================================
-' Zet een invoerhulp-tooltip op de losse-groente-slots Y2:AV3, die de
+' Zet per losse-groente-slot (Y..AV, rij 2-3) een invoerhulp-tooltip die de
 ' gebruiker wijst op de macro VoegLosseGroenteToe. Beperkt de invoer niet.
-' Wordt aangeroepen door MaakWeekbestand zodat elk nieuw weekbestand de
-' hint heeft (handmatig instellen verdwijnt bij hergenereren).
+' De tooltip staat ENKEL op lege slots (naamcel rij 2 leeg); gevulde slots
+' krijgen geen hint. Roep opnieuw aan na het vullen om te verversen.
+' Wordt aangeroepen door MaakWeekbestand zodat elk nieuw weekbestand de hint
+' heeft (handmatig instellen verdwijnt bij hergenereren).
 ' =============================================
 Sub ZetLosseGroenteTip(oWk As Object)
-    Dim oCells As Object, oVal As Object
-    oCells = oWk.getCellRangeByName("Y2:AV3")
-    oVal = oCells.Validation
-    oVal.Type = com.sun.star.sheet.ValidationType.ANY   ' geen invoerbeperking, enkel hint
-    oVal.ShowInputMessage = True
-    oVal.InputTitle   = "Gebruik de macro"
-    oVal.InputMessage = "Typ losse groenten hier niet handmatig in." & Chr(10) & _
-        "Start de macro VoegLosseGroenteToe: die zet ook de prijsopmaak, " & _
-        "de eenheid-metadata in Blad2 en laat de afrekening/samenvatting meelopen."
-    oCells.Validation = oVal      ' terugzetten = verplicht, anders geen effect
+    Const cGroent0     = 24   ' eerste groente-kolom (Y)
+    Const nGroentSlots = 24   ' slots Y..AV
+    Dim iSlot As Integer, oCells As Object, oVal As Object, bLeeg As Boolean
+    For iSlot = 0 To nGroentSlots - 1
+        ' sub-bereik = naam (rij 2) + prijs (rij 3) van dit slot
+        oCells = oWk.getCellRangeByPosition(cGroent0 + iSlot, 1, cGroent0 + iSlot, 2)
+        bLeeg  = (Trim(oWk.getCellByPosition(cGroent0 + iSlot, 1).getString()) = "")
+        oVal = oCells.Validation
+        oVal.Type = com.sun.star.sheet.ValidationType.ANY   ' geen invoerbeperking, enkel hint
+        If bLeeg Then
+            oVal.ShowInputMessage = True
+            oVal.InputTitle   = "Gebruik de macro"
+            oVal.InputMessage = "Typ losse groenten hier niet handmatig in." & Chr(10) & _
+                "Start de macro VoegLosseGroenteToe: die zet ook de prijsopmaak, " & _
+                "de eenheid-metadata in Blad2 en laat de afrekening/samenvatting meelopen."
+        Else
+            oVal.ShowInputMessage = False
+        End If
+        oCells.Validation = oVal      ' terugzetten = verplicht, anders geen effect
+    Next iSlot
 End Sub
 
 Sub PasRijOpmaakToe(oSheet As Object, rIdx As Integer, _
