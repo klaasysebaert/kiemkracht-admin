@@ -2073,6 +2073,9 @@ Sub VoegLosseGroenteToe()
 
     oDoc.calculateAll()
 
+    ' Tooltip op dit (nu gevulde) slot weghalen; lege slots houden de hint
+    ZetLosseGroenteTip(oWk)
+
     MsgBox "Losse groente toegevoegd in kolom " & KolomLetter(cGroent0 + iVrij) & ":" & Chr(10) & _
            "   " & sNaam & " - " & oCel.getString() & Chr(10) & Chr(10) & _
            "Vul nu bij de klanten de hoeveelheden in; afrekening en samenvatting lopen mee.", _
