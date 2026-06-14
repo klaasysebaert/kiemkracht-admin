@@ -1741,15 +1741,17 @@ Sub MaakEtikettenBijbestelling()
         Next g
         If Not bHasG Then GoTo VolgendeRijBij
 
-        ' Enkel etiket als € losse groenten (kolom W) > drempel
-        If oWkSheet.getCellByPosition(cWaarde, i).getValue() <= cMinBedrag Then GoTo VolgendeRijBij
-
         ' Pakketorde voor sortering
         If      oWkSheet.getCellByPosition(cKG,   i).getValue() > 0 Then : iPakOrd = 1
         ElseIf  oWkSheet.getCellByPosition(cGG,   i).getValue() > 0 Then : iPakOrd = 2
         ElseIf  oWkSheet.getCellByPosition(cEGG,  i).getValue() > 0 Then : iPakOrd = 3
         ElseIf  oWkSheet.getCellByPosition(cMINI, i).getValue() > 0 Then : iPakOrd = 4
         Else                                                               : iPakOrd = 5
+        End If
+
+        ' Drempel alleen voor klanten MET pakket; "geen pakket" krijgt altijd een etiket
+        If iPakOrd < 5 Then
+            If oWkSheet.getCellByPosition(cWaarde, i).getValue() <= cMinBedrag Then GoTo VolgendeRijBij
         End If
 
         If nEt <= 500 Then
