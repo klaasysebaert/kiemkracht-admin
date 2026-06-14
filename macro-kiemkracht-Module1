@@ -3040,18 +3040,20 @@ Sub VerwerkStopStart()
 
     Dim klId(5000)      As Long
     Dim klVn(5000)      As String
+    Dim klVn2(5000)     As String
     Dim klFn(5000)      As String
     Dim klMail(5000)    As String
     Dim klFormaat(5000) As String
     Dim nKl As Integer : nKl = 0
     oStmt = oConn.createStatement()
-    oRS = oStmt.executeQuery("SELECT id, voornaam, familienaam, email1, formaat FROM klanten")
+    oRS = oStmt.executeQuery("SELECT id, voornaam, familienaam, email1, formaat, COALESCE(voornaam2,'') FROM klanten")
     Do While oRS.next()
         klId(nKl)      = CLng(oRS.getString(1))
         klVn(nKl)      = oRS.getString(2)
         klFn(nKl)      = oRS.getString(3)
         klMail(nKl)    = oRS.getString(4)
         klFormaat(nKl) = oRS.getString(5)
+        klVn2(nKl)     = oRS.getString(6)
         nKl = nKl + 1
     Loop
     oRS.close() : oStmt.close()
