@@ -3226,6 +3226,7 @@ Sub VerwerkStopStart()
                     If klMail(kIdx) <> "" Then
                         mEmail(nMail)    = klMail(kIdx)
                         mVoor(nMail)     = klVn(kIdx)
+                        mVoor2(nMail)    = klVn2(kIdx)
                         mKlantId(nMail)  = riKlant(i)
                         mWeek(nMail)     = w
                         mType(nMail)     = "vooruitbestelling"
