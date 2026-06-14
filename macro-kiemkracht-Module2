@@ -407,6 +407,7 @@ Sub BereidMailmergeVoor()
                "&leverdag="  & sLevdag & _
                "&afhaalpunt=" & sAfhaalURL
         If sPakketURL <> "" Then sURL = sURL & "&formaat=" & sPakketURL
+        If kVoor2(k) <> "" Then sURL = sURL & "&voornaam2=" & JoinPlus(kVoor2(k))
 
         ' --- Base64-URL (oude kolom K + nieuwe DB) ---
         sQuerystring = "voornaam="    & UrlEncodeValue(kVoor(k))  & _
@@ -418,6 +419,9 @@ Sub BereidMailmergeVoor()
                        "&afhaalpunt=" & UrlEncodeValue(sAfhaal)
         If sPakketURL <> "" Then
             sQuerystring = sQuerystring & "&formaat=" & UrlEncodeValue(sPakketURL)
+        End If
+        If kVoor2(k) <> "" Then
+            sQuerystring = sQuerystring & "&voornaam2=" & UrlEncodeValue(kVoor2(k))
         End If
         sBestelURL = BESTEL_URL & "?d=" & Base64UrlEncode(sQuerystring)
 
