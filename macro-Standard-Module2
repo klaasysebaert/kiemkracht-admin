@@ -93,6 +93,11 @@ Sub StartBereidKoffieMailmergeVoor()
     BereidKoffieMailmergeVoor()
 End Sub
 
+Sub StartBereidCombiMailmergeVoor()
+    ReloadKiemkracht()
+    BereidCombiMailmergeVoor()
+End Sub
+
 Sub StartVerwerkStopStart()
     ReloadKiemkracht()
     VerwerkStopStart()
