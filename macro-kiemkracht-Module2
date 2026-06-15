@@ -777,6 +777,442 @@ VerbindingsFout:
 
 End Sub
 
+Sub BereidCombiMailmergeVoor()
+
+    ' =============================================
+    ' Kiemkracht - Combi-mailmerge voorbereiden (groente + koffie)
+    '
+    ' Zelfde klantselectie als BereidMailmergeVoor (wie krijgt deze week
+    ' een aanbodsmail: pare/onpare-ritme, vooruitbestellingen, annulaties),
+    ' maar:
+    '   - Vult ENKEL het tabblad "Mailmerge" — GEEN DB-run en GEEN
+    '     mailmerge_recipients. Bedoeld voor de Thunderbird-mailmerge.
+    '   - Voegt naast de groente-bestel-URL (kolom J/K) een extra kolom toe
+    '     (KoffieURL_encoded) met de gepersonaliseerde koffie-bestel-URL
+    '     (zoals BereidKoffieMailmergeVoor), zodat de aanbodsmail beide
+    '     links kan bevatten.
+    '
+    ' Draai deze i.p.v. BereidMailmergeVoor in een week waarin je de
+    ' koffie-link wil meesturen. Verzenden gebeurt via Thunderbird vanaf
+    ' het tabblad 'Mailmerge'.
+    ' =============================================
+
+    ' Webshop- en koffie-URL volgen de omgeving
+    Dim BESTEL_URL As String
+    Dim KOFFIE_URL As String
+    If BepaalOmgeving() = "dev" Then
+        BESTEL_URL = "https://bestel.dev.kiemkracht.be/"
+        KOFFIE_URL = "https://koffie.dev.kiemkracht.be/"
+    Else
+        BESTEL_URL = "https://bestel.kiemkracht.be/"
+        KOFFIE_URL = "https://koffie.kiemkracht.be/"
+    End If
+
+    ' --- Weeknummer: komende donderdag ---
+    Dim dVandaag   As Date
+    Dim dDonderdag As Date
+    Dim iWeekdag   As Integer
+    dVandaag = Now()
+    iWeekdag = Weekday(dVandaag, 1)  ' 1=zo, ..., 5=do, 6=vr, 7=za
+    Dim iDagenTot As Integer
+    If iWeekdag <= 5 Then
+        iDagenTot = 5 - iWeekdag
+    Else
+        iDagenTot = 5 - iWeekdag + 7
+    End If
+    If iWeekdag = 5 Then iDagenTot = 7  ' op donderdag: volgende week
+    dDonderdag = dVandaag + iDagenTot
+
+    Dim iWeek As Integer
+    Dim iJaar As Integer
+    iWeek = DatePart("ww", dDonderdag, 2, 2)
+    iJaar = Year(dDonderdag)
+
+    Dim sPareOnpare As String
+    If (iWeek Mod 2) = 0 Then sPareOnpare = "pare" Else sPareOnpare = "onpare"
+    ' Ritme dat deze week (pariteit) matcht — gebruikt om bij een combo-klant
+    ' (meerdere abonnementen) de juiste abonnement-lijn voor de URL te kiezen.
+    Dim sParRitme As String
+    If sPareOnpare = "pare" Then sParRitme = "pare-week" Else sParRitme = "onpare-week"
+    ' Weeknummer voor de pauze-conditie (een gepauzeerd abonnement telt deze week niet mee).
+    Dim iWeekNumMM As Long : iWeekNumMM = CLng(iJaar) * 100 + iWeek
+
+    ' Bevestiging
+    Dim sAntwoord As Integer
+    sAntwoord = MsgBox( _
+        "Combi-mailmerge (groente + koffie) voorbereiden voor:" & Chr(10) & _
+        "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & _
+        "Komende donderdag: " & Format(dDonderdag, "DD/MM/YYYY") & Chr(10) & Chr(10) & _
+        "Vult ENKEL het tabblad 'Mailmerge' (Thunderbird-pad) met de" & Chr(10) & _
+        "groente-bestel-URL plus een extra kolom koffie-bestel-URL." & Chr(10) & _
+        "Er wordt GEEN DB-run aangemaakt." & Chr(10) & Chr(10) & _
+        "Doorgaan?", _
+        36, "BereidCombiMailmergeVoor")
+    If sAntwoord <> 6 Then  ' 6 = Ja
+        SluitSSHTunnels()
+        Exit Sub
+    End If
+
+    ' --- Check data-bestand vroeg (we hebben oDoc nodig voor de Mailmerge-sheet) ---
+    Dim oDoc As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        SluitSSHTunnels()
+        Exit Sub
+    End If
+
+    ' --- JDBC-verbinding ---
+    On Error GoTo VerbindingsFout
+    Dim oConn As Object
+    oConn = MaakDBVerbinding()
+    On Error GoTo 0
+
+    Dim oStmt As Object
+    Dim oRS   As Object
+
+    ' --- Stap 1: klanten ophalen (identiek aan BereidMailmergeVoor) ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT k.voornaam, k.familienaam, k.email1, " & _
+        "COALESCE(ab.eff_type, k.type) AS type, " & _
+        "COALESCE(ab.eff_formaat, k.formaat) AS formaat, " & _
+        "COALESCE(a.naam, '') AS afhaalnaam, " & _
+        "COALESCE(a.dag_afhaling, '') AS leverdag, " & _
+        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
+        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,'') " & _
+        "FROM klanten k " & _
+        "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
+        "LEFT JOIN LATERAL ( " & _
+        "  SELECT 'abonnee' " & _
+        "      || CASE x.ritme WHEN 'pare-week' THEN '-pare-week' " & _
+        "                      WHEN 'onpare-week' THEN '-onpare-week' ELSE '' END " & _
+        "      || CASE WHEN x.status = 'toekomst' THEN '-toekomst' ELSE '' END AS eff_type, " & _
+        "    x.formaat AS eff_formaat " & _
+        "  FROM abonnementen x " & _
+        "  WHERE x.klant_id = k.id AND x.status IN ('actief','toekomst') " & _
+        "    AND (x.pauze_vanaf_week IS NULL OR (x.pauze_vanaf_jaar * 100 + x.pauze_vanaf_week) > " & iWeekNumMM & ") " & _
+        "  ORDER BY (CASE WHEN x.ritme = 'wekelijks' OR x.ritme = '" & sParRitme & "' THEN 0 ELSE 1 END), x.id " & _
+        "  LIMIT 1 " & _
+        ") ab ON true " & _
+        "WHERE k.status NOT IN ('gepauzeerd', 'gestopt') " & _
+        "ORDER BY k.familienaam, k.voornaam")
+
+    Dim kVoor(1000)    As String
+    Dim kFam(1000)     As String
+    Dim kEmail(1000)   As String
+    Dim kType(1000)    As String
+    Dim kFormaat(1000) As String
+    Dim kAfhaal(1000)  As String
+    Dim kLevdag(1000)  As String
+    Dim kID(1000)      As String
+    Dim kEmail2(1000)  As String
+    Dim kEmail3(1000)  As String
+    Dim kEmail4(1000)  As String
+    Dim kVoor2(1000)   As String
+    Dim kFam2(1000)    As String
+    Dim nKlanten      As Integer
+    nKlanten = 0
+
+    Do While oRS.next()
+        kVoor(nKlanten)    = oRS.getString(1)
+        kFam(nKlanten)     = oRS.getString(2)
+        kEmail(nKlanten)   = oRS.getString(3)
+        kType(nKlanten)    = oRS.getString(4)
+        kFormaat(nKlanten) = oRS.getString(5)
+        kAfhaal(nKlanten)  = oRS.getString(6)
+        kLevdag(nKlanten)  = oRS.getString(7)
+        kID(nKlanten)      = oRS.getString(8)
+        kEmail2(nKlanten)  = oRS.getString(9)
+        kEmail3(nKlanten)  = oRS.getString(10)
+        kEmail4(nKlanten)  = oRS.getString(11)
+        kVoor2(nKlanten)   = oRS.getString(12)
+        kFam2(nKlanten)    = oRS.getString(13)
+        nKlanten = nKlanten + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 2: vooruitbestellingen deze week ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT klant_email, formaat " & _
+        "FROM vooruitbestellingen " & _
+        "WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek)
+
+    Dim vbEmail(1000)   As String
+    Dim vbFormaat(1000) As String
+    Dim nVB As Integer
+    nVB = 0
+    Do While oRS.next()
+        vbEmail(nVB)   = oRS.getString(1)
+        vbFormaat(nVB) = oRS.getString(2)
+        nVB = nVB + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' --- Stap 2b: annulaties deze week ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT klant_email " & _
+        "FROM annulaties " & _
+        "WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek)
+
+    Dim annEmail(1000) As String
+    Dim nAnn As Integer
+    nAnn = 0
+    Do While oRS.next()
+        annEmail(nAnn) = oRS.getString(1)
+        nAnn = nAnn + 1
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' Geen DB-writes meer nodig — verbinding mag dicht.
+    oConn.close()
+
+    ' --- Stap 3: sheet "Mailmerge" aanmaken of leegmaken ---
+    Dim oSheets As Object
+    Dim oSheet  As Object
+    oSheets = oDoc.Sheets
+
+    If oSheets.hasByName("Mailmerge") Then
+        oSheet = oSheets.getByName("Mailmerge")
+        oSheet.clearContents(7)
+    Else
+        oSheets.insertNewByName("Mailmerge", 0)  ' eerste positie
+        oSheet = oSheets.getByName("Mailmerge")
+    End If
+
+    ' --- Stap 4: kolomhoofden (0-19 identiek aan BereidMailmergeVoor, 20 = koffie) ---
+    Dim hoofden(20) As String
+    hoofden(0)  = "Voornaam"
+    hoofden(1)  = "Familienaam"
+    hoofden(2)  = "Email"
+    hoofden(3)  = "Type"
+    hoofden(4)  = "Mailtype"
+    hoofden(5)  = "Pakket"
+    hoofden(6)  = "Leverdag"
+    hoofden(7)  = "Afhaal"
+    hoofden(8)  = "Week"
+    hoofden(9)  = "BestelURL"
+    hoofden(10) = "BestelURL_encoded"
+    hoofden(11) = "Voornaam2"
+    hoofden(12) = "Familienaam2"
+    hoofden(13) = "Email2"
+    hoofden(14) = "Voornaam3"
+    hoofden(15) = "Familienaam3"
+    hoofden(16) = "Email3"
+    hoofden(17) = "Voornaam4"
+    hoofden(18) = "Familienaam4"
+    hoofden(19) = "Email4"
+    hoofden(20) = "KoffieURL_encoded"
+
+    Dim c As Integer
+    For c = 0 To 20
+        Dim oCell As Object
+        oCell = oSheet.getCellByPosition(c, 0)
+        oCell.setString(hoofden(c))
+        oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oCell.CellBackColor = RGB(204, 204, 204)
+    Next c
+
+    ' --- Stap 5: klanten verwerken — enkel naar Mailmerge-sheet schrijven ---
+    Dim r As Integer : r = 1  ' rij 1 = eerste datarij (rij 0 = hoofden)
+
+    ' ALLE per-klant variabelen vooraan declareren (LO Basic struikelt op
+    ' Dim binnen een loop).
+    Dim k As Integer
+    Dim sType         As String
+    Dim sFormaat      As String
+    Dim sAfhaal       As String
+    Dim sLevdag       As String
+    Dim bVooruit      As Boolean
+    Dim v             As Integer
+    Dim bMail         As Boolean
+    Dim sMailtype     As String
+    Dim sPakketURL    As String
+    Dim bGean         As Boolean
+    Dim a             As Integer
+    Dim sTypeURL      As String
+    Dim sVoornaamURL  As String
+    Dim sAfhaalURL    As String
+    Dim sURL          As String
+    Dim sQuerystring  As String
+    Dim sBestelURL    As String
+    Dim sKoffieQs     As String
+    Dim sKoffieURL    As String
+
+    For k = 0 To nKlanten - 1
+
+        sType    = kType(k)
+        sFormaat = kFormaat(k)
+        sAfhaal  = kAfhaal(k)
+        sLevdag  = kLevdag(k)
+
+        ' Vooruitbesteld?
+        bVooruit = False
+        For v = 0 To nVB - 1
+            If LCase(vbEmail(v)) = LCase(kEmail(k)) Then
+                bVooruit = True
+                If vbFormaat(v) <> "" Then sFormaat = vbFormaat(v)
+                Exit For
+            End If
+        Next v
+
+        ' Mail deze week?
+        bMail = False
+        If bVooruit Then
+            bMail = True
+        ElseIf sType = "abonnee" Then
+            bMail = True
+        ElseIf sType = "abonnee-pare-week" And sPareOnpare = "pare" Then
+            bMail = True
+        ElseIf sType = "abonnee-onpare-week" And sPareOnpare = "onpare" Then
+            bMail = True
+        ElseIf sType = "weekperweek" Then
+            bMail = True
+        ElseIf sType = "weekperweek-pare-week" And sPareOnpare = "pare" Then
+            bMail = True
+        ElseIf sType = "weekperweek-onpare-week" And sPareOnpare = "onpare" Then
+            bMail = True
+        ElseIf sType = "abonnee-toekomst" _
+            Or sType = "abonnee-pare-week-toekomst" _
+            Or sType = "abonnee-onpare-week-toekomst" Then
+            bMail = True
+        End If
+        If Not bMail Then GoTo VolgendeKlant
+        If kEmail(k) = "" Then GoTo VolgendeKlant
+
+        ' Mailtype + pakket-in-URL
+        If bVooruit Then
+            sMailtype  = "bevestiging"
+            sPakketURL = sFormaat
+        ElseIf sType = "weekperweek" Or sType = "weekperweek-pare-week" Or sType = "weekperweek-onpare-week" _
+           Or sType = "abonnee-toekomst" Or sType = "abonnee-pare-week-toekomst" _
+           Or sType = "abonnee-onpare-week-toekomst" Then
+            sMailtype  = "uitnodiging-los"
+            sPakketURL = ""
+        Else
+            bGean = False
+            For a = 0 To nAnn - 1
+                If LCase(annEmail(a)) = LCase(kEmail(k)) Then
+                    bGean = True : Exit For
+                End If
+            Next a
+            If bGean Then
+                sMailtype  = "annulatie-bevestiging"
+                sPakketURL = ""
+            Else
+                sMailtype  = "uitnodiging"
+                sPakketURL = sFormaat
+            End If
+        End If
+
+        ' Type voor URL (toekomst -> weekperweek)
+        If InStr(sType, "-toekomst") > 0 Then
+            sTypeURL = "weekperweek"
+        Else
+            sTypeURL = sType
+        End If
+
+        ' --- Plain groente-URL (kolom J) ---
+        sVoornaamURL = JoinPlus(kVoor(k))
+        sAfhaalURL   = JoinPlus(sAfhaal)
+
+        sURL = BESTEL_URL & _
+               "?voornaam="  & sVoornaamURL & _
+               "&naam="      & JoinPlus(kFam(k)) & _
+               "&email="     & kEmail(k) & _
+               "&klant_id="  & kID(k) & _
+               "&type="      & sTypeURL & _
+               "&leverdag="  & sLevdag & _
+               "&afhaalpunt=" & sAfhaalURL
+        If sPakketURL <> "" Then sURL = sURL & "&formaat=" & sPakketURL
+        If kVoor2(k) <> "" Then sURL = sURL & "&voornaam2=" & JoinPlus(kVoor2(k))
+
+        ' --- Base64 groente-URL (kolom K) ---
+        sQuerystring = "voornaam="    & UrlEncodeValue(kVoor(k))  & _
+                       "&naam="       & UrlEncodeValue(kFam(k))   & _
+                       "&email="      & UrlEncodeValue(kEmail(k)) & _
+                       "&klant_id="   & kID(k)                    & _
+                       "&type="       & UrlEncodeValue(sTypeURL)  & _
+                       "&leverdag="   & UrlEncodeValue(sLevdag)   & _
+                       "&afhaalpunt=" & UrlEncodeValue(sAfhaal)
+        If sPakketURL <> "" Then
+            sQuerystring = sQuerystring & "&formaat=" & UrlEncodeValue(sPakketURL)
+        End If
+        If kVoor2(k) <> "" Then
+            sQuerystring = sQuerystring & "&voornaam2=" & UrlEncodeValue(kVoor2(k))
+        End If
+        sBestelURL = BESTEL_URL & "?d=" & Base64UrlEncode(sQuerystring)
+
+        ' --- Base64 koffie-URL (kolom U) — zelfde payload als BereidKoffieMailmergeVoor ---
+        sKoffieQs = "voornaam="    & UrlEncodeValue(kVoor(k))   & _
+                    "&naam="       & UrlEncodeValue(kFam(k))    & _
+                    "&email="      & UrlEncodeValue(kEmail(k))  & _
+                    "&klant_id="   & kID(k)                     & _
+                    "&afhaalpunt=" & UrlEncodeValue(kAfhaal(k))
+        sKoffieURL = KOFFIE_URL & "?d=" & Base64UrlEncode(sKoffieQs)
+
+        ' === Mailmerge-sheet rij schrijven ===
+        oSheet.getCellByPosition(0, r).setString(kVoor(k))
+        oSheet.getCellByPosition(1, r).setString(kFam(k))
+        oSheet.getCellByPosition(2, r).setString(kEmail(k))
+        oSheet.getCellByPosition(3, r).setString(sType)
+        oSheet.getCellByPosition(4, r).setString(sMailtype)
+        oSheet.getCellByPosition(5, r).setString(sPakketURL)
+        oSheet.getCellByPosition(6, r).setString(sLevdag)
+        oSheet.getCellByPosition(7, r).setString(sAfhaal)
+        oSheet.getCellByPosition(8, r).setValue(iWeek)
+        oSheet.getCellByPosition(9, r).setString(sURL)
+        oSheet.getCellByPosition(10, r).setString(sBestelURL)
+
+        If kVoor2(k)  <> "" Then oSheet.getCellByPosition(11, r).setString(kVoor2(k))
+        If kFam2(k)   <> "" Then oSheet.getCellByPosition(12, r).setString(kFam2(k))
+        If kEmail2(k) <> "" Then oSheet.getCellByPosition(13, r).setString(kEmail2(k))
+        If kEmail3(k) <> "" Then oSheet.getCellByPosition(16, r).setString(kEmail3(k))
+        If kEmail4(k) <> "" Then oSheet.getCellByPosition(19, r).setString(kEmail4(k))
+
+        oSheet.getCellByPosition(20, r).setString(sKoffieURL)
+
+        r = r + 1
+
+        VolgendeKlant:
+    Next k
+
+    ' --- Stap 6: kolombreedte ---
+    Dim oKolommen As Object
+    oKolommen = oSheet.getColumns()
+    Dim cIdx As Integer
+    For cIdx = 0 To 20
+        oKolommen.getByIndex(cIdx).OptimalWidth = True
+    Next cIdx
+    oKolommen.getByIndex(9).Width  = 12000  ' ~12 cm
+    oKolommen.getByIndex(10).Width = 12000
+    oKolommen.getByIndex(20).Width = 12000  ' koffie-URL
+
+    SluitSSHTunnels()
+
+    ' --- Klaar ---
+    Dim nSheetRijen As Integer
+    nSheetRijen = r - 1
+    MsgBox "Combi-mailmerge klaar!" & Chr(10) & Chr(10) & _
+           "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & Chr(10) & _
+           "Tabblad 'Mailmerge': " & nSheetRijen & " klanten" & Chr(10) & _
+           "Kolom K = groente-bestel-URL, kolom U = koffie-bestel-URL." & Chr(10) & Chr(10) & _
+           "GEEN DB-run aangemaakt — verstuur via Thunderbird-mailmerge" & Chr(10) & _
+           "vanaf het tabblad 'Mailmerge'.", _
+           64, "BereidCombiMailmergeVoor"
+
+    Exit Sub
+
+VerbindingsFout:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
+           "Controleer of de SSH-tunnel actief is (poort 5433/5434).", 16, "Fout"
+    SluitSSHTunnels()
+
+End Sub
+
 ' =============================================
 ' Hulpfunctie: vervang spaties door + voor URL
 ' =============================================
