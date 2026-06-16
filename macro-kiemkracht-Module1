@@ -3665,6 +3665,16 @@ Sub KoffieWeekbestand()
     Dim oSheet    As Object
     Dim sUrl      As String
 
+    Dim iFiltMaand    As Integer
+    Dim iFiltJaar     As Integer
+    Dim saMaanden(12) As String
+    Dim sDefaultMaand As String
+    Dim sMaandIn      As String
+    Dim sFiltDatum    As String
+    Dim sM            As String
+    Dim sJ            As String
+    Dim iSep          As Integer
+
     Const cNaam  = 0
     Const cAfh   = 1
     Const cKlDag = 2
