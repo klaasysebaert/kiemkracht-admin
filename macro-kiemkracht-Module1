@@ -3762,6 +3762,8 @@ Sub KoffieWeekbestand()
         "       COALESCE(vragen_opmerkingen,''), " & _
         "       to_char(aangemaakt AT TIME ZONE 'Europe/Brussels', 'DD/MM/YYYY HH24:MI') " & _
         "FROM koffie_bestellingen " & _
+        "WHERE date_trunc('month', aangemaakt AT TIME ZONE 'Europe/Brussels') " & _
+        "      = DATE '" & sFiltDatum & "' " & _
         "ORDER BY aangemaakt")
     nBest = 0
     Do While oRS.next()
