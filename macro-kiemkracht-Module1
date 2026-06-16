@@ -3659,6 +3659,8 @@ Sub KoffieWeekbestand()
     Dim iVorm As Integer
     Dim iSrt  As Integer
     Dim iGew  As Integer
+    Dim iSomTot As Integer
+    Dim sKol    As String
 
     Dim oDesktop  As Object
     Dim oNieuwDoc As Object
