@@ -1582,6 +1582,9 @@ Sub KoffieOrderpicking()
     Dim oBrCurs    As Object
     Dim aTabStops(1) As New com.sun.star.style.TabStop
     Dim sOdtPath     As String
+    Dim sOdtUrl      As String
+    Dim oEnSluit     As Object
+    Dim oCompSluit   As Object
     Dim sDagFile     As String
     Dim aOdtPath1(9) As String
     Dim nOdtPath1    As Integer : nOdtPath1 = 0
