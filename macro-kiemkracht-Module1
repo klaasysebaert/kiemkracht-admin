@@ -3869,8 +3869,9 @@ Sub KoffieWeekbestand()
     oSheet.getCellByPosition(cTyp,   r).setString("type")
     oSheet.getCellByPosition(cOpm,   r).setString("vragen_opmerkingen")
     oSheet.getCellByPosition(cEmail, r).setString("email")
-    oSheet.getCellByPosition(cTel,   r).setString("telefoon")
-    oSheet.getCellByPosition(cKlId,  r).setString("klant_id")
+    oSheet.getCellByPosition(cTel,     r).setString("telefoon")
+    oSheet.getCellByPosition(cKlId,    r).setString("klant_id")
+    oSheet.getCellByPosition(cBesteld, r).setString("besteld op")
 
     ' Bestelregels (rij 4 en verder)
     For b = 0 To nBest - 1
