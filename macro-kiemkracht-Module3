@@ -1351,6 +1351,400 @@ DebugFout:
 End Sub
 
 ' =============================================
+' Kiemkracht - Orderpicking koffie per afhaalpunt
+' Draait vanuit een koffie-weekbestand (KoffieWeekbestand): eerste blad =
+' databron. Maakt per klaarmaak-dag (donderdag/vrijdag) één Writer-document,
+' gegroepeerd per afhaalpunt — zelfde layout als de groenten-orderpicking
+' "volgens afhaalpunt" (Document 1 in MaakOverzichten), maar zonder
+' pakket/formaat en met koffie-SKU's i.p.v. losse groenten.
+' =============================================
+Sub KoffieOrderpicking()
+    On Error GoTo DebugFout
+
+    ' Kolomindices koffie-weekbestand (zie KoffieWeekbestand)
+    Const cNaam  = 0
+    Const cAfh   = 1
+    Const cKlDag = 2
+    Const cProd0 = 9
+    Const nProd  = 18
+
+    Dim oDoc     As Object
+    Dim oWkSheet As Object
+    oDoc     = ThisComponent
+    oWkSheet = oDoc.Sheets.getByIndex(0)
+
+    If Left(oWkSheet.Name, 6) <> "Koffie" Then
+        MsgBox "Dit lijkt geen koffie-weekbestand (eerste tabblad heet niet " & _
+               """Koffie week …""). Open een koffie-weekbestand en start de macro " & _
+               "vanuit dat venster.", 16, "Orderpicking koffie"
+        Exit Sub
+    End If
+    If oDoc.getURL() = "" Then
+        MsgBox "Sla het koffie-weekbestand eerst op voordat je de orderpicking maakt.", _
+               48, "Orderpicking koffie"
+        Exit Sub
+    End If
+
+    ' Productlabels: rij 1 = soort+vorm ("El Dorado gemalen"), rij 3 = gewicht
+    ' ("x250g"). Toon "El Dorado gemalen 250g".
+    Dim prodLabel(17) As String
+    Dim p    As Integer
+    Dim sLab As String
+    Dim sGew As String
+    For p = 0 To nProd - 1
+        sLab = oWkSheet.getCellByPosition(cProd0 + p, 0).getString()
+        sGew = oWkSheet.getCellByPosition(cProd0 + p, 2).getString()
+        If Left(sGew, 1) = "x" Then sGew = Mid(sGew, 2)
+        prodLabel(p) = Trim(sLab & " " & sGew)
+    Next p
+
+    ' Laatste rij
+    Dim oCalcCursor As Object
+    oCalcCursor = oWkSheet.createCursor()
+    oCalcCursor.gotoEndOfUsedArea(True)
+    Dim nLastRow As Long
+    nLastRow = oCalcCursor.getRangeAddress().EndRow
+
+    ' --- Klantblokken + unieke dagen ---
+    Dim aBlok(500) As String
+    Dim aAfh2(500) As String
+    Dim aDag2(500) As String
+    Dim nBlok      As Integer
+    Dim aDagen(9)  As String
+    Dim nDagen     As Integer
+    nBlok  = 0
+    nDagen = 0
+
+    Dim i          As Long
+    Dim d          As Integer
+    Dim sNaam      As String
+    Dim sAfh2      As String
+    Dim sKlaarDag  As String
+    Dim sBlok      As String
+    Dim sAant      As String
+    Dim nAant      As Double
+    Dim bHasP      As Boolean
+    Dim bNieuwedag As Boolean
+
+    ' Data start op rij-index 4 (= rij 5): rij 0-2 producthoofding, rij 3
+    ' klanttitels + kolomtotalen.
+    For i = 4 To nLastRow
+        sNaam = oWkSheet.getCellByPosition(cNaam, i).getString()
+        If sNaam = "" Then GoTo VolgendeRij
+
+        bHasP = False
+        For p = 0 To nProd - 1
+            If oWkSheet.getCellByPosition(cProd0 + p, i).getValue() > 0 Then
+                bHasP = True : Exit For
+            End If
+        Next p
+        If Not bHasP Then GoTo VolgendeRij
+
+        sAfh2     = oWkSheet.getCellByPosition(cAfh,   i).getString()
+        sKlaarDag = oWkSheet.getCellByPosition(cKlDag, i).getString()
+        If sKlaarDag = "" Then sKlaarDag = "zonder dag"
+
+        ' Unieke dag bijhouden
+        bNieuwedag = True
+        For d = 0 To nDagen - 1
+            If aDagen(d) = sKlaarDag Then bNieuwedag = False : Exit For
+        Next d
+        If bNieuwedag And nDagen < 10 Then
+            aDagen(nDagen) = sKlaarDag
+            nDagen = nDagen + 1
+        End If
+
+        sBlok = sNaam & " (" & sAfh2 & ")"
+        For p = 0 To nProd - 1
+            nAant = oWkSheet.getCellByPosition(cProd0 + p, i).getValue()
+            If nAant > 0 Then
+                If nAant = Int(nAant) Then sAant = CStr(CLng(nAant)) Else sAant = CStr(nAant)
+                sBlok = sBlok & Chr(10) & prodLabel(p) & ": " & sAant
+            End If
+        Next p
+
+        If nBlok <= 500 Then
+            aBlok(nBlok) = sBlok
+            aAfh2(nBlok) = sAfh2
+            aDag2(nBlok) = sKlaarDag
+            nBlok = nBlok + 1
+        End If
+
+        VolgendeRij:
+    Next i
+
+    If nBlok = 0 Then
+        MsgBox "Geen koffiebestellingen gevonden in dit weekbestand.", 48, "Orderpicking koffie"
+        Exit Sub
+    End If
+
+    ' --- Sorteer per dag → per afhaalpunt (volgorde eerste verschijning) →
+    ' oorspronkelijke klantvolgorde. ---
+    Dim aBlok1(500) As String
+    Dim aAfh21(500) As String
+    Dim aDag1(500)  As String
+    Dim n1          As Integer : n1 = 0
+    Dim dd          As Integer
+    Dim sD          As String
+    Dim aAfhL1(500) As String
+    Dim nAfhL1      As Integer
+    Dim a1          As Integer
+    Dim b           As Integer
+    Dim bGevA1      As Boolean
+    For dd = 0 To nDagen - 1
+        sD = aDagen(dd)
+        nAfhL1 = 0
+        For b = 0 To nBlok - 1
+            If aDag2(b) = sD Then
+                bGevA1 = False
+                For a1 = 0 To nAfhL1 - 1
+                    If aAfhL1(a1) = aAfh2(b) Then bGevA1 = True : Exit For
+                Next a1
+                If Not bGevA1 Then
+                    aAfhL1(nAfhL1) = aAfh2(b)
+                    nAfhL1 = nAfhL1 + 1
+                End If
+            End If
+        Next b
+        For a1 = 0 To nAfhL1 - 1
+            For b = 0 To nBlok - 1
+                If aDag2(b) = sD And aAfh2(b) = aAfhL1(a1) Then
+                    aBlok1(n1) = aBlok(b)
+                    aAfh21(n1) = aAfh2(b)
+                    aDag1(n1)  = sD
+                    n1 = n1 + 1
+                End If
+            Next b
+        Next a1
+    Next dd
+
+    ' --- Writer-documenten (per dag één), zelfde layout als MaakOverzichten ---
+    Dim oDesktop As Object
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+
+    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
+    aArgs(0).Name  = "Hidden"
+    aArgs(0).Value = True
+
+    Dim aSave(0) As New com.sun.star.beans.PropertyValue
+    aSave(0).Name  = "FilterName"
+    aSave(0).Value = "writer8"
+
+    Dim sWkPath As String
+    sWkPath = ConvertFromURL(oDoc.getURL())
+
+    Dim oWriter  As Object
+    Dim oPS      As Object
+    Dim oTC      As Object
+    Dim oFText   As Object
+    Dim oFCurs   As Object
+    Dim oFldPN   As Object
+    Dim oFldPC   As Object
+    Dim oText    As Object
+    Dim oWCursor As Object
+
+    Dim oBL As New com.sun.star.table.BorderLine2
+    oBL.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
+    oBL.LineWidth = 26
+    Dim oNoBL As New com.sun.star.table.BorderLine2
+
+    Dim aLines()   As String
+    Dim l          As Integer
+    Dim nStreepjes As Integer
+    Dim bNieuwAfh  As Boolean
+
+    Const nPgHP2    = 29700
+    Const nKolBod   = 26000
+    Const nZoneP2   = 4000
+    Const nKolBr    = 8900
+    Const nStreepBr = 200
+    Const nLetterBr = 310
+
+    Dim oCtrl      As Object
+    Dim oVC        As Object
+    Dim bEersteKop As Boolean
+    Dim oEnP2      As Object
+    Dim oParaP2    As Object
+    Dim oKopCurs   As Object
+    Dim oPtP2      As Object
+    Dim nYInPg     As Long
+    Dim nCharH     As Single
+    Dim oBrCurs    As Object
+    Dim aTabStops(1) As New com.sun.star.style.TabStop
+    Dim sOdtPath     As String
+    Dim sDagFile     As String
+    Dim aOdtPath1(9) As String
+    Dim nOdtPath1    As Integer : nOdtPath1 = 0
+    Dim bFirstInDoc1 As Boolean
+    Dim sPrevAfh1    As String
+
+    For dd = 0 To nDagen - 1
+        sD = aDagen(dd)
+
+        oWriter = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+
+        oPS = oWriter.StyleFamilies.getByName("PageStyles").getByIndex(0)
+        oPS.IsLandscape  = False
+        oPS.Width        = 21000 : oPS.Height       = 29700
+        oPS.TopMargin    = 1500  : oPS.BottomMargin = 1500
+        oPS.LeftMargin   = 1200  : oPS.RightMargin  = 1200
+
+        oTC = oPS.TextColumns
+        oTC.ColumnCount = 2 : oTC.AutomaticDistance = 800
+        oPS.TextColumns = oTC
+
+        oPS.FooterIsOn = True
+        oFText = oPS.FooterText
+        oFCurs = oFText.createTextCursor()
+        oFCurs.setPropertyValue("CharFontName", "Calibri")
+        oFCurs.setPropertyValue("CharHeight",   10)
+        oFCurs.setPropertyValue("ParaAdjust",   com.sun.star.style.ParagraphAdjust.LEFT)
+        aTabStops(0).Position    = 8700
+        aTabStops(0).Alignment   = com.sun.star.style.TabAlign.RIGHT
+        aTabStops(0).DecimalChar = ASC(".")
+        aTabStops(0).FillChar    = ASC(" ")
+        aTabStops(1).Position    = 9500
+        aTabStops(1).Alignment   = com.sun.star.style.TabAlign.CENTER
+        aTabStops(1).DecimalChar = ASC(".")
+        aTabStops(1).FillChar    = ASC(" ")
+        oFCurs.setPropertyValue("ParaTabStops", aTabStops())
+        oFText.insertString(oFCurs, Chr(9), False)
+        oFText.insertString(oFCurs, "Koffie " & sD & " (afh.punt)", False)
+        oFText.insertString(oFCurs, Chr(9), False)
+        oFldPN = oWriter.createInstance("com.sun.star.text.textfield.PageNumber")
+        oFldPN.SubType        = com.sun.star.text.PageNumberType.CURRENT
+        oFldPN.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+        oFText.insertTextContent(oFCurs, oFldPN, False)
+        oFText.insertString(oFCurs, " / ", False)
+        oFldPC = oWriter.createInstance("com.sun.star.text.textfield.PageCount")
+        oFldPC.NumberingType  = com.sun.star.style.NumberingType.ARABIC
+        oFText.insertTextContent(oFCurs, oFldPC, False)
+
+        oText    = oWriter.getText()
+        oWCursor = oText.createTextCursor()
+        oWCursor.setPropertyValue("CharFontName", "Calibri")
+        oWCursor.setPropertyValue("CharHeight", 16)
+        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+        oWCursor.setPropertyValue("ParaTopMargin", 0)
+        oWCursor.setPropertyValue("ParaBottomMargin", 200)
+        oText.insertString(oWCursor, "Koffie " & sD & " ", False)
+        oWCursor.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.ITALIC)
+        oText.insertString(oWCursor, "(afh.punt)", False)
+        oWCursor.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
+        oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+        oText.insertControlCharacter(oWCursor, _
+            com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+        bFirstInDoc1 = True
+        sPrevAfh1    = ""
+
+        For b = 0 To n1 - 1
+            If aDag1(b) <> sD Then GoTo VolgendBlok1
+            bNieuwAfh = (sPrevAfh1 = "") Or (aAfh21(b) <> sPrevAfh1)
+            If bNieuwAfh Then
+                oWCursor.setPropertyValue("CharFontName",     "Calibri")
+                oWCursor.setPropertyValue("CharHeight",       16)
+                oWCursor.setPropertyValue("CharWeight",       com.sun.star.awt.FontWeight.BOLD)
+                oWCursor.setPropertyValue("ParaAdjust",       com.sun.star.style.ParagraphAdjust.CENTER)
+                oWCursor.setPropertyValue("TopBorder",        oNoBL)
+                oWCursor.setPropertyValue("BottomBorder",     oNoBL)
+                oWCursor.setPropertyValue("LeftBorder",       oNoBL)
+                oWCursor.setPropertyValue("RightBorder",      oNoBL)
+                oWCursor.setPropertyValue("ParaTopMargin",    IIf(bFirstInDoc1, 0, 400))
+                oWCursor.setPropertyValue("ParaBottomMargin", 200)
+                nStreepjes = CInt((nKolBr - (Len(aAfh21(b)) * nLetterBr) - 2 * nLetterBr) / 2 / nStreepBr)
+                If nStreepjes < 3 Then nStreepjes = 3
+                oText.insertString(oWCursor, String(nStreepjes, "-") & " " & aAfh21(b) & " " & String(nStreepjes, "-"), False)
+                oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+                oWCursor.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
+                oText.insertControlCharacter(oWCursor, _
+                    com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+                sPrevAfh1 = aAfh21(b)
+            End If
+
+            oWCursor.setPropertyValue("CharFontName",          "Calibri")
+            oWCursor.setPropertyValue("CharHeight",            14)
+            oWCursor.setPropertyValue("ParaTopMargin",         0)
+            oWCursor.setPropertyValue("TopBorder",             oBL)
+            oWCursor.setPropertyValue("BottomBorder",          oBL)
+            oWCursor.setPropertyValue("LeftBorder",            oBL)
+            oWCursor.setPropertyValue("RightBorder",           oBL)
+            oWCursor.setPropertyValue("TopBorderDistance",     100)
+            oWCursor.setPropertyValue("BottomBorderDistance",  100)
+            oWCursor.setPropertyValue("LeftBorderDistance",    150)
+            oWCursor.setPropertyValue("RightBorderDistance",   150)
+            oWCursor.setPropertyValue("ParaBottomMargin",      300)
+
+            aLines = Split(aBlok1(b), Chr(10))
+            oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+            oText.insertString(oWCursor, aLines(0), False)
+            oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+
+            For l = 1 To UBound(aLines)
+                oText.insertControlCharacter(oWCursor, _
+                    com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                oText.insertString(oWCursor, aLines(l), False)
+            Next l
+
+            oText.insertControlCharacter(oWCursor, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            bFirstInDoc1 = False
+
+            VolgendBlok1:
+        Next b
+
+        oWriter.getCurrentController().getFrame().getContainerWindow().setVisible(True)
+        Wait 400
+        oCtrl      = oWriter.getCurrentController()
+        oVC        = oCtrl.getViewCursor()
+        bEersteKop = True
+        oEnP2 = oText.createEnumeration()
+        Do While oEnP2.hasMoreElements()
+            oParaP2 = oEnP2.nextElement()
+            If Not oParaP2.supportsService("com.sun.star.text.Paragraph") Then GoTo VolgP2
+            oKopCurs = oText.createTextCursorByRange(oParaP2.getStart())
+            nCharH = oKopCurs.getPropertyValue("CharHeight")
+            If nCharH = 16 Then
+                If bEersteKop Then : bEersteKop = False : GoTo VolgP2 : End If
+                oCtrl.select(oKopCurs)
+                oPtP2  = oVC.getPosition()
+                nYInPg = oPtP2.Y Mod nPgHP2
+                If nYInPg > nKolBod - nZoneP2 Then
+                    oBrCurs = oText.createTextCursorByRange(oParaP2.getStart())
+                    oBrCurs.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+                End If
+            ElseIf nCharH = 14 Then
+                oCtrl.select(oKopCurs)
+                oPtP2  = oVC.getPosition()
+                nYInPg = oPtP2.Y Mod nPgHP2
+                If nYInPg > nKolBod - 700 Then
+                    oBrCurs = oText.createTextCursorByRange(oParaP2.getStart())
+                    oBrCurs.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
+                End If
+            End If
+            VolgP2:
+        Loop
+
+        sDagFile = Join(Split(LCase(sD), " "), "_")
+        sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_afhaalpunt_" & sDagFile & ".odt"
+        oWriter.storeToURL(ConvertToURL(sOdtPath), aSave())
+        If nOdtPath1 <= 9 Then : aOdtPath1(nOdtPath1) = sOdtPath : nOdtPath1 = nOdtPath1 + 1 : End If
+        oWriter.close(True)
+    Next dd
+
+    Dim sMsgOp As String : sMsgOp = ""
+    Dim p1 As Integer
+    For p1 = 0 To nOdtPath1 - 1
+        sMsgOp = sMsgOp & Chr(10) & aOdtPath1(p1)
+    Next p1
+    MsgBox nBlok & " bestelling(en), " & nDagen & " dag(en) (orderpicking koffie)" & _
+           Chr(10) & Chr(10) & sMsgOp, 64, "Orderpicking koffie klaar"
+    Exit Sub
+
+DebugFout:
+    MsgBox "Fout " & Err & ": " & Error & Chr(10) & "Regel: " & Erl, 16, "Debug KoffieOrderpicking"
+End Sub
+
+' =============================================
 ' Kiemkracht - Alle overzichten afdrukken
 ' Drukt alle gegenereerde .odt-bestanden af naast het weekbestand.
 ' Afweeglijst per dag wordt 2x afgedrukt (dubbel exemplaar).
