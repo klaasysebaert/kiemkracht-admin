@@ -1465,7 +1465,7 @@ Sub MaakWeekbestand()
             nLenR3 = Len(Format(groentPrijs(ci), "0.00")) + 5 + Len(groentEenh(ci))
             nWdtR3 = 190 * nLenR3 + 200
             If nWdtR3 < 2300 Then nWdtR3 = 2300
-            If nWdtR3 > 4000 Then nWdtR3 = 4000
+            If nWdtR3 > 4200 Then nWdtR3 = 4200
         End If
         oSheet.Columns.getByIndex(cGroent0 + ci).Width = nWdtR3
     Next ci
