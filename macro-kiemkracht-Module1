@@ -3620,6 +3620,7 @@ Sub KoffieWeekbestand()
     Dim bEmail(500)   As String
     Dim bTel(500)     As String
     Dim bAfh(500)     As String
+    Dim bAfhKort(500) As String
     Dim bOpm(500)     As String
     Dim bBesteld(500) As String
     Dim bType(500)    As String
