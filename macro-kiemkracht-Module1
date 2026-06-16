@@ -3697,6 +3697,50 @@ Sub KoffieWeekbestand()
     iWeek    = DatePart("ww", dVandaag, 2, 2)
     iJaar    = Year(dVandaag)
 
+    ' --- Maand kiezen: standaard de huidige maand, aanpasbaar ---
+    ' Het bestand bevat enkel koffiebestellingen die in de gekozen maand
+    ' (Belgische tijd) geplaatst zijn. De bestands-/mapnaam blijft op week.
+    iFiltMaand = Month(dVandaag)
+    iFiltJaar  = Year(dVandaag)
+
+    saMaanden(1)  = "januari"  : saMaanden(2)  = "februari"
+    saMaanden(3)  = "maart"    : saMaanden(4)  = "april"
+    saMaanden(5)  = "mei"      : saMaanden(6)  = "juni"
+    saMaanden(7)  = "juli"     : saMaanden(8)  = "augustus"
+    saMaanden(9)  = "september": saMaanden(10) = "oktober"
+    saMaanden(11) = "november" : saMaanden(12) = "december"
+
+    sDefaultMaand = Right("0" & iFiltMaand, 2) & "/" & iFiltJaar
+    sMaandIn = InputBox( _
+        "Welke maand verwerken? Alle koffiebestellingen die in die maand " & _
+        "geplaatst zijn, komen in het bestand." & Chr(10) & Chr(10) & _
+        "Formaat MM/JJJJ — ENTER = " & saMaanden(iFiltMaand) & " " & iFiltJaar & ".", _
+        "KoffieWeekbestand - maand kiezen", sDefaultMaand)
+
+    If sMaandIn = "" Then Exit Sub   ' Annuleren of leeg veld = stoppen
+
+    ' Parse MM/JJJJ (ook M/JJJJ en MM-JJJJ toegelaten)
+    sMaandIn = Trim(sMaandIn)
+    iSep = InStr(sMaandIn, "/")
+    If iSep = 0 Then iSep = InStr(sMaandIn, "-")
+    If iSep > 0 Then
+        sM = Trim(Left(sMaandIn, iSep - 1))
+        sJ = Trim(Mid(sMaandIn, iSep + 1))
+    End If
+    If iSep = 0 Or Not IsNumeric(sM) Or Not IsNumeric(sJ) Then
+        MsgBox "Ongeldige invoer: " & sMaandIn & Chr(10) & _
+               "Verwacht MM/JJJJ, bv. 06/2026.", 16, "KoffieWeekbestand"
+        Exit Sub
+    End If
+    If CInt(sM) < 1 Or CInt(sM) > 12 Or CInt(sJ) < 2020 Or CInt(sJ) > 2100 Then
+        MsgBox "Ongeldige maand/jaar: " & sMaandIn & Chr(10) & _
+               "Verwacht MM/JJJJ, bv. 06/2026.", 16, "KoffieWeekbestand"
+        Exit Sub
+    End If
+    iFiltMaand = CInt(sM)
+    iFiltJaar  = CInt(sJ)
+    sFiltDatum = iFiltJaar & "-" & Right("0" & iFiltMaand, 2) & "-01"
+
     If BepaalOmgeving() = "dev" Then sOmgSuffix = "-dev" Else sOmgSuffix = ""
 
     Dim sWeekMap As String
