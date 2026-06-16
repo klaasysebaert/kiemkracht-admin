@@ -1829,6 +1829,32 @@ Sub MaakPrint()
         End If
     Next dd
 
+    ' --- Koffie-orderpicking (indien die week aangemaakt) ---
+    ' De koffiebestanden staan in de zustermap "<jaar>_week_<wk>_koffie\"
+    ' naast het groenten-weekbestand, met basis "koffie_<groentenbestandsnaam>".
+    Dim iSlash      As Integer
+    Dim sWkDir      As String
+    Dim sWkFile     As String
+    Dim sKoffieBase As String
+    Dim sKoffiePad  As String
+    iSlash = InStrRev(sWkPath, "\")
+    If iSlash > 0 Then
+        sWkDir      = Left(sWkPath, iSlash - 1)
+        sWkFile     = Mid(sWkPath, iSlash + 1)
+        sKoffieBase = sWkDir & "_koffie\koffie_" & Left(sWkFile, Len(sWkFile) - 4)
+        For dd = 0 To 6
+            sKoffiePad = sKoffieBase & "_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt"
+            If FileExists(sKoffiePad) Then
+                sPaths(nPaths) = sKoffiePad : nPaths = nPaths + 1
+            End If
+        Next dd
+        ' bestellingen zonder gekende klaarmaak-dag
+        sKoffiePad = sKoffieBase & "_orderpicking_afhaalpunt_zonder_dag.odt"
+        If FileExists(sKoffiePad) Then
+            sPaths(nPaths) = sKoffiePad : nPaths = nPaths + 1
+        End If
+    End If
+
     If nPaths = 0 Then
         MsgBox "Geen documenten gevonden om af te drukken. " & _
                "Controleer of je de macro hebt uitgevoerd vanuit het weekbestand " & _
