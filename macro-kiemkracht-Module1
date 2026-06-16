@@ -3705,7 +3705,8 @@ Sub KoffieWeekbestand()
     oRS = oStmt.executeQuery( _
         "SELECT id, COALESCE(klant_id::text,''), voornaam, familienaam, " & _
         "       klant_email, COALESCE(telefoon,''), afhaalpunt, " & _
-        "       COALESCE(vragen_opmerkingen,'') " & _
+        "       COALESCE(vragen_opmerkingen,''), " & _
+        "       to_char(aangemaakt AT TIME ZONE 'Europe/Brussels', 'DD/MM/YYYY HH24:MI') " & _
         "FROM koffie_bestellingen " & _
         "ORDER BY aangemaakt")
     nBest = 0
@@ -3718,6 +3719,7 @@ Sub KoffieWeekbestand()
         bTel(nBest)     = oRS.getString(6)
         bAfh(nBest)     = oRS.getString(7)
         bOpm(nBest)     = oRS.getString(8)
+        bBesteld(nBest) = oRS.getString(9)
         nBest = nBest + 1
     Loop
     oRS.close() : oStmt.close()
