@@ -1365,6 +1365,7 @@ Sub KoffieOrderpicking()
     Const cNaam  = 0
     Const cAfh   = 1
     Const cKlDag = 2
+    Const cOpm   = 4
     Const cProd0 = 9
     Const nProd  = 18
 

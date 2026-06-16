@@ -110,6 +110,11 @@ Sub StartMaakOverzichten()
     MaakOverzichten()
 End Sub
 
+Sub StartKoffieOrderpicking()
+    ReloadKiemkracht()
+    KoffieOrderpicking()
+End Sub
+
 Sub StartVoegNieuweKlantToe()
     ReloadKiemkracht()
     VoegNieuweKlantToe()
