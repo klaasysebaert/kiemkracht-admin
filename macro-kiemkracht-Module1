@@ -3952,6 +3952,16 @@ Sub KoffieWeekbestand()
         Next p
     Next b
 
+    ' --- Kolomtotalen in rij 4 (J4:AA4): som per product. De som loopt tot
+    ' 10 rijen onder de laatste bestelling, zodat handmatig bijgevoegde
+    ' bestelregels automatisch meegeteld worden. ---
+    iSomTot = nBest + 14        ' laatste bestelrij (= nBest+4) + 10 extra rijen
+    For p = 0 To 17
+        sKol = KolomLetter(cProd0 + p)
+        oSheet.getCellByPosition(cProd0 + p, 3).setFormula( _
+            "=SUM(" & sKol & "5:" & sKol & iSomTot & ")")
+    Next p
+
     ' Opslaan
     sUrl = ConvertToURL(sBestand)
     Dim aSaveProps(0) As New com.sun.star.beans.PropertyValue
