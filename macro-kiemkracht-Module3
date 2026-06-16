@@ -1465,6 +1465,14 @@ Sub KoffieOrderpicking()
             End If
         Next p
 
+        ' Opmerkingen van de klant (kolom E) — eventuele interne regeleindes
+        ' platslaan zodat het één "Opm.: …"-regel blijft.
+        sOpm = oWkSheet.getCellByPosition(cOpm, i).getString()
+        If InStr(sOpm, Chr(13)) > 0 Then sOpm = Join(Split(sOpm, Chr(13)), " ")
+        If InStr(sOpm, Chr(10)) > 0 Then sOpm = Join(Split(sOpm, Chr(10)), " ")
+        sOpm = Trim(sOpm)
+        If sOpm <> "" Then sBlok = sBlok & Chr(10) & "Opm.: " & sOpm
+
         If nBlok <= 500 Then
             aBlok(nBlok) = sBlok
             aAfh2(nBlok) = sAfh2
