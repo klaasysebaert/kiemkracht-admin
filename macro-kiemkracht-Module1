@@ -3621,6 +3621,7 @@ Sub KoffieWeekbestand()
     Dim bTel(500)     As String
     Dim bAfh(500)     As String
     Dim bOpm(500)     As String
+    Dim bBesteld(500) As String
     Dim bType(500)    As String
     Dim bKlaarDag(500) As String
     Dim bAant(500, 17) As Integer
