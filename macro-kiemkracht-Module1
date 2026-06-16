@@ -3960,7 +3960,7 @@ Sub KoffieWeekbestand()
     For b = 0 To nBest - 1
         r = 4 + b
         oSheet.getCellByPosition(cNaam,  r).setString(Trim(bVoor(b) & " " & bFam(b)))
-        oSheet.getCellByPosition(cAfh,   r).setString(bAfh(b))
+        oSheet.getCellByPosition(cAfh,   r).setString(bAfhKort(b))
         oSheet.getCellByPosition(cKlDag, r).setString(bKlaarDag(b))
         oSheet.getCellByPosition(cTyp,   r).setString(bType(b))
         oSheet.getCellByPosition(cOpm,   r).setString(bOpm(b))
