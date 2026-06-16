@@ -3955,11 +3955,14 @@ Sub KoffieWeekbestand()
     Dim aSaveProps(0) As New com.sun.star.beans.PropertyValue
     aSaveProps(0).Name  = "FilterName"
     aSaveProps(0).Value = "calc8"
-    oNieuwDoc.storeToURL(sUrl, aSaveProps())
+    ' storeAsURL (niet storeToURL): koppelt het open venster aan dit bestand,
+    ' zodat het bestand-met-naam open blijft i.p.v. een "Geen titel"-document.
+    oNieuwDoc.storeAsURL(sUrl, aSaveProps())
 
     SluitSSHTunnels()
     MsgBox "Koffie-weekbestand opgeslagen:" & Chr(10) & sBestand & Chr(10) & _
-           Chr(10) & nBest & " bestelling(en) verwerkt.", 64, "KoffieWeekbestand"
+           Chr(10) & nBest & " bestelling(en) uit " & saMaanden(iFiltMaand) & " " & _
+           iFiltJaar & " verwerkt.", 64, "KoffieWeekbestand"
     Exit Sub
 
 VerbindingsFout:
