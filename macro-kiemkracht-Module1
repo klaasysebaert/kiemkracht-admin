@@ -3966,6 +3966,24 @@ Sub KoffieWeekbestand()
 
     ' Opslaan
     sUrl = ConvertToURL(sBestand)
+
+    ' Sluit een eventueel reeds open exemplaar van dit bestand (bv. nog open
+    ' van een vorige run): storeAsURL faalt anders met "AlreadyExists" omdat
+    ' de URL al aan een open venster gekoppeld is. Nooit het data-document.
+    If FileExists(sBestand) Then
+        oEnum = StarDesktop.Components.createEnumeration()
+        Do While oEnum.hasMoreElements()
+            oComp = oEnum.nextElement()
+            If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
+                If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                    If sUrl = oComp.getURL() And Not (oComp Is oCallerDoc) Then
+                        oComp.close(True)
+                    End If
+                End If
+            End If
+        Loop
+    End If
+
     Dim aSaveProps(0) As New com.sun.star.beans.PropertyValue
     aSaveProps(0).Name  = "FilterName"
     aSaveProps(0).Value = "calc8"
