@@ -1422,6 +1422,7 @@ Sub KoffieOrderpicking()
     Dim sAfh2      As String
     Dim sKlaarDag  As String
     Dim sBlok      As String
+    Dim sOpm       As String
     Dim sAant      As String
     Dim nAant      As Double
     Dim bHasP      As Boolean
