@@ -1456,7 +1456,7 @@ Sub MaakWeekbestand()
     ' De kop (rij 2) breekt af (wrap) en is dus niet bepalend; enkel rij 3 telt.
     ' Schatting op tekenlengte: ~190 (1/100 mm) per teken + marge. De vaste tekst
     ' " € / " = 5 tekens; de prijs heeft altijd 2 decimalen (Format "0.00").
-    ' 2300 = minimum (normale "… € / kg"-kolommen blijven gelijk), 4000 = plafond.
+    ' 2300 = minimum (normale "… € / kg"-kolommen blijven gelijk), 4200 = plafond.
     Dim nLenR3 As Integer
     Dim nWdtR3 As Long
     For ci = 0 To nGroentSlots - 1
