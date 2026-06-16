@@ -3882,7 +3882,8 @@ Sub KoffieWeekbestand()
         oSheet.getCellByPosition(cTyp,   r).setString(bType(b))
         oSheet.getCellByPosition(cOpm,   r).setString(bOpm(b))
         oSheet.getCellByPosition(cEmail, r).setString(bEmail(b))
-        oSheet.getCellByPosition(cTel,   r).setString(bTel(b))
+        oSheet.getCellByPosition(cTel,     r).setString(bTel(b))
+        oSheet.getCellByPosition(cBesteld, r).setString(bBesteld(b))
         If bKlantId(b) <> "" Then
             oSheet.getCellByPosition(cKlId, r).setValue(CDbl(bKlantId(b)))
         End If
