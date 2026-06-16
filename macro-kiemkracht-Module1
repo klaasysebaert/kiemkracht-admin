@@ -1451,9 +1451,23 @@ Sub MaakWeekbestand()
     For ci = 0 To 23
         oSheet.Columns.getByIndex(ci).Width = aBreedtes(ci)
     Next ci
-    ' Losse groenten: altijd 24 slots à 2,30 cm elk
+    ' Losse groenten: basisbreedte 2,30 cm per slot, maar breder als de prijsregel
+    ' in rij 3 ("<prijs> € / <eenheid>") niet past — anders toont LibreOffice "###".
+    ' De kop (rij 2) breekt af (wrap) en is dus niet bepalend; enkel rij 3 telt.
+    ' Schatting op tekenlengte: ~190 (1/100 mm) per teken + marge. De vaste tekst
+    ' " € / " = 5 tekens; de prijs heeft altijd 2 decimalen (Format "0.00").
+    ' 2300 = minimum (normale "… € / kg"-kolommen blijven gelijk), 4000 = plafond.
+    Dim nLenR3 As Integer
+    Dim nWdtR3 As Long
     For ci = 0 To nGroentSlots - 1
-        oSheet.Columns.getByIndex(cGroent0 + ci).Width = 2300
+        nWdtR3 = 2300
+        If ci < nGroenten Then
+            nLenR3 = Len(Format(groentPrijs(ci), "0.00")) + 5 + Len(groentEenh(ci))
+            nWdtR3 = 190 * nLenR3 + 200
+            If nWdtR3 < 2300 Then nWdtR3 = 2300
+            If nWdtR3 > 4000 Then nWdtR3 = 4000
+        End If
+        oSheet.Columns.getByIndex(cGroent0 + ci).Width = nWdtR3
     Next ci
     ' Invoerhulp op de losse-groente-slots: wijs op de macro VoegLosseGroenteToe
     ZetLosseGroenteTip(oSheet)
