@@ -1381,6 +1381,35 @@ Sub MaakWeekbestand()
             "=SUMIF($C$7:$C$" & iLaatste & ";""vrijdag"";" & sK & "7:" & sK & iLaatste & ")")
     Next ic
 
+    ' Weglatingen (AZ..BK) — aantal keer dat een groente weggelaten wordt, over
+    ' ALLE klanten samen (onafhankelijk van pakketformaat), gesplitst per dag
+    ' klaarmaken (kolom C) net als de pakket-/lossetotalen hierboven. De
+    ' weglatingcellen in de klantrijen bevatten de groentenaam (tekst) als de
+    ' groente weggelaten is, dus tellen = niet-lege cellen tellen: SUMPRODUCT op
+    ' (<kol>7:<kol>last<>"") i.p.v. SUM. Rij 4 = totaal (do+vr), rij 5 =
+    ' donderdag, rij 6 = vrijdag (code-rijen 3/4/5).
+    ' IF-guard op de koprij (rij 3): enkel tellen als het slot een groentenaam
+    ' heeft. Groente in het pakket maar nergens weggelaten -> 0; ongebruikt slot
+    ' (lege koprij) -> leeg (geen 0). De guard past zich ook aan een handmatig
+    ' toegevoegde weglating-groente aan.
+    Dim sWK     As String
+    Dim sWRange As String
+    Dim sCDag   As String
+    sCDag = "$C$7:$C$" & iLaatste
+    For ic = cWeg0 To cWeg0 + nWegSlots - 1
+        sWK = KolomLetter(ic)
+        sWRange = sWK & "7:" & sWK & iLaatste
+        ' Totaal (spreadsheet rij 4)
+        oSheet.getCellByPosition(ic, 3).setFormula( _
+            "=IF(" & sWK & "$3="""";"""";SUMPRODUCT((" & sWRange & "<>"""")*1))")
+        ' Donderdag (spreadsheet rij 5)
+        oSheet.getCellByPosition(ic, 4).setFormula( _
+            "=IF(" & sWK & "$3="""";"""";SUMPRODUCT((" & sWRange & "<>"""")*(" & sCDag & "=""donderdag"")))")
+        ' Vrijdag (spreadsheet rij 6)
+        oSheet.getCellByPosition(ic, 5).setFormula( _
+            "=IF(" & sWK & "$3="""";"""";SUMPRODUCT((" & sWRange & "<>"""")*(" & sCDag & "=""vrijdag"")))")
+    Next ic
+
     ' =============================================
     ' OPMAAK TOEPASSEN
     ' =============================================
