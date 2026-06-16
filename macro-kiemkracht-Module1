@@ -3665,6 +3665,8 @@ Sub KoffieWeekbestand()
     Dim oDesktop  As Object
     Dim oNieuwDoc As Object
     Dim oSheet    As Object
+    Dim oComp     As Object
+    Dim oEnum     As Object
     Dim sUrl      As String
 
     Dim iFiltMaand    As Integer
