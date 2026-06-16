@@ -3671,9 +3671,10 @@ Sub KoffieWeekbestand()
     Const cTyp   = 3
     Const cOpm   = 4
     Const cEmail = 5
-    Const cTel   = 6
-    Const cKlId  = 7
-    Const cProd0 = 8
+    Const cTel     = 6
+    Const cKlId    = 7
+    Const cBesteld = 8
+    Const cProd0   = 9
 
     oCallerDoc = HuidigDataDocument()
     If IsNull(oCallerDoc) Then
