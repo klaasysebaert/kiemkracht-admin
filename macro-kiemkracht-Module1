@@ -3901,6 +3901,28 @@ Sub KoffieWeekbestand()
         End If
     Next b
 
+    ' --- Stap 4d: korte afhaalpuntnaam (zoals in de groenten-lijsten) ---
+    ' Het formulier bewaart de lange publieke naam (naam_publiek) als
+    ' afhaalpunt-string. Map die terug naar de interne korte naam
+    ' (afhaalpunten.naam), zodat weekbestand en orderpicking dezelfde korte
+    ' naam tonen als bij de groenten. Geen match (bv. grondvast-vrije tekst)
+    ' → lange naam behouden.
+    For b = 0 To nBest - 1
+        bAfhKort(b) = bAfh(b)
+        If bAfh(b) <> "" Then
+            sZoek = LCase(bAfh(b))
+            For i = 0 To nAp - 1
+                If apNaam(i) <> "" Then
+                    If LCase(apNaamPub(i)) = sZoek Or LCase(apNaam(i)) = sZoek _
+                       Or (apNaamPub(i) <> "" And InStr(sZoek, LCase(apNaamPub(i))) > 0) Then
+                        bAfhKort(b) = apNaam(i)
+                        Exit For
+                    End If
+                End If
+            Next i
+        End If
+    Next b
+
     oConnG.close()
     oConnK.close()
 
