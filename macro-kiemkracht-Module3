@@ -1089,6 +1089,7 @@ Sub MaakOverzichten()
             Loop
             Wait 250
             sOdtPath3 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_afweeglijst_" & LCase(aDagen(d)) & ".odt"
+            SluitIndienOpen(ConvertToURL(sOdtPath3))
             oWriter3.storeToURL(ConvertToURL(sOdtPath3), aSave())
             oWriter3.close(True)
 
