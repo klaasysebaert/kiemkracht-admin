@@ -839,6 +839,7 @@ Sub MaakOverzichten()
         Loop
         Wait 250
         sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_oogstlijst_" & sD & ".odt"
+        SluitIndienOpen(ConvertToURL(sOdtPath2))
         oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
         If nOdtPath2 <= 9 Then : aOdtPath2(nOdtPath2) = sOdtPath2 : nOdtPath2 = nOdtPath2 + 1 : End If
         oWriter2.close(True)
