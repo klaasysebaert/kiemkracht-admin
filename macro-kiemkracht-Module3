@@ -1774,6 +1774,26 @@ DebugFout:
 End Sub
 
 ' =============================================
+' Kiemkracht - Sluit een reeds open document met deze URL
+' Voorkomt dat storeToURL faalt met "AlreadyExists" (0x440a) wanneer het
+' doelbestand nog open staat (vorige run of handmatig geopend). Werkt voor
+' Writer- én Calc-documenten; doet niets als het bestand niet open is. Een
+' document-in-aanbouw (nog geen URL) wordt nooit geraakt.
+' =============================================
+Sub SluitIndienOpen(sUrl As String)
+    If sUrl = "" Then Exit Sub
+    Dim oEnum As Object
+    Dim oComp As Object
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oComp = oEnum.nextElement()
+        If HasUnoInterfaces(oComp, "com.sun.star.frame.XModel") Then
+            If oComp.getURL() = sUrl Then oComp.close(True)
+        End If
+    Loop
+End Sub
+
+' =============================================
 ' Kiemkracht - Alle overzichten afdrukken
 ' Drukt alle gegenereerde .odt-bestanden af naast het weekbestand.
 ' Afweeglijst per dag wordt 2x afgedrukt (dubbel exemplaar).
