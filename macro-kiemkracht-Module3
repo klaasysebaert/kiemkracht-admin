@@ -648,6 +648,7 @@ Sub MaakOverzichten()
         Loop
 
         sOdtPathF = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_per_klant_formaat_" & LCase(sD) & ".odt"
+        SluitIndienOpen(ConvertToURL(sOdtPathF))
         oWriterF.storeToURL(ConvertToURL(sOdtPathF), aSave())
         If nOdtPath1b <= 9 Then : aOdtPath1b(nOdtPath1b) = sOdtPathF : nOdtPath1b = nOdtPath1b + 1 : End If
         oWriterF.close(True)
