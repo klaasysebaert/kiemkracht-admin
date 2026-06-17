@@ -1860,15 +1860,17 @@ Sub MaakPrint()
     ' --- Koffie-orderpicking (indien die week aangemaakt) ---
     ' De koffiebestanden staan in de zustermap "<jaar>_week_<wk>_koffie\"
     ' naast het groenten-weekbestand, met basis "koffie_<groentenbestandsnaam>".
-    Dim iSlash      As Integer
+    ' Laatste pad-element (bestandsnaam) via Split — InStrRev bestaat niet in
+    ' native LO Basic (enkel met Option VBASupport).
+    Dim aWkDelen()  As String
     Dim sWkDir      As String
     Dim sWkFile     As String
     Dim sKoffieBase As String
     Dim sKoffiePad  As String
-    iSlash = InStrRev(sWkPath, "\")
-    If iSlash > 0 Then
-        sWkDir      = Left(sWkPath, iSlash - 1)
-        sWkFile     = Mid(sWkPath, iSlash + 1)
+    aWkDelen = Split(sWkPath, "\")
+    sWkFile  = aWkDelen(UBound(aWkDelen))
+    If Len(sWkPath) > Len(sWkFile) Then
+        sWkDir      = Left(sWkPath, Len(sWkPath) - Len(sWkFile) - 1)
         sKoffieBase = sWkDir & "_koffie\koffie_" & Left(sWkFile, Len(sWkFile) - 4)
         For dd = 0 To 6
             sKoffiePad = sKoffieBase & "_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt"
