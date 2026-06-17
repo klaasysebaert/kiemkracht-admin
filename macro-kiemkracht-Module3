@@ -1303,6 +1303,7 @@ Sub MaakOverzichten()
                 Wait 250
 
                 sOdtPath4 = Left(sWkPath, Len(sWkPath) - 4) & "_weglatingen_" & LCase(aDagen(d)) & ".odt"
+                SluitIndienOpen(ConvertToURL(sOdtPath4))
                 oWriter4.storeToURL(ConvertToURL(sOdtPath4), aSave())
                 If d = nDagen - 1 Then
                     ' tweede write op het laatste bestand: vangt verloren Explorer-notificatie op
