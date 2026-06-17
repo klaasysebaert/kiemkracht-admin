@@ -1858,30 +1858,35 @@ Sub MaakPrint()
     Next dd
 
     ' --- Koffie-orderpicking (indien die week aangemaakt) ---
-    ' De koffiebestanden staan in de zustermap "<jaar>_week_<wk>_koffie\"
-    ' naast het groenten-weekbestand, met basis "koffie_<groentenbestandsnaam>".
-    ' Laatste pad-element (bestandsnaam) via Split — InStrRev bestaat niet in
-    ' native LO Basic (enkel met Option VBASupport).
-    Dim aWkDelen()  As String
-    Dim sWkDir      As String
-    Dim sWkFile     As String
-    Dim sKoffieBase As String
-    Dim sKoffiePad  As String
+    ' De koffiebestanden staan in de zustermap "<jaar>_week_<wk>_koffie\" naast
+    ' het groenten-weekbestand. De groenten-bestandsnaam kan een suffix dragen
+    ' (bv. "_definitief"), dus we leiden enkel de MAP af en zoeken daar met een
+    ' wildcard naar de orderpicking-bestanden — ongeacht hun basisnaam.
+    ' (InStrRev bestaat niet in native LO Basic; vandaar Split voor het pad.)
+    Dim aWkDelen()   As String
+    Dim sWkDir       As String
+    Dim sWkFile      As String
+    Dim sKoffieMap   As String
+    Dim sKoffieNaam  As String
     aWkDelen = Split(sWkPath, "\")
     sWkFile  = aWkDelen(UBound(aWkDelen))
     If Len(sWkPath) > Len(sWkFile) Then
-        sWkDir      = Left(sWkPath, Len(sWkPath) - Len(sWkFile) - 1)
-        sKoffieBase = sWkDir & "_koffie\koffie_" & Left(sWkFile, Len(sWkFile) - 4)
-        For dd = 0 To 6
-            sKoffiePad = sKoffieBase & "_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt"
-            If FileExists(sKoffiePad) Then
-                sPaths(nPaths) = sKoffiePad : nPaths = nPaths + 1
-            End If
-        Next dd
-        ' bestellingen zonder gekende klaarmaak-dag
-        sKoffiePad = sKoffieBase & "_orderpicking_afhaalpunt_zonder_dag.odt"
-        If FileExists(sKoffiePad) Then
-            sPaths(nPaths) = sKoffiePad : nPaths = nPaths + 1
+        sWkDir     = Left(sWkPath, Len(sWkPath) - Len(sWkFile) - 1)
+        sKoffieMap = sWkDir & "_koffie\"
+        If FileExists(sKoffieMap) Then
+            For dd = 0 To 6
+                sKoffieNaam = Dir(sKoffieMap & "*_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt")
+                Do While sKoffieNaam <> ""
+                    sPaths(nPaths) = sKoffieMap & sKoffieNaam : nPaths = nPaths + 1
+                    sKoffieNaam = Dir()
+                Loop
+            Next dd
+            ' bestellingen zonder gekende klaarmaak-dag
+            sKoffieNaam = Dir(sKoffieMap & "*_orderpicking_afhaalpunt_zonder_dag.odt")
+            Do While sKoffieNaam <> ""
+                sPaths(nPaths) = sKoffieMap & sKoffieNaam : nPaths = nPaths + 1
+                sKoffieNaam = Dir()
+            Loop
         End If
     End If
 
