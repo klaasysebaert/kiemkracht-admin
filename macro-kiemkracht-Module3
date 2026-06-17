@@ -1743,21 +1743,7 @@ Sub KoffieOrderpicking()
         sDagFile = Join(Split(LCase(sD), " "), "_")
         sOdtPath = Left(sWkPath, Len(sWkPath) - 4) & "_orderpicking_afhaalpunt_" & sDagFile & ".odt"
         sOdtUrl  = ConvertToURL(sOdtPath)
-
-        ' Sluit een eventueel reeds open exemplaar van dit doelbestand (bv. nog
-        ' open van een vorige run of handmatig geopend): storeToURL faalt anders
-        ' met "AlreadyExists" (0x440a). oWriter zelf heeft nog geen URL en wordt
-        ' dus niet geraakt.
-        oEnSluit = StarDesktop.Components.createEnumeration()
-        Do While oEnSluit.hasMoreElements()
-            oCompSluit = oEnSluit.nextElement()
-            If HasUnoInterfaces(oCompSluit, "com.sun.star.lang.XServiceInfo") Then
-                If oCompSluit.supportsService("com.sun.star.text.TextDocument") Then
-                    If oCompSluit.getURL() = sOdtUrl Then oCompSluit.close(True)
-                End If
-            End If
-        Loop
-
+        SluitIndienOpen(sOdtUrl)
         oWriter.storeToURL(sOdtUrl, aSave())
         If nOdtPath1 <= 9 Then : aOdtPath1(nOdtPath1) = sOdtPath : nOdtPath1 = nOdtPath1 + 1 : End If
         oWriter.close(True)
