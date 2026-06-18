@@ -1883,10 +1883,12 @@ Sub MaakMaandbestand()
     oOp.getCellByPosition(5, 0).setString("Betaling 2")
     oOp.getCellByPosition(6, 0).setString("Totaal betaald")
     oOp.getCellByPosition(7, 0).setString("Nog te betalen")
-    Dim oHdrOp As Object : oHdrOp = oOp.getCellRangeByPosition(0, 0, 7, 0)
+    oOp.getCellByPosition(8, 0).setString("Email")        ' I = afrekening.D (Email)
+    oOp.getCellByPosition(9, 0).setString("Voornaam")     ' J = afrekening.E (Voornaam)
+    Dim oHdrOp As Object : oHdrOp = oOp.getCellRangeByPosition(0, 0, 9, 0)
     oHdrOp.CharWeight = com.sun.star.awt.FontWeight.BOLD
     oHdrOp.CellBackColor = RGB(204, 204, 204)
-    oOp.getCellRangeByPosition(0, 1, 7, 5).CellBackColor = RGB(242, 242, 242)
+    oOp.getCellRangeByPosition(0, 1, 9, 5).CellBackColor = RGB(242, 242, 242)
     Dim roOp As Integer, sRij As String
     For roOp = 6 To ro - 1
         sRij = CStr(roOp + 1)
