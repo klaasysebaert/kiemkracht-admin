@@ -1898,6 +1898,8 @@ Sub MaakMaandbestand()
         oOp.getCellByPosition(3, roOp).setFormula("=afrekening.G" & sRij)   ' Saldo
         oOp.getCellByPosition(6, roOp).setFormula("=E" & sRij & "+F" & sRij)   ' Totaal betaald
         oOp.getCellByPosition(7, roOp).setFormula("=D" & sRij & "-G" & sRij)   ' Nog te betalen
+        oOp.getCellByPosition(8, roOp).setFormula("=afrekening.D" & sRij)   ' Email
+        oOp.getCellByPosition(9, roOp).setFormula("=afrekening.E" & sRij)   ' Voornaam
     Next roOp
     ' Getalopmaak D (Saldo), G (Totaal betaald), H (Nog te betalen)
     Dim oFmtsOp As Object : oFmtsOp = oOut.getNumberFormats()
