@@ -1917,6 +1917,8 @@ Sub MaakMaandbestand()
     oOp.Columns.getByIndex(2).Width = 5260   ' C Voornaam2 Familienaam2
     oOp.Columns.getByIndex(3).Width = 5000   ' D Saldo
     oOp.Columns.getByIndex(6).Width = 2700   ' G Totaal betaald = 2,70 cm
+    oOp.Columns.getByIndex(8).Width = 5000   ' I Email
+    oOp.Columns.getByIndex(9).Width = 2400   ' J Voornaam = 2,40 cm
 
     ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
     ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
