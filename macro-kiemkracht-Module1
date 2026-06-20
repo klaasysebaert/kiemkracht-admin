@@ -306,6 +306,36 @@ Sub LaadAlleTabellen()
     oRS.close()
     oStmt.close()
 
+    ' --- Nieuwe uitschrijvers voor de aanbodmail (opt-out) verzamelen + markeren ---
+    ' Defensief: op een nog niet-gemigreerde DB ontbreken de kolommen → stil overslaan.
+    Dim oStu As Object, oRSu As Object
+    On Error Resume Next
+    oStu = oConn.createStatement()
+    oRSu = oStu.executeQuery( _
+        "SELECT voornaam, familienaam, COALESCE(email1,''), " & _
+        "COALESCE(to_char(mail_opt_out_op,'DD/MM/YYYY'),''), COALESCE(mail_opt_out_reden,'') " & _
+        "FROM klanten WHERE mail_opt_out = true AND mail_opt_out_gemeld = false " & _
+        "ORDER BY mail_opt_out_op")
+    If Err = 0 Then
+        Do While oRSu.next()
+            nUit = nUit + 1
+            sUit = sUit & "- " & Trim(oRSu.getString(1) & " " & oRSu.getString(2)) & _
+                   " (" & oRSu.getString(3) & ")"
+            If oRSu.getString(4) <> "" Then sUit = sUit & " - " & oRSu.getString(4)
+            If oRSu.getString(5) <> "" Then sUit = sUit & " - reden: " & oRSu.getString(5)
+            sUit = sUit & Chr(10)
+        Loop
+        oRSu.close()
+        oStu.close()
+        If nUit > 0 Then
+            oStu = oConn.createStatement()
+            oStu.executeUpdate("UPDATE klanten SET mail_opt_out_gemeld = true " & _
+                "WHERE mail_opt_out = true AND mail_opt_out_gemeld = false")
+            oStu.close()
+        End If
+    End If
+    On Error GoTo 0
+
     oConn.close()
     oIndicator.setValue(100)
     oIndicator.setText("Bijna klaar...")
