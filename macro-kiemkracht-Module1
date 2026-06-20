@@ -340,6 +340,8 @@ Sub LaadAlleTabellen()
     oIndicator.setValue(100)
     oIndicator.setText("Bijna klaar...")
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
+    If nUit > 0 Then MsgBox sUit, 48, nUit & " nieuwe uitschrijver(s) voor de aanbodmail" & _
+        Chr(10) & "(zie ook de mail_opt_out-kolommen in het klanten-tabblad)"
     oIndicator.end()
     SluitSSHTunnels()
     Exit Sub
