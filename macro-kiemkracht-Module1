@@ -121,6 +121,9 @@ Sub LaadAlleTabellen()
     Dim i            As Integer
     Dim col          As Integer
     Dim row          As Integer
+    Dim sUit         As String     ' lijst nieuwe uitschrijvers (opt-out aanbodmail)
+    Dim nUit         As Integer
+    sUit = "" : nUit = 0
 
     ' Tabellen om in te laden
     Dim tabellen(11)  As String
