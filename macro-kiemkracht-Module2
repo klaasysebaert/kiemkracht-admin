@@ -633,6 +633,7 @@ Sub BereidKoffieMailmergeVoor()
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "WHERE k.type NOT IN ('stop-tijdelijk', 'stop-definitief') " & _
+        "AND COALESCE(k.mail_opt_out, false) = false " & _
         "AND COALESCE(k.email1, '') <> '' " & _
         "ORDER BY k.familienaam, k.voornaam")
 
