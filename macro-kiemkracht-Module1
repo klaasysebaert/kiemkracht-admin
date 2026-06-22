@@ -454,9 +454,12 @@ Private Sub SchrijfBereik(oRange As Object, aHeader() As Variant, aData() As Var
     Dim aOut As Variant, aRij As Variant, aBron As Variant
     Dim c As Integer, r As Long
     aOut = oRange.getDataArray()
+    mStap = mStap & " [aOut=" & (UBound(aOut) + 1) & "r, aHeader=" & (UBound(aHeader) + 1) & _
+            ", aData=" & (UBound(aData) + 1) & ", nKol=" & nKol & ", nData=" & nData & "]"
 
     ' Koprij
     aRij = aOut(0)
+    mStap = mStap & " rij0len=" & (UBound(aRij) + 1)
     For c = 0 To nKol - 1
         aRij(c) = aHeader(c)
     Next c
