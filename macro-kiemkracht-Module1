@@ -154,153 +154,35 @@ Sub LaadAlleTabellen()
     oIndicator.start("Kiemkracht - tabellen laden", 100)
     oIndicator.setText("Verbinden met de database...")
 
-    ' JDBC-verbinding openen (juiste omgeving via MaakDBVerbinding)
-    On Error GoTo VerbindingsFout
-    oConn = MaakDBVerbinding()
-    On Error GoTo 0
+    ' Vanaf hier ALTIJD via Opkuis afronden: zo worden schermvergrendeling en
+    ' herberekening ook bij een fout halverwege netjes hersteld (geen bevroren
+    ' scherm of hangende voortgangsbalk meer).
+    On Error GoTo Opkuis
 
-    ' Loop over elke tabel
+    ' Schermopbouw en automatische herberekening uit tijdens het laden — samen
+    ' met setDataArray (zie helpers) is dit de grote snelheidswinst.
+    bAutoCalc = oDoc.isAutomaticCalculationEnabled()
+    oDoc.lockControllers()
+    bLocked = True
+    oDoc.enableAutomaticCalculation(False)
+
+    ' JDBC-verbinding openen (juiste omgeving via MaakDBVerbinding)
+    oConn = MaakDBVerbinding()
+
+    ' Loop over elke tabel — bulk inladen via één setDataArray (zie LaadTabelSnel)
     Dim nTabellen As Integer : nTabellen = UBound(tabellen) + 1
     For i = 0 To UBound(tabellen)
         Dim sNaam As String
         sNaam = tabellen(i)
-
         oIndicator.setValue((i + 1) * 80 \ nTabellen)
         oIndicator.setText("Laden: " & sNaam & " (" & (i + 1) & "/" & nTabellen & ")")
-
-        ' Tabblad aanmaken of leegmaken
-        If oSheets.hasByName(sNaam) Then
-            oSheet = oSheets.getByName(sNaam)
-            oSheet.clearContents(7)
-        Else
-            oSheets.insertNewByName(sNaam, oSheets.Count)
-            oSheet = oSheets.getByName(sNaam)
-        End If
-
-        ' Query uitvoeren
-        oStmt = oConn.createStatement()
-        oRS   = oStmt.executeQuery("SELECT * FROM " & sNaam)
-        oMeta = oRS.getMetaData()
-
-        Dim nKolommen As Integer
-        nKolommen = oMeta.getColumnCount()
-
-        ' Kolomhoofden schrijven (rij 0)
-        For col = 1 To nKolommen
-            oSheet.getCellByPosition(col - 1, 0).setString(oMeta.getColumnName(col))
-        Next col
-
-        ' Data schrijven
-        row = 1
-        Do While oRS.next()
-            If (row Mod 200) = 0 Then
-                oIndicator.setText("Laden: " & sNaam & " - " & row & " rijen")
-            End If
-            For col = 1 To nKolommen
-                Dim sVal As String
-                sVal = oRS.getString(col)
-                If oRS.wasNull() Then
-                    oSheet.getCellByPosition(col - 1, row).setString("")
-                Else
-                    Dim nType As Integer
-                    nType = oMeta.getColumnType(col)
-                    If (nType >= 2 And nType <= 8) Then
-                        On Error Resume Next
-                        Dim dVal As Double
-                        dVal = CDbl(Replace(sVal, ".", ","))
-                        If Err = 0 Then
-                            oSheet.getCellByPosition(col - 1, row).setValue(dVal)
-                        Else
-                            oSheet.getCellByPosition(col - 1, row).setString(sVal)
-                        End If
-                        On Error GoTo 0
-                    Else
-                        oSheet.getCellByPosition(col - 1, row).setString(sVal)
-                    End If
-                End If
-            Next col
-            row = row + 1
-        Loop
-
-        oRS.close()
-        oStmt.close()
-
+        LaadTabelSnel(oSheets, oConn, sNaam)
     Next i
 
-    ' Aantal klanten ophalen voor een vloeiende voortgangsbalk in de
-    ' klanten_beheer-fase (anders staat de balk lang stil op 80%).
-    Dim nKlanten As Integer
-    nKlanten = 0
-    oStmt = oConn.createStatement()
-    oRS = oStmt.executeQuery("SELECT COUNT(*) FROM klanten")
-    If oRS.next() Then nKlanten = oRS.getInt(1)
-    oRS.close()
-    oStmt.close()
-    If nKlanten < 1 Then nKlanten = 1
-
-    oIndicator.setValue(80)
+    ' klanten_beheer: geselecteerde kolommen, bulk via setDataArray (zie LaadKlantenBeheer)
+    oIndicator.setValue(85)
     oIndicator.setText("Laden: klanten_beheer (12/12)")
-
-    ' --- klanten_beheer: geselecteerde kolommen schrijven vanaf kolom F (index 5) ---
-    Dim oKB As Object
-    If oSheets.hasByName("klanten_beheer") Then
-        oKB = oSheets.getByName("klanten_beheer")
-    Else
-        oSheets.insertNewByName("klanten_beheer", oSheets.Count)
-        oKB = oSheets.getByName("klanten_beheer")
-    End If
-
-    Dim kbKol(15) As String
-    kbKol(0)  = "voornaam"         : kbKol(1)  = "familienaam"
-    kbKol(2)  = "voornaam2"        : kbKol(3)  = "familienaam2"
-    kbKol(4)  = "afhaalpunt_id"    : kbKol(5)  = "type"
-    kbKol(6)  = "formaat"          : kbKol(7)  = "email1"
-    kbKol(8)  = "email2"           : kbKol(9)  = "email3"
-    kbKol(10) = "email4"           : kbKol(11) = "telefoon"
-    kbKol(12) = "opmerkingen"      : kbKol(13) = "opmerkingen_volgend"
-    kbKol(14) = "opmerking_status" : kbKol(15) = "nooit_groenten"
-    Dim nKBKol As Integer : nKBKol = 16
-
-    ' Kolommen F-J (5-9) en L-V (11-21) wissen; K (10) bevat gebruikersformules
-    oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
-    oKB.getCellRangeByPosition(11, 0, 21, 10000).clearContents(7)
-
-    ' Kolomhoofden schrijven in rij 0
-    Dim kbIdx As Integer
-    For kbIdx = 0 To nKBKol - 1
-        oKB.getCellByPosition(KBKolom(kbIdx), 0).setString(kbKol(kbIdx))
-    Next kbIdx
-
-    ' Data schrijven (zelfde volgorde als klanten-tabblad, geen ORDER BY)
-    oStmt = oConn.createStatement()
-    oRS = oStmt.executeQuery( _
-        "SELECT voornaam, familienaam, voornaam2, familienaam2, afhaalpunt_id, " & _
-        "type, formaat, email1, email2, email3, email4, telefoon, " & _
-        "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten " & _
-        "FROM klanten")
-    Dim kbRow As Integer
-    kbRow = 1
-    ' Statusbalk actief houden tijdens het schrijven van klanten_beheer,
-    ' anders valt hij terug op de standaardweergave ("Blad x van y").
-    oIndicator.setText("Laden: klanten_beheer...")
-    Do While oRS.next()
-        If (kbRow Mod 50) = 0 Then
-            oIndicator.setValue(80 + Int(kbRow / nKlanten * 18))
-            oIndicator.setText("Laden: klanten_beheer - " & kbRow & " rijen")
-        End If
-        For kbIdx = 1 To nKBKol
-            Dim kbVal As String
-            kbVal = oRS.getString(kbIdx)
-            If oRS.wasNull() Then
-                oKB.getCellByPosition(KBKolom(kbIdx - 1), kbRow).setString("")
-            Else
-                oKB.getCellByPosition(KBKolom(kbIdx - 1), kbRow).setString(kbVal)
-            End If
-        Next kbIdx
-        kbRow = kbRow + 1
-    Loop
-    oRS.close()
-    oStmt.close()
+    LaadKlantenBeheer(oSheets, oConn)
 
     ' --- Nieuwe uitschrijvers voor de aanbodmail (opt-out) verzamelen + markeren ---
     ' Defensief: op een nog niet-gemigreerde DB ontbreken de kolommen → stil overslaan.
