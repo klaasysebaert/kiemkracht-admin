@@ -306,6 +306,7 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     Next col
 
     ' Jagged array opbouwen: element 0 = koprij, daarna de datarijen
+    mStap = sNaam & " — rijen inlezen"
     ReDim aData(nRows)
     aData(0) = aHdr()
     r = 1
