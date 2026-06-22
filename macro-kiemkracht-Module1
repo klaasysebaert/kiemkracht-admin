@@ -453,46 +453,6 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
 End Sub
 
 
-' ---------------------------------------------------------------------------
-' SchrijfBereik — schrijft een koprij + datarijen in één keer naar een bereik.
-' Cruciaal: het sjabloon (aOut) wordt door het bereik ZELF geleverd via
-' getDataArray(), zodat het gegarandeerd de juiste UNO-structuur heeft
-' (sequence<sequence<any>>). Een volledig in Basic opgebouwde geneste array
-' wordt door setDataArray soms geweigerd met een lege RuntimeException.
-'   aHeader : nKol kolomkoppen (rij 0)
-'   aData   : aData(0..nData-1), elk een array van nKol waarden
-' ---------------------------------------------------------------------------
-Private Sub SchrijfBereik(oRange As Object, aHeader() As Variant, aData() As Variant, nData As Long, nKol As Integer)
-    Dim aOut As Variant, aRij As Variant, aBron As Variant
-    Dim c As Integer, r As Long
-    aOut = oRange.getDataArray()
-    mStap = mStap & " [aOut=" & (UBound(aOut) + 1) & "r, aHeader=" & (UBound(aHeader) + 1) & _
-            ", aData=" & (UBound(aData) + 1) & ", nKol=" & nKol & ", nData=" & nData & "]"
-
-    ' Koprij
-    aRij = aOut(0)
-    mStap = mStap & " rij0len=" & (UBound(aRij) + 1)
-    For c = 0 To nKol - 1
-        aRij(c) = aHeader(c)
-    Next c
-    aOut(0) = aRij
-
-    ' Datarijen
-    For r = 1 To nData
-        aRij  = aOut(r)
-        aBron = aData(r - 1)
-        mStap = "DATA r=" & r & "/" & nData & " aRijLen=" & (UBound(aRij) + 1) & _
-                " aBronArray=" & IsArray(aBron)
-        If IsArray(aBron) Then mStap = mStap & " aBronLen=" & (UBound(aBron) + 1)
-        For c = 0 To nKol - 1
-            aRij(c) = aBron(c)
-        Next c
-        aOut(r) = aRij
-    Next r
-
-    oRange.setDataArray(aOut)
-End Sub
-
 Sub MaakWeekbestand()
 
     ' =============================================
