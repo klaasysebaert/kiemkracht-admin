@@ -214,21 +214,213 @@ Sub LaadAlleTabellen()
     End If
     On Error GoTo 0
 
+    ' Het opt-out-blok hierboven zette de errorhandler uit (On Error GoTo 0);
+    ' opnieuw arming zodat ook fouten in de afronding netjes opgekuist worden.
+    On Error GoTo Opkuis
     oConn.close()
+
+    ' Herberekenen en UI terug vrijgeven
+    oDoc.calculateAll()
+    oDoc.enableAutomaticCalculation(bAutoCalc)
+    If bLocked Then
+        oDoc.unlockControllers()
+        bLocked = False
+    End If
+
     oIndicator.setValue(100)
-    oIndicator.setText("Bijna klaar...")
+    oIndicator.end()
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
     If nUit > 0 Then MsgBox sUit, 48, nUit & " nieuwe uitschrijver(s) voor de aanbodmail" & _
         Chr(10) & "(zie ook de mail_opt_out-kolommen in het klanten-tabblad)"
-    oIndicator.end()
     SluitSSHTunnels()
     Exit Sub
 
-VerbindingsFout:
+Opkuis:
+    ' UI-staat ALTIJD herstellen, ook bij een fout halverwege — anders blijft het
+    ' scherm vergrendeld en de voortgangsbalk hangen (zoals bij de nachtelijke hang).
+    Dim sFout As String
+    sFout = "Fout " & Err & " op regel " & Erl & ": " & Error
+    On Error Resume Next
+    If Not IsNull(oConn) Then oConn.close()
+    oDoc.enableAutomaticCalculation(bAutoCalc)
+    If bLocked Then oDoc.unlockControllers()
     If Not IsNull(oIndicator) Then oIndicator.end()
-    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
-           "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
+    SluitSSHTunnels()
+    On Error GoTo 0
+    MsgBox sFout & Chr(10) & Chr(10) & _
+           "De inlees is NIET volledig afgerond. Controleer of de SSH-tunnel/DB-" & _
+           "verbinding actief is (poort 5433) en probeer opnieuw.", 16, "Laden mislukt"
 
+End Sub
+
+
+' ---------------------------------------------------------------------------
+' LaadTabelSnel — laadt één DB-tabel volledig in een gelijknamig tabblad met
+' één setDataArray-aanroep (veel sneller dan cel-per-cel). Numerieke SQL-types
+' worden naar getal omgezet, de rest blijft tekst (zelfde gedrag als voorheen).
+' ---------------------------------------------------------------------------
+Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
+    Dim oSheet As Object, oStmt As Object, oRS As Object, oMeta As Object, oRange As Object
+    Dim nKolommen As Integer, col As Integer, t As Integer
+    Dim nRows As Long, r As Long, nData As Long
+    Dim sVal As String, dVal As Double, bOk As Boolean
+    Dim aHdr() As Variant, aData() As Variant, aRow() As Variant
+    Dim bNum() As Boolean
+
+    ' Tabblad ophalen of aanmaken, daarna volledig leegmaken
+    If oSheets.hasByName(sNaam) Then
+        oSheet = oSheets.getByName(sNaam)
+    Else
+        oSheets.insertNewByName(sNaam, oSheets.Count)
+        oSheet = oSheets.getByName(sNaam)
+    End If
+    oSheet.clearContents(7)
+
+    ' Aantal rijen vooraf (om de array exact te dimensioneren)
+    oStmt = oConn.createStatement()
+    On Error Resume Next
+    oStmt.QueryTimeOut = 60      ' faal i.p.v. eindeloos hangen bij een dode verbinding
+    On Error GoTo 0
+    oRS = oStmt.executeQuery("SELECT COUNT(*) FROM " & sNaam)
+    nRows = 0
+    If oRS.next() Then nRows = oRS.getLong(1)
+    oRS.close()
+
+    ' Gegevens + metadata ophalen
+    oRS   = oStmt.executeQuery("SELECT * FROM " & sNaam)
+    oMeta = oRS.getMetaData()
+    nKolommen = oMeta.getColumnCount()
+
+    ReDim bNum(nKolommen - 1)
+    ReDim aHdr(nKolommen - 1)
+    For col = 1 To nKolommen
+        aHdr(col - 1) = oMeta.getColumnName(col)
+        t = oMeta.getColumnType(col)
+        bNum(col - 1) = (t >= 2 And t <= 8)   ' numerieke SQL-types
+    Next col
+
+    ' Jagged array opbouwen: element 0 = koprij, daarna de datarijen
+    ReDim aData(nRows)
+    aData(0) = aHdr()
+    r = 1
+    Do While oRS.next()
+        If r > UBound(aData) Then ReDim Preserve aData(r + 100)   ' vangnet bij drift
+        ReDim aRow(nKolommen - 1)
+        For col = 1 To nKolommen
+            sVal = oRS.getString(col)
+            If oRS.wasNull() Then
+                aRow(col - 1) = ""
+            ElseIf bNum(col - 1) Then
+                bOk = True
+                On Error Resume Next
+                dVal = CDbl(Replace(sVal, ".", ","))
+                If Err <> 0 Then bOk = False
+                On Error GoTo 0
+                If bOk Then aRow(col - 1) = dVal Else aRow(col - 1) = sVal
+            Else
+                aRow(col - 1) = sVal
+            End If
+        Next col
+        aData(r) = aRow()
+        r = r + 1
+    Loop
+    oRS.close()
+    oStmt.close()
+
+    ' Exact bijknippen en in één keer wegschrijven
+    nData = r - 1
+    ReDim Preserve aData(nData)
+    oRange = oSheet.getCellRangeByPosition(0, 0, nKolommen - 1, nData)
+    oRange.setDataArray(aData)
+End Sub
+
+
+' ---------------------------------------------------------------------------
+' LaadKlantenBeheer — schrijft de geselecteerde klanten-kolommen naar twee
+' aaneengesloten blokken: F-J (5-9) en L-V (11-21). Kolom K (10) bevat
+' gebruikersformules en blijft ongemoeid. Bulk via setDataArray.
+' ---------------------------------------------------------------------------
+Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
+    Dim oKB As Object, oStmt As Object, oRS As Object
+    Dim kbKol(15) As String
+    Dim j As Integer
+    Dim nRows As Long, r As Long, nData As Long
+    Dim aA() As Variant, aB() As Variant, rA() As Variant, rB() As Variant
+    Dim hA(4) As Variant, hB(10) As Variant
+
+    kbKol(0)  = "voornaam"         : kbKol(1)  = "familienaam"
+    kbKol(2)  = "voornaam2"        : kbKol(3)  = "familienaam2"
+    kbKol(4)  = "afhaalpunt_id"    : kbKol(5)  = "type"
+    kbKol(6)  = "formaat"          : kbKol(7)  = "email1"
+    kbKol(8)  = "email2"           : kbKol(9)  = "email3"
+    kbKol(10) = "email4"           : kbKol(11) = "telefoon"
+    kbKol(12) = "opmerkingen"      : kbKol(13) = "opmerkingen_volgend"
+    kbKol(14) = "opmerking_status" : kbKol(15) = "nooit_groenten"
+
+    If oSheets.hasByName("klanten_beheer") Then
+        oKB = oSheets.getByName("klanten_beheer")
+    Else
+        oSheets.insertNewByName("klanten_beheer", oSheets.Count)
+        oKB = oSheets.getByName("klanten_beheer")
+    End If
+
+    ' F-J (5-9) en L-V (11-21) wissen; K (10) bevat gebruikersformules
+    oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
+    oKB.getCellRangeByPosition(11, 0, 21, 10000).clearContents(7)
+
+    ' Aantal rijen vooraf
+    oStmt = oConn.createStatement()
+    On Error Resume Next
+    oStmt.QueryTimeOut = 60
+    On Error GoTo 0
+    oRS = oStmt.executeQuery("SELECT COUNT(*) FROM klanten")
+    nRows = 0
+    If oRS.next() Then nRows = oRS.getLong(1)
+    oRS.close()
+
+    ' Data (zelfde volgorde als klanten-tabblad, geen ORDER BY)
+    oRS = oStmt.executeQuery( _
+        "SELECT voornaam, familienaam, voornaam2, familienaam2, afhaalpunt_id, " & _
+        "type, formaat, email1, email2, email3, email4, telefoon, " & _
+        "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten " & _
+        "FROM klanten")
+
+    ' Twee aaneengesloten blokken: F-J = kolommen 1-5, L-V = kolommen 6-16
+    ReDim aA(nRows)
+    ReDim aB(nRows)
+    For j = 0 To 4  : hA(j) = kbKol(j)     : Next j
+    For j = 0 To 10 : hB(j) = kbKol(j + 5) : Next j
+    aA(0) = hA()
+    aB(0) = hB()
+
+    r = 1
+    Do While oRS.next()
+        If r > UBound(aA) Then
+            ReDim Preserve aA(r + 100)
+            ReDim Preserve aB(r + 100)
+        End If
+        ReDim rA(4)
+        ReDim rB(10)
+        For j = 0 To 4
+            rA(j) = oRS.getString(j + 1)
+            If oRS.wasNull() Then rA(j) = ""
+        Next j
+        For j = 0 To 10
+            rB(j) = oRS.getString(j + 6)
+            If oRS.wasNull() Then rB(j) = ""
+        Next j
+        aA(r) = rA()
+        aB(r) = rB()
+        r = r + 1
+    Loop
+    oRS.close()
+    oStmt.close()
+
+    nData = r - 1
+    ReDim Preserve aA(nData)
+    ReDim Preserve aB(nData)
+    oKB.getCellRangeByPosition(5,  0, 9,  nData).setDataArray(aA)
+    oKB.getCellRangeByPosition(11, 0, 21, nData).setDataArray(aB)
 End Sub
 
 Sub MaakWeekbestand()
