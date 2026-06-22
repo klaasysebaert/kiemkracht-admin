@@ -469,6 +469,9 @@ Private Sub SchrijfBereik(oRange As Object, aHeader() As Variant, aData() As Var
     For r = 1 To nData
         aRij  = aOut(r)
         aBron = aData(r - 1)
+        mStap = "DATA r=" & r & "/" & nData & " aRijLen=" & (UBound(aRij) + 1) & _
+                " aBronArray=" & IsArray(aBron)
+        If IsArray(aBron) Then mStap = mStap & " aBronLen=" & (UBound(aBron) + 1)
         For c = 0 To nKol - 1
             aRij(c) = aBron(c)
         Next c
