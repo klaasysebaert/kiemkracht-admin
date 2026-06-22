@@ -110,20 +110,16 @@ Sub LaadAlleTabellen()
     
     ' DB-verbinding en SSH-tunnel: zie MaakDBVerbinding()
 
-    Dim oDoc         As Object
-    Dim oSheets      As Object
-    Dim oConn        As Object
-    Dim oStmt        As Object
-    Dim oRS          As Object
-    Dim oSheet       As Object
-    Dim oMeta        As Object
-    Dim oIndicator   As Object
-    Dim i            As Integer
-    Dim col          As Integer
-    Dim row          As Integer
-    Dim sUit         As String     ' lijst nieuwe uitschrijvers (opt-out aanbodmail)
-    Dim nUit         As Integer
-    sUit = "" : nUit = 0
+    Dim oDoc       As Object
+    Dim oSheets    As Object
+    Dim oConn      As Object
+    Dim oIndicator As Object
+    Dim i          As Integer
+    Dim sUit       As String     ' lijst nieuwe uitschrijvers (opt-out aanbodmail)
+    Dim nUit       As Integer
+    Dim bAutoCalc  As Boolean    ' stond automatische herberekening aan?
+    Dim bLocked    As Boolean    ' zijn de controllers vergrendeld?
+    sUit = "" : nUit = 0 : bAutoCalc = True : bLocked = False
 
     ' Tabellen om in te laden
     Dim tabellen(11)  As String
