@@ -242,7 +242,8 @@ Opkuis:
     ' UI-staat ALTIJD herstellen, ook bij een fout halverwege — anders blijft het
     ' scherm vergrendeld en de voortgangsbalk hangen (zoals bij de nachtelijke hang).
     Dim sFout As String
-    sFout = "Fout " & Err & " op regel " & Erl & ": " & Error
+    sFout = "Fout " & Err & " op regel " & Erl & ": " & Error & _
+            Chr(10) & "Stap: " & mStap
     On Error Resume Next
     If Not IsNull(oConn) Then oConn.close()
     oDoc.enableAutomaticCalculation(bAutoCalc)
