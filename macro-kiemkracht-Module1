@@ -388,8 +388,12 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     ' Twee aaneengesloten blokken: F-J = kolommen 1-5, L-V = kolommen 6-16
     ReDim aA(nRows)
     ReDim aB(nRows)
-    For j = 0 To 4  : hA(j) = kbKol(j)     : Next j
-    For j = 0 To 10 : hB(j) = kbKol(j + 5) : Next j
+    For j = 0 To 4
+        hA(j) = kbKol(j)
+    Next j
+    For j = 0 To 10
+        hB(j) = kbKol(j + 5)
+    Next j
     aA(0) = hA()
     aB(0) = hB()
 
