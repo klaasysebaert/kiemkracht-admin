@@ -266,9 +266,9 @@ End Sub
 Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     Dim oSheet As Object, oStmt As Object, oRS As Object, oMeta As Object, oRange As Object
     Dim nKolommen As Integer, col As Integer, t As Integer
-    Dim nRows As Long, r As Long, nData As Long
+    Dim nRows As Long, r As Long
     Dim sVal As String, dVal As Double, bOk As Boolean
-    Dim aHdr() As Variant, aData() As Variant, aRow() As Variant
+    Dim aOut As Variant, aRij As Variant
     Dim bNum() As Boolean
 
     ' Tabblad ophalen of aanmaken, daarna volledig leegmaken
@@ -281,7 +281,7 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     End If
     oSheet.clearContents(7)
 
-    ' Aantal rijen vooraf (om de array exact te dimensioneren)
+    ' Aantal rijen vooraf, om het doelbereik (en dus het sjabloon) op maat te maken
     mStap = sNaam & " — rijen tellen"
     oStmt = oConn.createStatement()
     On Error Resume Next
@@ -299,47 +299,55 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     nKolommen = oMeta.getColumnCount()
 
     ReDim bNum(nKolommen - 1)
-    ReDim aHdr(nKolommen - 1)
     For col = 1 To nKolommen
-        aHdr(col - 1) = oMeta.getColumnName(col)
         t = oMeta.getColumnType(col)
         bNum(col - 1) = (t >= 2 And t <= 8)   ' numerieke SQL-types
     Next col
 
-    ' Alle datawaarden eerst uitlezen in een tijdelijke (jagged) array. Die wordt
-    ' NIET aan UNO doorgegeven, dus z'n type maakt niet uit.
-    mStap = sNaam & " — rijen inlezen"
-    ReDim aData(nRows)
-    r = 0
+    ' Sjabloon met de JUISTE UNO-structuur uit het doelbereik zelf halen
+    ' (rij 0 = kop, rijen 1..nRows = data). We schrijven RECHTSTREEKS in de
+    ' sjabloonrijen — geen geneste Basic-array opbouwen of aan een Sub doorgeven,
+    ' want StarBasic verliest daarbij de rij-inhoud (aBronLen=0).
+    mStap = sNaam & " — sjabloon (" & (nRows + 1) & " rijen x " & nKolommen & " kol)"
+    oRange = oSheet.getCellRangeByPosition(0, 0, nKolommen - 1, nRows)
+    aOut = oRange.getDataArray()
+
+    ' Koprij
+    aRij = aOut(0)
+    For col = 1 To nKolommen
+        aRij(col - 1) = oMeta.getColumnName(col)
+    Next col
+    aOut(0) = aRij
+
+    ' Datarijen
+    mStap = sNaam & " — rijen schrijven"
+    r = 1
     Do While oRS.next()
-        If r > UBound(aData) Then ReDim Preserve aData(r + 100)   ' vangnet bij drift
-        ReDim aRow(nKolommen - 1)
+        If r > UBound(aOut) Then Exit Do      ' veiligheid bij onverwachte drift
+        aRij = aOut(r)
         For col = 1 To nKolommen
             sVal = oRS.getString(col)
             If oRS.wasNull() Then
-                aRow(col - 1) = ""
+                aRij(col - 1) = ""
             ElseIf bNum(col - 1) Then
                 bOk = True
                 On Error Resume Next
                 dVal = CDbl(Replace(sVal, ".", ","))
                 If Err <> 0 Then bOk = False
                 On Error GoTo 0
-                If bOk Then aRow(col - 1) = dVal Else aRow(col - 1) = sVal
+                If bOk Then aRij(col - 1) = dVal Else aRij(col - 1) = sVal
             Else
-                aRow(col - 1) = sVal
+                aRij(col - 1) = sVal
             End If
         Next col
-        aData(r) = aRow()
+        aOut(r) = aRij
         r = r + 1
     Loop
     oRS.close()
     oStmt.close()
-    nData = r                       ' aantal datarijen
 
-    ' Wegschrijven via SchrijfBereik (sjabloon-aanpak; zie aldaar)
-    mStap = sNaam & " — wegschrijven (" & (nData + 1) & " rijen x " & nKolommen & " kol)"
-    oRange = oSheet.getCellRangeByPosition(0, 0, nKolommen - 1, nData)
-    SchrijfBereik(oRange, aHdr, aData, nData, nKolommen)
+    mStap = sNaam & " — wegschrijven"
+    oRange.setDataArray(aOut)
 End Sub
 
 
