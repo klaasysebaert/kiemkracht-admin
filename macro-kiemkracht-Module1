@@ -432,8 +432,9 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     nData = r - 1
     ReDim Preserve aA(nData)
     ReDim Preserve aB(nData)
-    oKB.getCellRangeByPosition(5,  0, 9,  nData).setDataArray(aA)
-    oKB.getCellRangeByPosition(11, 0, 21, nData).setDataArray(aB)
+    mStap = "klanten_beheer — wegschrijven (" & (nData + 1) & " rijen)"
+    oKB.getCellRangeByPosition(5,  0, 9,  nData).setDataArray(aA())
+    oKB.getCellRangeByPosition(11, 0, 21, nData).setDataArray(aB())
 End Sub
 
 Sub MaakWeekbestand()
