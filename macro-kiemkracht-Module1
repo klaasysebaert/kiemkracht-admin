@@ -360,9 +360,9 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Dim oKB As Object, oStmt As Object, oRS As Object, oRngA As Object, oRngB As Object
     Dim kbKol(15) As String
     Dim j As Integer
-    Dim nRows As Long, r As Long, nData As Long
-    Dim aA() As Variant, aB() As Variant, rA() As Variant, rB() As Variant
-    Dim hA() As Variant, hB() As Variant
+    Dim nRows As Long, r As Long
+    Dim sVal As String
+    Dim aOutA As Variant, aOutB As Variant, aRij As Variant
 
     kbKol(0)  = "voornaam"         : kbKol(1)  = "familienaam"
     kbKol(2)  = "voornaam2"        : kbKol(3)  = "familienaam2"
@@ -384,7 +384,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
     oKB.getCellRangeByPosition(11, 0, 21, 10000).clearContents(7)
 
-    ' Aantal rijen vooraf
+    ' Aantal rijen vooraf, om de sjablonen op maat te maken
     mStap = "klanten_beheer — rijen tellen"
     oStmt = oConn.createStatement()
     On Error Resume Next
@@ -402,50 +402,54 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten " & _
         "FROM klanten")
 
-    ' Kopteksten per blok; data in tijdelijke (jagged) arrays (niet aan UNO
-    ' doorgegeven). F-J = kolommen 1-5 van de query, L-V = kolommen 6-16.
-    mStap = "klanten_beheer — rijen inlezen"
-    ReDim hA(4)
-    ReDim hB(10)
-    For j = 0 To 4
-        hA(j) = kbKol(j)
-    Next j
-    For j = 0 To 10
-        hB(j) = kbKol(j + 5)
-    Next j
+    ' Twee sjablonen uit de doelbereiken zelf (juiste UNO-structuur); rechtstreeks
+    ' invullen, geen geneste Basic-array opbouwen/doorgeven. F-J = querykolommen
+    ' 1-5, L-V = querykolommen 6-16.
+    mStap = "klanten_beheer — sjablonen (" & (nRows + 1) & " rijen)"
+    oRngA = oKB.getCellRangeByPosition(5,  0, 9,  nRows)
+    oRngB = oKB.getCellRangeByPosition(11, 0, 21, nRows)
+    aOutA = oRngA.getDataArray()
+    aOutB = oRngB.getDataArray()
 
-    ReDim aA(nRows)
-    ReDim aB(nRows)
-    r = 0
+    ' Koprijen
+    aRij = aOutA(0)
+    For j = 0 To 4
+        aRij(j) = kbKol(j)
+    Next j
+    aOutA(0) = aRij
+    aRij = aOutB(0)
+    For j = 0 To 10
+        aRij(j) = kbKol(j + 5)
+    Next j
+    aOutB(0) = aRij
+
+    ' Datarijen — rechtstreeks in de sjabloonrijen schrijven
+    mStap = "klanten_beheer — rijen schrijven"
+    r = 1
     Do While oRS.next()
-        If r > UBound(aA) Then
-            ReDim Preserve aA(r + 100)
-            ReDim Preserve aB(r + 100)
-        End If
-        ReDim rA(4)
-        ReDim rB(10)
+        If r > UBound(aOutA) Then Exit Do
+        aRij = aOutA(r)
         For j = 0 To 4
-            rA(j) = oRS.getString(j + 1)
-            If oRS.wasNull() Then rA(j) = ""
+            sVal = oRS.getString(j + 1)
+            If oRS.wasNull() Then sVal = ""
+            aRij(j) = sVal
         Next j
+        aOutA(r) = aRij
+        aRij = aOutB(r)
         For j = 0 To 10
-            rB(j) = oRS.getString(j + 6)
-            If oRS.wasNull() Then rB(j) = ""
+            sVal = oRS.getString(j + 6)
+            If oRS.wasNull() Then sVal = ""
+            aRij(j) = sVal
         Next j
-        aA(r) = rA()
-        aB(r) = rB()
+        aOutB(r) = aRij
         r = r + 1
     Loop
     oRS.close()
     oStmt.close()
-    nData = r                       ' aantal datarijen
 
-    ' Wegschrijven via SchrijfBereik (sjabloon-aanpak)
-    mStap = "klanten_beheer — wegschrijven (" & (nData + 1) & " rijen)"
-    oRngA = oKB.getCellRangeByPosition(5,  0, 9,  nData)
-    oRngB = oKB.getCellRangeByPosition(11, 0, 21, nData)
-    SchrijfBereik(oRngA, hA, aA, nData, 5)
-    SchrijfBereik(oRngB, hB, aB, nData, 11)
+    mStap = "klanten_beheer — wegschrijven"
+    oRngA.setDataArray(aOutA)
+    oRngB.setDataArray(aOutB)
 End Sub
 
 
