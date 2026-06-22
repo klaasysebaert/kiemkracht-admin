@@ -306,11 +306,11 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
         bNum(col - 1) = (t >= 2 And t <= 8)   ' numerieke SQL-types
     Next col
 
-    ' Jagged array opbouwen: element 0 = koprij, daarna de datarijen
+    ' Alle datawaarden eerst uitlezen in een tijdelijke (jagged) array. Die wordt
+    ' NIET aan UNO doorgegeven, dus z'n type maakt niet uit.
     mStap = sNaam & " — rijen inlezen"
     ReDim aData(nRows)
-    aData(0) = aHdr()
-    r = 1
+    r = 0
     Do While oRS.next()
         If r > UBound(aData) Then ReDim Preserve aData(r + 100)   ' vangnet bij drift
         ReDim aRow(nKolommen - 1)
@@ -334,13 +334,35 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     Loop
     oRS.close()
     oStmt.close()
+    nData = r                       ' aantal datarijen
 
-    ' Exact bijknippen en in één keer wegschrijven
-    nData = r - 1
-    ReDim Preserve aData(nData)
+    ' Wegschrijven via een sjabloon dat het bereik ZELF levert (getDataArray):
+    ' dat heeft de juiste UNO-structuur (sequence<sequence<any>>). Een volledig
+    ' handgebouwde geneste Basic-array wordt door setDataArray soms geweigerd met
+    ' een lege RuntimeException; in dit sjabloon schrijven en terugzetten werkt wél.
     mStap = sNaam & " — wegschrijven (" & (nData + 1) & " rijen x " & nKolommen & " kol)"
     oRange = oSheet.getCellRangeByPosition(0, 0, nKolommen - 1, nData)
-    oRange.setDataArray(aData())
+    Dim aOut As Variant, aTmplRow As Variant, aSrc As Variant
+    aOut = oRange.getDataArray()
+
+    ' Koprij
+    aTmplRow = aOut(0)
+    For col = 0 To nKolommen - 1
+        aTmplRow(col) = aHdr(col)
+    Next col
+    aOut(0) = aTmplRow
+
+    ' Datarijen
+    For r = 1 To nData
+        aTmplRow = aOut(r)
+        aSrc = aData(r - 1)
+        For col = 0 To nKolommen - 1
+            aTmplRow(col) = aSrc(col)
+        Next col
+        aOut(r) = aTmplRow
+    Next r
+
+    oRange.setDataArray(aOut)
 End Sub
 
 
