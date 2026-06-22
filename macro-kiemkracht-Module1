@@ -271,6 +271,7 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     Dim bNum() As Boolean
 
     ' Tabblad ophalen of aanmaken, daarna volledig leegmaken
+    mStap = sNaam & " — tabblad leegmaken"
     If oSheets.hasByName(sNaam) Then
         oSheet = oSheets.getByName(sNaam)
     Else
@@ -280,16 +281,18 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     oSheet.clearContents(7)
 
     ' Aantal rijen vooraf (om de array exact te dimensioneren)
+    mStap = sNaam & " — rijen tellen"
     oStmt = oConn.createStatement()
     On Error Resume Next
     oStmt.QueryTimeOut = 60      ' faal i.p.v. eindeloos hangen bij een dode verbinding
     On Error GoTo 0
     oRS = oStmt.executeQuery("SELECT COUNT(*) FROM " & sNaam)
     nRows = 0
-    If oRS.next() Then nRows = oRS.getLong(1)
+    If oRS.next() Then nRows = oRS.getInt(1)
     oRS.close()
 
     ' Gegevens + metadata ophalen
+    mStap = sNaam & " — query + kolommen"
     oRS   = oStmt.executeQuery("SELECT * FROM " & sNaam)
     oMeta = oRS.getMetaData()
     nKolommen = oMeta.getColumnCount()
