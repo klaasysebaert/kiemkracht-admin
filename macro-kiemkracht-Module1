@@ -394,19 +394,21 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten " & _
         "FROM klanten")
 
-    ' Twee aaneengesloten blokken: F-J = kolommen 1-5, L-V = kolommen 6-16
-    ReDim aA(nRows)
-    ReDim aB(nRows)
+    ' Kopteksten per blok; data in tijdelijke (jagged) arrays (niet aan UNO
+    ' doorgegeven). F-J = kolommen 1-5 van de query, L-V = kolommen 6-16.
+    mStap = "klanten_beheer — rijen inlezen"
+    ReDim hA(4)
+    ReDim hB(10)
     For j = 0 To 4
         hA(j) = kbKol(j)
     Next j
     For j = 0 To 10
         hB(j) = kbKol(j + 5)
     Next j
-    aA(0) = hA()
-    aB(0) = hB()
 
-    r = 1
+    ReDim aA(nRows)
+    ReDim aB(nRows)
+    r = 0
     Do While oRS.next()
         If r > UBound(aA) Then
             ReDim Preserve aA(r + 100)
@@ -428,13 +430,14 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Loop
     oRS.close()
     oStmt.close()
+    nData = r                       ' aantal datarijen
 
-    nData = r - 1
-    ReDim Preserve aA(nData)
-    ReDim Preserve aB(nData)
+    ' Wegschrijven via SchrijfBereik (sjabloon-aanpak)
     mStap = "klanten_beheer — wegschrijven (" & (nData + 1) & " rijen)"
-    oKB.getCellRangeByPosition(5,  0, 9,  nData).setDataArray(aA())
-    oKB.getCellRangeByPosition(11, 0, 21, nData).setDataArray(aB())
+    oRngA = oKB.getCellRangeByPosition(5,  0, 9,  nData)
+    oRngB = oKB.getCellRangeByPosition(11, 0, 21, nData)
+    SchrijfBereik(oRngA, hA, aA, nData, 5)
+    SchrijfBereik(oRngB, hB, aB, nData, 11)
 End Sub
 
 Sub MaakWeekbestand()
