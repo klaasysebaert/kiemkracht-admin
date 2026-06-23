@@ -21,16 +21,40 @@ Private mStap As String
 ' anders Null. ThisComponent = het venster waarin de macro gestart is — zo
 ' werkt alles op het bestand waarin je de macro oproept, ook met
 ' kiemkracht-data.ods en kiemkracht-data-dev.ods tegelijk open.
+'
+' Fallback: ThisComponent is onbetrouwbaar zodra er andere vensters openstaan
+' (bv. een leeg "Geen titel"-venster wordt dan het actieve component, zonder URL).
+' Lukt ThisComponent niet, dan scannen we alle open documenten. Staat er PRECIES
+' één kiemkracht-data-bestand open, dan gebruiken we dat. Staan prod én dev allebei
+' open, dan durven we niet te kiezen en geven we Null terug (de aanroeper toont de
+' instructie om vanuit het juiste venster te starten).
 Function HuidigDataDocument() As Object
-    Dim oDoc As Object
-    oDoc = ThisComponent
+    If IsDataDoc(ThisComponent) Then
+        HuidigDataDocument = ThisComponent
+        Exit Function
+    End If
+
+    Dim oEnum As Object, oC As Object, oGevonden As Object
+    Dim nGevonden As Integer
+    nGevonden = 0
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oC = oEnum.nextElement()
+        If IsDataDoc(oC) Then
+            nGevonden = nGevonden + 1
+            oGevonden = oC
+        End If
+    Loop
+    If nGevonden = 1 Then HuidigDataDocument = oGevonden
+End Function
+
+' True als oDoc een (opgeslagen) kiemkracht-data(-dev).ods Calc-document is.
+Function IsDataDoc(oDoc As Object) As Boolean
+    IsDataDoc = False
     If IsNull(oDoc) Then Exit Function
     If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then Exit Function
-    If oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
-        If InStr(LCase(oDoc.getURL()), "kiemkracht-data") > 0 Then
-            HuidigDataDocument = oDoc
-        End If
-    End If
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then Exit Function
+    If InStr(LCase(oDoc.getURL()), "kiemkracht-data") > 0 Then IsDataDoc = True
 End Function
 
 ' Geeft "dev" als het actieve bestand op "-dev.ods" eindigt, anders "prod".
