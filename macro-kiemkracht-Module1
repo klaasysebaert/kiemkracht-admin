@@ -2241,8 +2241,8 @@ Sub VoegLosseGroenteToe()
 
     Dim bPerStuk As Boolean : bPerStuk = False
     If sEenheid <> "" Then
-        bPerStuk = (MsgBox("Wordt deze groente per stuk verkocht?" & Chr(10) & _
-            "(Ja = per stuk, bv. 'x " & sEenheid & "';  Nee = per " & sEenheid & ")", _
+        bPerStuk = (MsgBox("""x ""-notatie hanteren zoals in ""2 x " & sEenheid & " " & sNaam & """?" & Chr(10) & _
+            "(Ja = met ""x ""-prefix;  Nee = gewoon per " & sEenheid & ")", _
             4 + 32, "Losse groente toevoegen") = 6)
     End If
 
