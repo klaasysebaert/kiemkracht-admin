@@ -149,3 +149,38 @@ Mailtype/formaat daarna uit "actief abonnement bij N?" (window) + pariteit; ande
 2. Migratie-backfill van bestaande stop-/pauzeklanten (3279 definitief, 3220 tijdelijk)
    doet Klaas zelf zodra het model staat.
 3. Fase 2: view/functie in DB vs gedeelde Basic-helper.
+
+## Fase 1 — as-built (2026-06-25)
+
+Geïmplementeerd en op dev getest (transacties met ROLLBACK: definitief/tijdelijk/
+downgrade + recompute, allemaal groen). Migratie 06 op **dev én prod** (additief,
+gedragsneutraal — de macro-library is gedeeld, dus de mailmerge verwijst meteen ook
+op prod naar de nieuwe kolommen).
+
+**Invoer = aparte kolommen** (niet de `R:H`-syntax uit het eerste ontwerp). In
+`klanten_stop_start`, header-gedetecteerd op naam (rijen 1–6):
+- `stop-doel`  → `definitief` (of leeg) / `tijdelijk` / `weekperweek`
+- `herstart-week` → weeknr, enkel bij `tijdelijk`
+
+Layout verschoof: R=stopzetting, **S=stop-doel, T=herstart-week**, U=vooruitbestellingen,
+V=start, W=type, X=formaat (vaste indices `COL_VB..COL_FORMAAT` +2 in `VerwerkStopStart`).
+
+**Wat de stop-tak schrijft** (per doel, op week W; herstart H):
+| doel | abonnementen | klanten |
+|---|---|---|
+| definitief | `eind=(W)` op lopende primair-abo's | `pauze_vanaf=W, pauze_tot=NULL` |
+| tijdelijk | `eind=(W)` + opvolger `start=(H)` (ritme/formaat gekopieerd) | `pauze_vanaf=W, pauze_tot=H` |
+| weekperweek | `eind=(W)` | geen pauzewindow |
+
+**Belangrijke as-built nuances:**
+- **NULL-veilig**: bestaande abo's hebben vaak `start=NULL` → conditie is
+  `(start IS NULL OR start_N <= N)`. Idem `eind IS NULL` = open.
+- **Selectie hervat zonder cron**: weekbestand én mailmerge lezen de windows
+  rechtstreeks; bij week ≥ herstart valt de uitsluiting vanzelf weg en wordt de
+  opvolger actief. De cron is dus enkel nodig voor (a) `klanten.type`/`status` als
+  **weergave** in klanten_beheer en (b) het opruimen van een afgelopen pauzewindow.
+- **Cron-recompute nog niet aangezet** (enige niet-additieve mutatie op prod):
+  gescoped op klanten met een abonnement of pauzewindow, `on_hold` uitgesloten,
+  legacy weekperweek-pariteit blijft. Toe te voegen aan `kiemkracht-flip-abonnement.sh`
+  na een dry-run op prod.
+- Fase 0-annulaties-guard blijft als vangnet tot de oude stops gebackfilld zijn.
