@@ -3207,6 +3207,10 @@ Sub VerwerkStopStart()
         Dim sStop  As String : sStop  = Trim(oSheet.getCellByPosition(COL_STOP,  r).getString())
         Dim sVb    As String : sVb    = Trim(oSheet.getCellByPosition(COL_VB,    r).getString())
         Dim sStart As String : sStart = Trim(oSheet.getCellByPosition(COL_START, r).getString())
+        Dim sDoel As String : sDoel = ""
+        If iDoelCol >= 0 Then sDoel = LCase(Trim(oSheet.getCellByPosition(iDoelCol, r).getString()))
+        Dim sHerstart As String : sHerstart = ""
+        If iHerstartCol >= 0 Then sHerstart = Trim(oSheet.getCellByPosition(iHerstartCol, r).getString())
 
         If sAnn <> "" Or sStop <> "" Or sVb <> "" Or sStart <> "" Then
             Dim dKlant As Double : dKlant = oSheet.getCellByPosition(iIdCol, r).getValue()
