@@ -3128,8 +3128,9 @@ End Function
 '   - kolom R = stopzetting          (één week,  bv. "W30")
 '   - kolom S = stop-doel            (definitief / tijdelijk / weekperweek;
 '               leeg = definitief — header-gedetecteerd op kop "stop-doel")
-'   - kolom T = herstart-week        (één week, enkel bij doel=tijdelijk;
-'               header-gedetecteerd op kop "herstart-week")
+'   - kolom T = herstart-week        (één week; verplicht bij doel=tijdelijk,
+'               optioneel bij doel=weekperweek (klant wordt dan in die week weer
+'               abonnee); header-gedetecteerd op kop "herstart-week")
 '   - kolom U = vooruitbestellingen  (tekst, bv. "W22-W24:groot, W26:klein, W28")
 '               Formaat per week optioneel (na ":"); zonder formaat valt
 '               het terug op klant.formaat. Geldige formaten: klein /
