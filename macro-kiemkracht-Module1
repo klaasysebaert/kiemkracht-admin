@@ -3175,6 +3175,18 @@ Sub VerwerkStopStart()
         Exit Sub
     End If
 
+    ' --- optionele kolommen 'stop-doel' en 'herstart-week' (header-gedetecteerd) ---
+    Dim iDoelCol As Integer : iDoelCol = -1
+    Dim iHerstartCol As Integer : iHerstartCol = -1
+    Dim hdr As Integer, hdc As Integer, sHdr As String
+    For hdr = 0 To 1
+        For hdc = 0 To 40
+            sHdr = LCase(Trim(oSheet.getCellByPosition(hdc, hdr).getString()))
+            If sHdr = "stop-doel" Then iDoelCol = hdc
+            If sHdr = "herstart-week" Or sHdr = "herstart" Then iHerstartCol = hdc
+        Next hdc
+    Next hdr
+
     ' === Fase 1: invoerrijen verzamelen en parseren ===
     Dim riRij(MAX_RIJ)   As Integer
     Dim riKlant(MAX_RIJ) As Long
