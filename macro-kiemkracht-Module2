@@ -2011,7 +2011,14 @@ Sub MaakMaandbestand()
     aOpen(0).Name = "Hidden" : aOpen(0).Value = False
     Dim oOut2 As Object
     oOut2 = oDesktop.loadComponentFromURL(sUrlUit, "_blank", 0, aOpen())
-    oOut2.getCurrentController().freezeAtPosition(2, 1)
+    ' Eerste rij + eerste 2 kolommen vastzetten op BEIDE tabbladen. freezeAtPosition
+    ' werkt enkel op het actieve blad, dus eerst "opvolgen betalingen" bevriezen en
+    ' dan terug naar "afrekening" (dat blijft zo ook het actieve blad bij openen).
+    Dim oCtrl2 As Object : oCtrl2 = oOut2.getCurrentController()
+    oCtrl2.setActiveSheet(oOut2.Sheets.getByName("opvolgen betalingen"))
+    oCtrl2.freezeAtPosition(2, 1)
+    oCtrl2.setActiveSheet(oOut2.Sheets.getByName("afrekening"))
+    oCtrl2.freezeAtPosition(2, 1)
 
     Dim sMsgWijz As String : sMsgWijz = ""
     If sEmailWijzigingen <> "" Then
