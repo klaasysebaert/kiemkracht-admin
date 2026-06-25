@@ -818,6 +818,7 @@ Sub MaakWeekbestand()
         "COALESCE(k.klant_type,''), COALESCE(vb.sleutel, a.formaat), COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
         "COALESCE(k.type,''), " & _
         "COALESCE(ap.dag_klaarmaken,''), " & _
+        "COALESCE(ap.dag_afhaling,''), " & _
         "COALESCE(ap.id_intern, 9999), " & _
         "COALESCE(k.id, 999999) " & _
         "FROM abonnementen a JOIN klanten k ON k.id = a.klant_id " & _
@@ -847,6 +848,7 @@ Sub MaakWeekbestand()
         "COALESCE(k.klant_type,''), vb.sleutel, COALESCE(k.telefoon,''), COALESCE(k.id::text,''), " & _
         "COALESCE(k.type,''), " & _
         "COALESCE(ap.dag_klaarmaken,''), " & _
+        "COALESCE(ap.dag_afhaling,''), " & _
         "COALESCE(ap.id_intern, 9999), " & _
         "COALESCE(k.id, 999999) " & _
         "FROM klanten k " & _
