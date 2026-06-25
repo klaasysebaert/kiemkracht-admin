@@ -1868,7 +1868,10 @@ Sub MaakMaandbestand()
             oS.getCellByPosition(7, ro).setValue(mVorig(idx))   ' Vorig saldo (uit vorige maand)
             oS.getCellByPosition(8, ro).setValue(mOntv(idx))    ' Ontvangen (Totaal betaald vorige maand)
         End If
-        oS.getCellByPosition(9, ro).setFormula("=H" & (ro + 1) & "-I" & (ro + 1))   ' J Verschil
+        ' J Verschil = Vorig saldo - Ontvangen, maar eerst beide naar centen ronden
+        ' zodat een sub-cent afrondingsresidu (Saldo heeft soms 3-4 decimalen) niet
+        ' als spook-saldo (bv. -0,01) blijft hangen of mee overgedragen wordt.
+        oS.getCellByPosition(9, ro).setFormula("=ROUND(H" & (ro + 1) & ";2)-ROUND(I" & (ro + 1) & ";2)")   ' J Verschil
         If Trim(mKid(idx)) = "" Then sGeenKid = sGeenKid & "  - " & mNaam(idx) & Chr(10)
         If Trim(mEmail(idx)) = "" Then sGeenEmail = sGeenEmail & "  - " & mNaam(idx) & Chr(10)
         For wi = 0 To NWEKEN - 1
