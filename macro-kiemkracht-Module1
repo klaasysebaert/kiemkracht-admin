@@ -3295,8 +3295,17 @@ Sub VerwerkStopStart()
                         Exit Sub
                     End If
                     iHerstartN = CInt(sHerCsv)
-                ElseIf sHerstart <> "" Then
-                    MsgBox "Rij " & (r + 1) & ": een herstart-week hoort enkel bij doel 'tijdelijk'.", 16, "Fout"
+                ElseIf sDoelN = "weekperweek" And sHerstart <> "" Then
+                    ' weekperweek met optionele herstart-week: klant wordt in die week weer
+                    ' volwaardig abonnee; de mail-poort blijft open in de tussentijd (aanbod-los).
+                    sHerCsv = ParseerWeken(sHerstart, True, sFout)
+                    If sFout <> "" Or sHerCsv = "" Then
+                        MsgBox "Rij " & (r + 1) & ": ongeldige herstart-week bij doel 'weekperweek'.", 16, "Fout"
+                        Exit Sub
+                    End If
+                    iHerstartN = CInt(sHerCsv)
+                ElseIf sDoelN = "definitief" And sHerstart <> "" Then
+                    MsgBox "Rij " & (r + 1) & ": een herstart-week hoort niet bij doel 'definitief'.", 16, "Fout"
                     Exit Sub
                 End If
             ElseIf sDoel <> "" Or sHerstart <> "" Then
