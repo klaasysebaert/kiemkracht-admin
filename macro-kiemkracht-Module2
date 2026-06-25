@@ -1483,7 +1483,7 @@ Sub MaakMaandbestand()
     Dim g As Integer, w As Integer, rr As Integer, blanks As Integer
     Dim sNaam As String, sAfhM As String, sKid As String
     Dim sEmail As String, sVoor As String, sLev As String
-    Dim dLever As Date, sDatum As String
+    Dim dLever As Date, sDatum As String, sDayWord As String
     Dim sPak As String, dBedrag As Double, q As Double, dVal As Double, dTot As Double, cnt As Double
     Dim sItemsA As String, sItemsN As String, sItem As String
     Dim sKey As String, ki As Integer, kFound As Integer
