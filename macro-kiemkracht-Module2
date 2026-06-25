@@ -1665,6 +1665,7 @@ Sub MaakMaandbestand()
                 If mVoor(kFound)  = "" Then mVoor(kFound)  = sVoor
             End If
             mSaldo(kFound) = mSaldo(kFound) + dTot
+            If mAfhDag(kFound) = "" Then mAfhDag(kFound) = sDayWord
             If sPak <> "" Then mPak(kFound, wi) = sPak
             If sItemsA <> "" Then
                 mBijA(kFound, wi) = sDatum & ": " & sItemsA
