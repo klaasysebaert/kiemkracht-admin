@@ -1704,16 +1704,54 @@ Sub MaakMaandbestand()
                 ' Volledig op kop-opzoeking (ZoekKolomKop, hoofdletter-ongevoelig): de
                 ' kolomvolgorde van BEIDE tabbladen kan wijzigen. Identiteit + Saldo uit
                 ' het afrekening-tab; "Totaal betaald" bestaat enkel in "opvolgen betalingen".
-                ' Beide tabbladen zijn rij-aligned (niet apart sorteren!). Rijen vanaf index 1.
                 Dim cVKid As Integer, cVNaam As Integer, cVEmail As Integer
-                Dim cVVoor As Integer, cVSaldo As Integer, cVTot As Integer
+                Dim cVVoor As Integer, cVSaldo As Integer
                 cVKid   = ZoekKolomKop(oVAfr, "klant_id")
                 cVNaam  = ZoekKolomKop(oVAfr, "Voornaam Familienaam")
                 cVEmail = ZoekKolomKop(oVAfr, "Email")
                 cVVoor  = ZoekKolomKop(oVAfr, "Voornaam")
                 cVSaldo = ZoekKolomKop(oVAfr, "Saldo")
-                cVTot   = ZoekKolomKop(oVOp, "Totaal betaald")
-                If cVNaam >= 0 And cVSaldo >= 0 And cVTot >= 0 Then bVorigGevonden = True
+                ' "Ontvangen" (Totaal betaald) komt uit "opvolgen betalingen", maar wordt
+                ' op klant_id (anders e-mail, anders naam) gekoppeld i.p.v. op rijnummer.
+                ' Bouw daarom eerst een map uit DAT tab zelf. Vroeger las de macro het
+                ' bedrag op hetzelfde rijnummer als het afrekening-tab; één ingevoegde/
+                ' verwijderde rij in één van beide tabbladen (bv. een witregel) gaf dan
+                ' vanaf die rij een verschuiving: elke klant kreeg het Ontvangen-bedrag
+                ' van de vorige klant. De koppeling hieronder is daar ongevoelig voor.
+                cOKid   = ZoekKolomKop(oVOp, "klant_id")
+                cONaam  = ZoekKolomKop(oVOp, "Voornaam Familienaam")
+                cOEmail = ZoekKolomKop(oVOp, "Email")
+                cOTot   = ZoekKolomKop(oVOp, "Totaal betaald")
+                nOp = 0
+                If cONaam >= 0 And cOTot >= 0 Then
+                    pBlanks = 0 : pr = 1
+                    Do While pBlanks < 10 And pr < 5000
+                        sONaam = oVOp.getCellByPosition(cONaam, pr).getString()
+                        If sONaam = "" Then
+                            pBlanks = pBlanks + 1
+                            GoTo VolgendeOpRij
+                        End If
+                        pBlanks = 0
+                        sOKid = "" : sOEmail = ""
+                        If cOKid   >= 0 Then sOKid   = Trim(oVOp.getCellByPosition(cOKid, pr).getString())
+                        If cOEmail >= 0 Then sOEmail = oVOp.getCellByPosition(cOEmail, pr).getString()
+                        If sOKid <> "" Then
+                            sOKey = "K:" & sOKid
+                        ElseIf sOEmail <> "" Then
+                            sOKey = "E:" & LCase(sOEmail)
+                        Else
+                            sOKey = "N:" & LCase(sONaam)
+                        End If
+                        If nOp <= UBound(opKey) Then
+                            opKey(nOp)  = sOKey
+                            opOntv(nOp) = oVOp.getCellByPosition(cOTot, pr).getValue()
+                            nOp = nOp + 1
+                        End If
+                        VolgendeOpRij:
+                        pr = pr + 1
+                    Loop
+                End If
+                If cVNaam >= 0 And cVSaldo >= 0 And cOTot >= 0 Then bVorigGevonden = True
                 If bVorigGevonden Then pBlanks = 0 Else pBlanks = 10   ' koppen niet herkend -> loop overslaan
                 pr = 1
                 Do While pBlanks < 10 And pr < 5000
