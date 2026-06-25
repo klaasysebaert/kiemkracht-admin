@@ -3481,22 +3481,34 @@ Sub VerwerkStopStart()
                 aSql(nItem) = "UPDATE klanten SET pauze_vanaf_jaar = " & iJaar & ", pauze_vanaf_week = " & w & _
                     ", pauze_tot_jaar = NULL, pauze_tot_week = NULL WHERE id = " & sKid
                 nItem = nItem + 1
-            ElseIf sDoelI = "tijdelijk" Then
-                Dim hW As Integer : hW = riHerstart(i)
-                Dim dHo As Date : dHo = WeekNaarDonderdag(hW)
-                Dim iHJaar As Integer : iHJaar = Year(dHo)
-                ' Relatie-poort dicht met einde => gepauzeerd; opent weer in de herstart-week.
-                aSql(nItem) = "UPDATE klanten SET pauze_vanaf_jaar = " & iJaar & ", pauze_vanaf_week = " & w & _
-                    ", pauze_tot_jaar = " & iHJaar & ", pauze_tot_week = " & hW & " WHERE id = " & sKid
-                nItem = nItem + 1
-                ' Opvolger-abonnement: levert weer vanaf de herstart-week (zelfde ritme/formaat).
-                aSql(nItem) = "INSERT INTO abonnementen (klant_id, ritme, formaat, status, bron, start_jaar, start_week) " & _
-                    "SELECT " & sKid & ", a.ritme, a.formaat, 'actief', 'primair', " & iHJaar & ", " & hW & _
-                    " FROM abonnementen a WHERE a.klant_id = " & sKid & " AND a.bron = 'primair' ORDER BY a.id DESC LIMIT 1"
-                nItem = nItem + 1
             Else
-                ' weekperweek: geen pauzewindow; klant blijft actief en krijgt aanbod-los.
-                ' klanten.type wordt door de cron op 'weekperweek' afgeleid zodra geen abonnement meer actief is.
+                ' tijdelijk of weekperweek (met optionele herstart): bepaal de herstart-week (0 = geen).
+                Dim hW As Integer : hW = riHerstart(i)
+                Dim iHJaar As Integer : iHJaar = 0
+                If hW > 0 Then
+                    Dim dHo As Date : dHo = WeekNaarDonderdag(hW)
+                    iHJaar = Year(dHo)
+                End If
+
+                If sDoelI = "tijdelijk" Then
+                    ' Relatie-poort dicht met einde => gepauzeerd; opent weer in de herstart-week.
+                    aSql(nItem) = "UPDATE klanten SET pauze_vanaf_jaar = " & iJaar & ", pauze_vanaf_week = " & w & _
+                        ", pauze_tot_jaar = " & iHJaar & ", pauze_tot_week = " & hW & " WHERE id = " & sKid
+                    nItem = nItem + 1
+                Else
+                    ' weekperweek: geen pauzewindow; klant blijft actief en krijgt aanbod-los.
+                    ' klanten.type wordt door de cron op 'weekperweek' afgeleid zolang geen abonnement actief is.
+                End If
+
+                ' Opvolger-abonnement vanaf de herstart-week (zelfde ritme/formaat) — voor
+                ' zowel tijdelijk als weekperweek-met-herstart. Zonder herstart-week (hW=0)
+                ' gebeurt er niets extra (= blijvende weekperweek).
+                If hW > 0 Then
+                    aSql(nItem) = "INSERT INTO abonnementen (klant_id, ritme, formaat, status, bron, start_jaar, start_week) " & _
+                        "SELECT " & sKid & ", a.ritme, a.formaat, 'actief', 'primair', " & iHJaar & ", " & hW & _
+                        " FROM abonnementen a WHERE a.klant_id = " & sKid & " AND a.bron = 'primair' ORDER BY a.id DESC LIMIT 1"
+                    nItem = nItem + 1
+                End If
             End If
 
             nStopz = nStopz + 1
