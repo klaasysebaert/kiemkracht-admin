@@ -1870,6 +1870,7 @@ Sub MaakMaandbestand()
         oS.getCellByPosition(3, ro).setString(mEmail(idx))
         oS.getCellByPosition(4, ro).setString(mVoor(idx))
         oS.getCellByPosition(5, ro).setString(sMaandNaam)
+        oS.getCellByPosition(11, ro).setString(mAfhDag(idx)) ' L = Afhaaldag (donderdag/vrijdag)
         oS.getCellByPosition(10, ro).setValue(mSaldo(idx))  ' K = Besteld in maand (hardgetal)
         oS.getCellByPosition(6, ro).setFormula("=K" & (ro + 1) & "+J" & (ro + 1))  ' G Saldo = Besteld + Verschil
         If mHist(idx) Then
