@@ -795,6 +795,7 @@ Sub MaakWeekbestand()
         "COALESCE(k.id::text,'') AS klant_id, " & _
         "COALESCE(k.type,'') AS type, " & _
         "COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
+        "COALESCE(kap.dag_afhaling, bap.dag_afhaling,'') AS dag_afhaling, " & _
         "COALESCE(kap.id_intern, bap.id_intern, 9999) AS id_intern_sort, " & _
         "COALESCE(k.id, 999999) AS klant_id_sort " & _
         "FROM bestellingen b " & _
