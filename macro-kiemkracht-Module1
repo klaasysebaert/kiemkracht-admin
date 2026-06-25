@@ -3605,6 +3605,8 @@ Sub VerwerkStopStart()
             oSheet.getCellByPosition(COL_STOP,  riRij(i)).setString("")
             oSheet.getCellByPosition(COL_VB,    riRij(i)).setString("")
             oSheet.getCellByPosition(COL_START, riRij(i)).setString("")
+            If iDoelCol >= 0     Then oSheet.getCellByPosition(iDoelCol,     riRij(i)).setString("")
+            If iHerstartCol >= 0 Then oSheet.getCellByPosition(iHerstartCol, riRij(i)).setString("")
         Next i
         SluitSSHTunnels()
         MsgBox "Alle " & nDup & " ingevoerde week(en) stonden al in de database." & Chr(10) & _
