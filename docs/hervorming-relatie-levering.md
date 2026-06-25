@@ -183,8 +183,11 @@ V=start, W=type, X=formaat (vaste indices `COL_VB..COL_FORMAAT` +2 in `VerwerkSt
   rechtstreeks; bij week ≥ herstart valt de uitsluiting vanzelf weg en wordt de
   opvolger actief. De cron is dus enkel nodig voor (a) `klanten.type`/`status` als
   **weergave** in klanten_beheer en (b) het opruimen van een afgelopen pauzewindow.
-- **Cron-recompute nog niet aangezet** (enige niet-additieve mutatie op prod):
-  gescoped op klanten met een abonnement of pauzewindow, `on_hold` uitgesloten,
-  legacy weekperweek-pariteit blijft. Toe te voegen aan `kiemkracht-flip-abonnement.sh`
-  na een dry-run op prod.
+- **Cron-recompute** (live in `/root/kiemkracht-flip-abonnement.sh`, dagelijks 6u,
+  prod+dev): leidt `klanten.status`/`type` af + ruimt afgelopen pauzewindows op.
+  Gescoped: niet `on_hold`, niet `-toekomst` (flip-cron-territorium), enkel klanten
+  met een abonnement of een gestopt/gepauzeerd-status; legacy weekperweek-pariteit
+  blijft. Raakt alleen écht gewijzigde rijen aan (`IS DISTINCT FROM`). Dry-run op prod
+  én dev gaf 0 wijzigingen op de huidige data; end-to-end testrun = overal `UPDATE 0`.
+  Backup van het oude script: `kiemkracht-flip-abonnement.sh.bak-20260625`.
 - Fase 0-annulaties-guard blijft als vangnet tot de oude stops gebackfilld zijn.
