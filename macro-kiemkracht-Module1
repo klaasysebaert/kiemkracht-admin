@@ -3265,6 +3265,32 @@ Sub VerwerkStopStart()
                 Exit Sub
             End If
 
+            ' Kolom stop-doel / herstart-week: enkel geldig bij een stopweek (kolom R)
+            Dim sDoelN As String : sDoelN = sDoel
+            Dim iHerstartN As Integer : iHerstartN = 0
+            If sStop <> "" Then
+                If sDoelN = "" Then sDoelN = "definitief"
+                If sDoelN <> "definitief" And sDoelN <> "tijdelijk" And sDoelN <> "weekperweek" Then
+                    MsgBox "Rij " & (r + 1) & ", stop-doel: ongeldig doel '" & sDoel & "'." & Chr(10) & _
+                           "Gebruik: definitief / tijdelijk / weekperweek (of leeg = definitief).", 16, "Fout"
+                    Exit Sub
+                End If
+                If sDoelN = "tijdelijk" Then
+                    Dim sHerCsv As String : sHerCsv = ParseerWeken(sHerstart, True, sFout)
+                    If sFout <> "" Or sHerCsv = "" Then
+                        MsgBox "Rij " & (r + 1) & ": doel 'tijdelijk' vereist een geldige herstart-week.", 16, "Fout"
+                        Exit Sub
+                    End If
+                    iHerstartN = CInt(sHerCsv)
+                ElseIf sHerstart <> "" Then
+                    MsgBox "Rij " & (r + 1) & ": een herstart-week hoort enkel bij doel 'tijdelijk'.", 16, "Fout"
+                    Exit Sub
+                End If
+            ElseIf sDoel <> "" Or sHerstart <> "" Then
+                MsgBox "Rij " & (r + 1) & ": stop-doel/herstart-week horen bij een stopweek in kolom R.", 16, "Fout"
+                Exit Sub
+            End If
+
             riRij(nRij)   = r
             riKlant(nRij) = CLng(dKlant)
             riAnn(nRij)   = sAnnCsv
@@ -3272,6 +3298,8 @@ Sub VerwerkStopStart()
             riVbFmt(nRij) = sVbFmtCsv
             riType(nRij)  = sTypeIn
             riFmt(nRij)   = sFmtIn
+            riDoel(nRij)     = sDoelN
+            riHerstart(nRij) = iHerstartN
             If sStopCsv  = "" Then riStop(nRij)  = 0 Else riStop(nRij)  = CInt(sStopCsv)
             If sStartCsv = "" Then riStart(nRij) = 0 Else riStart(nRij) = CInt(sStartCsv)
             nRij = nRij + 1
