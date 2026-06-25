@@ -1600,7 +1600,7 @@ Sub MaakWeekbestand()
     aBreedtes(10) = 1800  ' leverdag (verborgen)
     aBreedtes(11) = 993   ' abonnement_wijziging
     aBreedtes(12) = 993   ' week_stop
-    aBreedtes(13) = 993   ' week_ann
+    aBreedtes(13) = 1800  ' dag afhaling
     aBreedtes(14) = 993   ' week_start
     aBreedtes(15) = 1700  ' klant_id
     aBreedtes(16) = 4219  ' datum/totaal kolom
