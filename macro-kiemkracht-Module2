@@ -151,6 +151,9 @@ Sub BereidMailmergeVoor()
         "  LIMIT 1 " & _
         ") ab ON true " & _
         "WHERE k.status NOT IN ('gepauzeerd', 'gestopt') " & _
+        " AND NOT (k.pauze_vanaf_jaar IS NOT NULL " & _
+        "          AND (k.pauze_vanaf_jaar * 100 + k.pauze_vanaf_week) <= " & iWeekNumMM & _
+        "          AND (k.pauze_tot_jaar IS NULL OR (k.pauze_tot_jaar * 100 + k.pauze_tot_week) > " & iWeekNumMM & ")) " & _
         " AND NOT EXISTS (SELECT 1 FROM annulaties ann " & _
         "   WHERE ann.jaar = " & iJaar & _
         "     AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & _
@@ -902,6 +905,9 @@ Sub BereidCombiMailmergeVoor()
         "  LIMIT 1 " & _
         ") ab ON true " & _
         "WHERE k.status NOT IN ('gepauzeerd', 'gestopt') " & _
+        " AND NOT (k.pauze_vanaf_jaar IS NOT NULL " & _
+        "          AND (k.pauze_vanaf_jaar * 100 + k.pauze_vanaf_week) <= " & iWeekNumMM & _
+        "          AND (k.pauze_tot_jaar IS NULL OR (k.pauze_tot_jaar * 100 + k.pauze_tot_week) > " & iWeekNumMM & ")) " & _
         " AND NOT EXISTS (SELECT 1 FROM annulaties ann " & _
         "   WHERE ann.jaar = " & iJaar & _
         "     AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & _
