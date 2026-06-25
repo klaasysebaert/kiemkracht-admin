@@ -1495,6 +1495,10 @@ Sub MaakMaandbestand()
     Dim pr As Integer, pBlanks As Integer
     Dim sPKid As String, sPNaam As String, sPEmail As String, sPVoor As String, sPKey As String
     Dim dPSaldo As Double, dPOntv As Double
+    ' "Ontvangen"-koppeling uit "opvolgen betalingen" op klant_id (niet op rijnummer)
+    Dim cOKid As Integer, cONaam As Integer, cOEmail As Integer, cOTot As Integer
+    Dim sOKid As String, sONaam As String, sOEmail As String, sOKey As String
+    Dim opKey(800) As String, opOntv(800) As Double, nOp As Integer, oi As Integer
     Dim nOvergedragen As Integer : nOvergedragen = 0
     Dim sGeenKid As String : sGeenKid = ""
     Dim sGeenEmail As String : sGeenEmail = ""
