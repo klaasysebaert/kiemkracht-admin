@@ -880,6 +880,7 @@ Sub MaakWeekbestand()
     Dim bTel(500)     As String
     Dim bTyp(500)     As String
     Dim bKlaarDag(500) As String
+    Dim bAfhDag(500)  As String
     Dim bSamenv(500)  As String
     Dim bKlantId(500) As String
     Dim nBest As Integer
