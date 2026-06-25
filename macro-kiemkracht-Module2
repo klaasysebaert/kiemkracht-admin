@@ -1766,7 +1766,6 @@ Sub MaakMaandbestand()
                     If cVEmail >= 0 Then sPEmail = oVAfr.getCellByPosition(cVEmail, pr).getString()
                     If cVVoor  >= 0 Then sPVoor  = oVAfr.getCellByPosition(cVVoor, pr).getString()
                     dPSaldo = oVAfr.getCellByPosition(cVSaldo, pr).getValue()  ' Saldo -> Vorig saldo
-                    dPOntv  = oVOp.getCellByPosition(cVTot, pr).getValue()     ' Totaal betaald -> Ontvangen
                     ' Sleutel identiek aan de maand-aggregatie (klant_id, anders e-mail, anders naam)
                     If sPKid <> "" Then
                         sPKey = "K:" & sPKid
@@ -1775,6 +1774,12 @@ Sub MaakMaandbestand()
                     Else
                         sPKey = "N:" & LCase(sPNaam)
                     End If
+                    ' Ontvangen (Totaal betaald) op klant_id koppelen met "opvolgen
+                    ' betalingen" -> robuust tegen rij-verschuiving tussen de tabbladen.
+                    dPOntv = 0
+                    For oi = 0 To nOp - 1
+                        If opKey(oi) = sPKey Then dPOntv = opOntv(oi) : Exit For
+                    Next oi
                     kFound = -1
                     For ki = 0 To nKl - 1
                         If mKey(ki) = sPKey Then kFound = ki : Exit For
