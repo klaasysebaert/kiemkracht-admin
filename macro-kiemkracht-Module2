@@ -1886,16 +1886,16 @@ Sub MaakMaandbestand()
         For wi = 0 To NWEKEN - 1
             ' ruwe inhoud (enkel voor weken die deze maand bestaan)
             If wi < nWk Then
-                If mPak(idx, wi)  <> "" Then oS.getCellByPosition(11 + wi * 2,     ro).setString(mPak(idx, wi))
-                If mBijA(idx, wi) <> "" Then oS.getCellByPosition(11 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
+                If mPak(idx, wi)  <> "" Then oS.getCellByPosition(12 + wi * 2,     ro).setString(mPak(idx, wi))
+                If mBijA(idx, wi) <> "" Then oS.getCellByPosition(12 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
             End If
             ' "als"-formules: lege ruwe cel -> "|"
-            oS.getCellByPosition(21 + wi * 2, ro).setFormula( _
-                "=IF(" & KolomLetter(11 + wi * 2) & (ro + 1) & "="""";""|"";" & _
-                KolomLetter(11 + wi * 2) & (ro + 1) & ")")
-            oS.getCellByPosition(21 + wi * 2 + 1, ro).setFormula( _
-                "=IF(" & KolomLetter(11 + wi * 2 + 1) & (ro + 1) & "="""";""|"";" & _
-                KolomLetter(11 + wi * 2 + 1) & (ro + 1) & ")")
+            oS.getCellByPosition(22 + wi * 2, ro).setFormula( _
+                "=IF(" & KolomLetter(12 + wi * 2) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(12 + wi * 2) & (ro + 1) & ")")
+            oS.getCellByPosition(22 + wi * 2 + 1, ro).setFormula( _
+                "=IF(" & KolomLetter(12 + wi * 2 + 1) & (ro + 1) & "="""";""|"";" & _
+                KolomLetter(12 + wi * 2 + 1) & (ro + 1) & ")")
         Next wi
         ro = ro + 1
         VolgendeUit:
