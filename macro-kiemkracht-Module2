@@ -1956,7 +1956,9 @@ Sub MaakMaandbestand()
         oOp.getCellByPosition(2, roOp).setFormula("=IF(afrekening.C" & sRij & "="""";"""";afrekening.C" & sRij & ")")   ' Voornaam2 Familienaam2
         oOp.getCellByPosition(3, roOp).setFormula("=afrekening.G" & sRij)   ' Saldo
         oOp.getCellByPosition(6, roOp).setFormula("=E" & sRij & "+F" & sRij)   ' Totaal betaald
-        oOp.getCellByPosition(7, roOp).setFormula("=D" & sRij & "-G" & sRij)   ' Nog te betalen
+        ' Nog te betalen = Saldo - Totaal betaald; beide eerst naar centen ronden
+        ' zodat een sub-cent afrondingsresidu niet als -0,01 blijft staan.
+        oOp.getCellByPosition(7, roOp).setFormula("=ROUND(D" & sRij & ";2)-ROUND(G" & sRij & ";2)")   ' Nog te betalen
         oOp.getCellByPosition(8, roOp).setFormula("=afrekening.D" & sRij)   ' Email
         oOp.getCellByPosition(9, roOp).setFormula("=afrekening.E" & sRij)   ' Voornaam
     Next roOp
