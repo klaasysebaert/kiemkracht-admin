@@ -902,6 +902,7 @@ Sub MaakWeekbestand()
         bTel(nBest)     = oRS.getString(13)
         bTyp(nBest)      = oRS.getString(15)
         bKlaarDag(nBest) = oRS.getString(16)
+        bAfhDag(nBest)   = oRS.getString(17)   ' dag_afhaling (kan afwijken van klaarmaken, bv. 't Voldersveld)
         bKlantId(nBest)  = oRS.getString(14)
         nBest = nBest + 1
     Loop
