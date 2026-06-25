@@ -1931,11 +1931,12 @@ Sub MaakMaandbestand()
     oS.Columns.getByIndex(5).Width = 1750   ' F Maand = 1,75 cm
     oS.Columns.getByIndex(6).Width  = 1300   ' G Saldo = 1,30 cm
     oS.Columns.getByIndex(10).Width = 1500   ' K Besteld in maand = 1,50 cm
+    oS.Columns.getByIndex(11).Width = 2200   ' L Afhaaldag = 2,20 cm
     For wi = 0 To NWEKEN - 1
-        oS.Columns.getByIndex(11 + wi * 2).Width      = 8000
-        oS.Columns.getByIndex(11 + wi * 2 + 1).Width  = 9000
-        oS.Columns.getByIndex(21 + wi * 2).Width      = 8000
-        oS.Columns.getByIndex(21 + wi * 2 + 1).Width  = 9000
+        oS.Columns.getByIndex(12 + wi * 2).Width      = 8000
+        oS.Columns.getByIndex(12 + wi * 2 + 1).Width  = 9000
+        oS.Columns.getByIndex(22 + wi * 2).Width      = 8000
+        oS.Columns.getByIndex(22 + wi * 2 + 1).Width  = 9000
     Next wi
 
     ' Tabblad "opvolgen betalingen"
