@@ -160,7 +160,8 @@ op prod naar de nieuwe kolommen).
 **Invoer = aparte kolommen** (niet de `R:H`-syntax uit het eerste ontwerp). In
 `klanten_stop_start`, header-gedetecteerd op naam (rijen 1–6):
 - `stop-doel`  → `definitief` (of leeg) / `tijdelijk` / `weekperweek`
-- `herstart-week` → weeknr, enkel bij `tijdelijk`
+- `herstart-week` → weeknr; verplicht bij `tijdelijk`, optioneel bij `weekperweek`
+  (klant wordt dan in die week weer volwaardig abonnee)
 
 Layout verschoof: R=stopzetting, **S=stop-doel, T=herstart-week**, U=vooruitbestellingen,
 V=start, W=type, X=formaat (vaste indices `COL_VB..COL_FORMAAT` +2 in `VerwerkStopStart`).
