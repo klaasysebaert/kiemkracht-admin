@@ -3192,7 +3192,7 @@ Sub VerwerkStopStart()
     Dim iDoelCol As Integer : iDoelCol = -1
     Dim iHerstartCol As Integer : iHerstartCol = -1
     Dim hdr As Integer, hdc As Integer, sHdr As String
-    For hdr = 0 To 1
+    For hdr = 0 To 5
         For hdc = 0 To 40
             sHdr = LCase(Trim(oSheet.getCellByPosition(hdc, hdr).getString()))
             If sHdr = "stop-doel" Then iDoelCol = hdc
