@@ -1401,7 +1401,8 @@ Sub MaakMaandbestand()
     Const cdNaam    = 0    ' voornaam + familienaam
     Const cdEmail   = 6
     Const cdVoor    = 8
-    Const cdDag     = 10   ' leverdag (donderdag/vrijdag)
+    Const cdDag     = 10   ' leverdag = klaarmaakdag (donderdag/vrijdag) — fallback
+    Const cdAfhDag  = 13   ' dag afhaling (afhaaldag klant; voorkeur boven cdDag)
     Const cdKlantId = 15   ' kolom P
     Const cdKG      = 17
     Const cdGG      = 18
