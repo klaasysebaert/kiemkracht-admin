@@ -1590,6 +1590,7 @@ Sub MaakMaandbestand()
             If Left(sLev, 2) = "vr" Then dLever = dLever + 1
             sDatum = KapWoord(sLev)
             If sDatum = "" Then sDatum = "Donderdag"
+            sDayWord = sDatum   ' losse dag-naam (Donderdag/Vrijdag) voor de Afhaaldag-kolom
             sDatum = sDatum & " " & Day(dLever) & " " & saMaanden(Month(dLever))
 
             ' Pakketregel
