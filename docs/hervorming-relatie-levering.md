@@ -171,7 +171,10 @@ V=start, W=type, X=formaat (vaste indices `COL_VB..COL_FORMAAT` +2 in `VerwerkSt
 |---|---|---|
 | definitief | `eind=(W)` op lopende primair-abo's | `pauze_vanaf=W, pauze_tot=NULL` |
 | tijdelijk | `eind=(W)` + opvolger `start=(H)` (ritme/formaat gekopieerd) | `pauze_vanaf=W, pauze_tot=H` |
-| weekperweek | `eind=(W)` | geen pauzewindow |
+| weekperweek | `eind=(W)` (+ opvolger `start=(H)` als herstart-week gegeven) | geen pauzewindow |
+
+`weekperweek` mét herstart-week = krijgt aanbod-los in `[W, H)` en wordt abonnee vanaf
+`H`; verschilt van `tijdelijk` enkel doordat de mail-poort openblijft (geen pauzewindow).
 
 **Belangrijke as-built nuances:**
 - **NULL-veilig**: bestaande abo's hebben vaak `start=NULL` → conditie is
