@@ -3197,6 +3197,8 @@ Sub VerwerkStopStart()
     Dim riStart(MAX_RIJ) As Integer
     Dim riType(MAX_RIJ)  As String
     Dim riFmt(MAX_RIJ)   As String
+    Dim riDoel(MAX_RIJ)     As String    ' '' / definitief / tijdelijk / weekperweek
+    Dim riHerstart(MAX_RIJ) As Integer   ' herstart-week (enkel bij doel=tijdelijk)
     Dim nRij As Integer : nRij = 0
 
     Dim r As Integer
