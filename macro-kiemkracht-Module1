@@ -1106,7 +1106,7 @@ Sub MaakWeekbestand()
     Const cDag      = 10  ' leverdag (verborgen)
     Const cWijzig   = 11  ' abonnement_wijziging
     Const cStop     = 12  ' week_stopzetten_abonnement
-    Const cAnn      = 13  ' (leeg — vrij voor andere info)
+    Const cAnn      = 13  ' dag afhaling (afhaaldag klant; kan afwijken van klaarmaakdag)
     Const cStart    = 14  ' week_start_abonnement
     Const cWBest    = 15  ' klant_id (kolom P)
     Const cDatum    = 16  ' datum (YYMMDD)
