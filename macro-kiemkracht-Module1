@@ -3695,6 +3695,8 @@ Sub VerwerkStopStart()
         oSheet.getCellByPosition(COL_START,   riRij(i)).setString("")
         oSheet.getCellByPosition(COL_TYPE,    riRij(i)).setString("")
         oSheet.getCellByPosition(COL_FORMAAT, riRij(i)).setString("")
+        If iDoelCol >= 0     Then oSheet.getCellByPosition(iDoelCol,     riRij(i)).setString("")
+        If iHerstartCol >= 0 Then oSheet.getCellByPosition(iHerstartCol, riRij(i)).setString("")
     Next i
 
     SluitSSHTunnels()
