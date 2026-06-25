@@ -1572,7 +1572,10 @@ Sub MaakMaandbestand()
             sKid   = Trim(oData.getCellByPosition(cdKlantId, rr).getString())
             sEmail = oData.getCellByPosition(cdEmail, rr).getString()
             sVoor  = oData.getCellByPosition(cdVoor, rr).getString()
-            sLev   = LCase(Trim(oData.getCellByPosition(cdDag, rr).getString()))
+            ' Afhaaldag (dag_afhaling) heeft voorrang; valt terug op de klaarmaakdag
+            ' (cdDag) voor weekbestanden van vóór de dag_afhaling-kolom.
+            sLev   = LCase(Trim(oData.getCellByPosition(cdAfhDag, rr).getString()))
+            If sLev = "" Then sLev = LCase(Trim(oData.getCellByPosition(cdDag, rr).getString()))
 
             If sKid <> "" Then
                 sKey = "K:" & sKid
