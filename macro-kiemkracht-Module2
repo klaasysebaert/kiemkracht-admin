@@ -1624,6 +1624,21 @@ Sub MaakMaandbestand()
                 sKey = "N:" & LCase(sNaam)
             End If
 
+            ' Bijhorende afrekening-rij zoeken op klant_id (anders naam). Niet gevonden
+            ' -> terugvallen op hetzelfde rijnummer (uitgelijnd bestand / oud gedrag).
+            arRow = -1
+            If sKid <> "" Then
+                For ai = 0 To nAf - 1
+                    If afKid(ai) = sKid Then arRow = afRow(ai) : Exit For
+                Next ai
+            End If
+            If arRow = -1 Then
+                For ai = 0 To nAf - 1
+                    If afNaamL(ai) = LCase(sNaam) Then arRow = afRow(ai) : Exit For
+                Next ai
+            End If
+            If arRow = -1 Then arRow = rr
+
             ' Leverdatum (donderdag van deze week; vrijdag-afhaalpunt = +1)
             dLever = wkThu(wi)
             If Left(sLev, 2) = "vr" Then dLever = dLever + 1
