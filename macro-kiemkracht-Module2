@@ -1687,6 +1687,7 @@ Sub MaakMaandbestand()
 
         If bSluiten Then oWeek.close(True)
         nVerwerkt = nVerwerkt + 1
+        sWeekLijst = sWeekLijst & "  - week " & wkNr(wi) & ": " & Mid(sPad, Len(sWeekMap) + 1) & Chr(10)
 
         VolgendeWeek:
     Next wi
