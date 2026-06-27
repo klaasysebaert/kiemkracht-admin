@@ -2059,9 +2059,14 @@ Sub MaakMaandbestand()
     If sGeenEmail <> "" Then
         sMsgKid = sMsgKid & Chr(10) & Chr(10) & "Klanten zonder e-mail (kunnen geen mail ontvangen):" & Chr(10) & sGeenEmail
     End If
+    Dim sMsgWeken As String : sMsgWeken = ""
+    If sWeekLijst <> "" Then
+        sMsgWeken = Chr(10) & Chr(10) & "Verwerkte weekbestanden (per week):" & Chr(10) & sWeekLijst
+    End If
     MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
            (ro - 6) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
-           sMaandNaam & " " & iJaar & ")." & Chr(10) & Chr(10) & _
+           sMaandNaam & " " & iJaar & ")." & _
+           sMsgWeken & Chr(10) & Chr(10) & _
            "Ruwe kolommen 'Pakket week n'/'Bijbestellingen week n' + " & _
            "mailmerge-kolommen 'Pakket n als'/'Bijb n als' (lege week -> ""|"")." & _
            sMsgWijz & sMsgVorig & sMsgKid, _
