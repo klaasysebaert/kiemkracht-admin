@@ -1488,6 +1488,11 @@ Sub MaakMaandbestand()
     Dim gName(80) As String, gPrice(80) As Double, gEenh(80) As String
     Dim wName(40) As String
     Dim g As Integer, w As Integer, rr As Integer, blanks As Integer
+    ' Afrekening-tab gekoppeld op klant_id (anders naam) i.p.v. op rijnummer:
+    ' het datablad en de afrekening-tab kunnen na manuele bewerking verschoven zijn.
+    Dim afKid(2000) As String, afNaamL(2000) As String, afRow(2000) As Integer
+    Dim nAf As Integer, ar As Integer, arBlanks As Integer, arRow As Integer, ai As Integer
+    Dim sArNaam As String, sArKid As String
     Dim sNaam As String, sAfhM As String, sKid As String
     Dim sEmail As String, sVoor As String, sLev As String
     Dim dLever As Date, sDatum As String, sDayWord As String
