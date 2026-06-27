@@ -1932,6 +1932,45 @@ Sub MaakWeekbestand()
     oAfr.getCellByPosition(1, 4).setValue(prijsMini)
     oAfr.getCellRangeByName("B2:B5").NumberFormat = nCur
 
+    ' --- Samenvatting bovenaan: weekwaarden (kruiscontrole met het maandbestand) ---
+    ' Robuust uit de datablad-AGGREGAATrijen (SUMIF; rij 4=totaal, 5=donderdag,
+    ' 6=vrijdag), NIET uit de per-klant-cellen: een handmatig verwijderde klantrij
+    ' breekt een per-klant-formule (#VERW!) en zou anders elk totaal besmetten.
+    ' C2:E5 = pakketwaarde per type (aantal datablad x prijscel B2:B5), do/vr/totaal.
+    oAfr.getCellByPosition(2, 0).setString("donderdag")   ' C1
+    oAfr.getCellByPosition(3, 0).setString("vrijdag")     ' D1
+    oAfr.getCellByPosition(4, 0).setString("totaal")      ' E1
+    Dim aPkCol(3) As String
+    aPkCol(0) = KolomLetter(cKG)    ' R Klein   -> prijs B2
+    aPkCol(1) = KolomLetter(cGG)    ' S Groot   -> B3
+    aPkCol(2) = KolomLetter(cEGG)   ' T E.groot -> B4
+    aPkCol(3) = KolomLetter(cMINI)  ' U Mini    -> B5
+    Dim iPk As Integer, sPrR As String
+    For iPk = 0 To 3
+        sPrR = CStr(iPk + 2)        ' prijscel B2..B5 = type-rij iPk+2
+        oAfr.getCellByPosition(2, iPk + 1).setFormula("=" & sData & "." & aPkCol(iPk) & "5*$B$" & sPrR)  ' do (datablad rij 5)
+        oAfr.getCellByPosition(3, iPk + 1).setFormula("=" & sData & "." & aPkCol(iPk) & "6*$B$" & sPrR)  ' vr (rij 6)
+        oAfr.getCellByPosition(4, iPk + 1).setFormula("=" & sData & "." & aPkCol(iPk) & "4*$B$" & sPrR)  ' totaal (rij 4)
+    Next iPk
+    oAfr.getCellRangeByName("C2:E5").NumberFormat = nCur
+    oAfr.getCellRangeByName("C1:E1").CharWeight = com.sun.star.awt.FontWeight.BOLD
+
+    ' Zij-strookje G2:H5 — totalen + WEEKTOTAAL (= het getal dat met het maandbestand
+    ' moet kloppen). Bijbestellingen uit het datablad-totaal van "€ losse" (kolom X);
+    ' weglatingen fouttolerant (AGGREGATE negeert #VERW!-weescellen van verwijderde rijen).
+    Dim sXcol As String : sXcol = KolomLetter(cWaarde)   ' X = € losse groenten
+    oAfr.getCellByPosition(6, 1).setString("Pakketten")         ' G2
+    oAfr.getCellByPosition(6, 2).setString("Bijbestellingen")   ' G3
+    oAfr.getCellByPosition(6, 3).setString("Weglatingen (-)")   ' G4
+    oAfr.getCellByPosition(6, 4).setString("WEEKTOTAAL")        ' G5
+    oAfr.getCellByPosition(7, 1).setFormula("=SUM(E2:E5)")                       ' H2 pakketten totaal
+    oAfr.getCellByPosition(7, 2).setFormula("=" & sData & "." & sXcol & "4")     ' H3 bijbestellingen totaal
+    oAfr.getCellByPosition(7, 3).setFormula("=AGGREGATE(9;6;D7:D2000)")          ' H4 weglatingen totaal (fouttolerant)
+    oAfr.getCellByPosition(7, 4).setFormula("=H2+H3-H4")                         ' H5 WEEKTOTAAL
+    oAfr.getCellRangeByName("H2:H5").NumberFormat = nCur
+    oAfr.getCellRangeByName("G2:G5").CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oAfr.getCellRangeByName("G5:H5").CharWeight = com.sun.star.awt.FontWeight.BOLD
+
     ' Koprij van de afrekeningstabel
     oAfr.getCellByPosition(0, 5).setString("klant / afhaalpunt")
     oAfr.getCellByPosition(1, 5).setString("pakket")
