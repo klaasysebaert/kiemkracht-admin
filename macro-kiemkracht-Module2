@@ -1418,6 +1418,7 @@ Sub MaakMaandbestand()
     ' Afrekening-tabblad
     Const caBedrag  = 1    ' B = pakket-bedrag
     Const caTotaal  = 4    ' E = TOTAAL
+    Const caKid     = 5    ' F = klant_id (afrekening-tab; voor rij-koppeling op identiteit)
     Const caWeg0    = 51   ' AZ = eerste weglating-detailkolom (vast: 24+24+3)
     Const NWEKEN    = 5    ' vaste leverweek-slots (max donderdagen in een maand)
 
