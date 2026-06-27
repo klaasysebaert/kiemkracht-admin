@@ -2122,33 +2122,57 @@ Function FmtNumTrim(dValue As Double) As String
 End Function
 
 ' Zoekt het weekbestand in sMap: begint met "week_<wk>_<jaar>", bevat sOmg
-' (leeg = prod, "-dev" = dev), eindigt op ".ods". Geeft volledig pad terug,
-' "" als niet gevonden. Zo werken suffixen als "_definitief" transparant.
+' (leeg = prod, "-dev" = dev), eindigt op ".ods".
+' Meerdere bestanden delen die prefix (working copy, "_definitief", en afgeleide
+' label-exports "_etiketten"/"_bijbestelling"). We mogen NIET zomaar de eerste
+' Dir()-treffer nemen (volgorde is filesysteem-afhankelijk → koos soms de working
+' copy zonder de ingevoerde bijbestellingen). Daarom deterministisch kiezen:
+'   1) het exacte "week_<wk>_<jaar>_definitief.ods" (prod-canoniek),
+'   2) anders een ander bestand dat "definitief" bevat (bv. dev),
+'   3) anders de gewone working copy (week nog niet gefinaliseerd).
+' Afgeleide exports ("etiket"/"bijbestelling") worden altijd uitgesloten.
+' Geeft volledig pad terug, "" als niet gevonden.
 Function ZoekWeekbestand(sMap As String, iWk As Integer, iJr As Integer, sOmg As String) As String
     Dim sPrefix As String
     sPrefix = LCase("week_" & iWk & "_" & iJr)
     Dim sOmgL As String : sOmgL = LCase(sOmg)
-    Dim sGlob As String : sGlob = sMap & "week_*.ods"
-    Dim sCand As String
-    sCand = Dir(sGlob)
+    Dim sExactName As String : sExactName = sPrefix & "_definitief.ods"   ' prod-canoniek
+    Dim sExactDef As String : sExactDef = ""
+    Dim sAnyDef As String   : sAnyDef   = ""
+    Dim sPlain As String    : sPlain    = ""
+    Dim bOmgOk As Boolean
+    Dim sCand As String, sCandL As String
+    sCand = Dir(sMap & "week_*.ods")
     Do While sCand <> ""
-        Dim sCandL As String : sCandL = LCase(sCand)
+        sCandL = LCase(sCand)
         If Left(sCandL, Len(sPrefix)) = sPrefix Then
             If sOmgL = "" Then
-                If InStr(sCandL, "-dev") = 0 Then
-                    ZoekWeekbestand = sMap & sCand
-                    Exit Function
-                End If
+                bOmgOk = (InStr(sCandL, "-dev") = 0)
             Else
-                If InStr(sCandL, sOmgL) > 0 Then
-                    ZoekWeekbestand = sMap & sCand
-                    Exit Function
+                bOmgOk = (InStr(sCandL, sOmgL) > 0)
+            End If
+            ' Label-exports nooit als databron gebruiken
+            If bOmgOk And InStr(sCandL, "etiket") = 0 And InStr(sCandL, "bijbestelling") = 0 Then
+                If sCandL = sExactName Then
+                    If sExactDef = "" Then sExactDef = sCand
+                ElseIf InStr(sCandL, "definitief") > 0 Then
+                    If sAnyDef = "" Then sAnyDef = sCand
+                Else
+                    If sPlain = "" Then sPlain = sCand
                 End If
             End If
         End If
         sCand = Dir()
     Loop
-    ZoekWeekbestand = ""
+    If sExactDef <> "" Then
+        ZoekWeekbestand = sMap & sExactDef
+    ElseIf sAnyDef <> "" Then
+        ZoekWeekbestand = sMap & sAnyDef
+    ElseIf sPlain <> "" Then
+        ZoekWeekbestand = sMap & sPlain
+    Else
+        ZoekWeekbestand = ""
+    End If
 End Function
 
 ' Eerste letter naar hoofdletter ("donderdag" -> "Donderdag").
