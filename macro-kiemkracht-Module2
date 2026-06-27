@@ -1693,7 +1693,7 @@ Sub MaakMaandbestand()
                 End If
             Next w
 
-            dTot = oAfr.getCellByPosition(caTotaal, rr).getValue()
+            dTot = oAfr.getCellByPosition(caTotaal, arRow).getValue()
 
             ' Klant opzoeken/aanmaken
             kFound = -1
