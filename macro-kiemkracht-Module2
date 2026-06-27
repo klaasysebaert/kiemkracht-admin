@@ -1649,7 +1649,7 @@ Sub MaakMaandbestand()
 
             ' Pakketregel
             sPak = ""
-            dBedrag = oAfr.getCellByPosition(caBedrag, rr).getValue()
+            dBedrag = oAfr.getCellByPosition(caBedrag, arRow).getValue()
             cnt = oData.getCellByPosition(cdKG, rr).getValue()
             If cnt > 0 Then sPak = FmtNumTrim(cnt) & " x Klein groentenpakket"
             cnt = oData.getCellByPosition(cdGG, rr).getValue()
