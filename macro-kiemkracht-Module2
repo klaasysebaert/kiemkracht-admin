@@ -1682,8 +1682,8 @@ Sub MaakMaandbestand()
                 End If
             Next g
             For w = 0 To nWeg - 1
-                If oAfr.getCellByPosition(caWeg0 + w, rr).getString() <> "" Then
-                    dVal = oAfr.getCellByPosition(caWeg0 + w, rr).getValue()
+                If oAfr.getCellByPosition(caWeg0 + w, arRow).getString() <> "" Then
+                    dVal = oAfr.getCellByPosition(caWeg0 + w, arRow).getValue()
                     If dVal > 0 Then
                         sItem = "geen " & LCase(wName(w)) & ": -" & FmtNum2(dVal) & Chr(8364)
                         If sItemsA <> "" Then sItemsA = sItemsA & " & " : sItemsN = sItemsN & Chr(10)
