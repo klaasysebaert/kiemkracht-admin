@@ -2109,7 +2109,6 @@ Sub MaakWeekbestand()
     oAfr.getCellRangeByName("A6:" & sLG & "6").CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfr.getCellByPosition(cGeen, 5).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oAfr.getCellRangeByName("A" & (arTot + 1) & ":E" & (arTot + 1)).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfr.Columns.getByIndex(0).Width = 5000
     oAfr.Columns.getByIndex(1).Width = 2000
     oAfr.Columns.getByIndex(2).Width = 2600
