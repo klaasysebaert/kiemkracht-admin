@@ -2114,6 +2114,8 @@ Sub MaakWeekbestand()
     oAfr.Columns.getByIndex(2).Width = 2600
     oAfr.Columns.getByIndex(3).Width = 2600
     oAfr.Columns.getByIndex(4).Width = 2400
+    oAfr.Columns.getByIndex(6).Width = 3800   ' G samenvatting-labels
+    oAfr.Columns.getByIndex(7).Width = 2600   ' H samenvatting-waarden
     oAfr.Columns.getByIndex(cSamenv).Width = 9000
     oAfr.getCellRangeByName(KolomLetter(cSamenv) & "7:" & KolomLetter(cSamenv) & nLaatsteForm).IsTextWrapped = True
     oAfr.Columns.getByIndex(cGeen).Width = 9000
