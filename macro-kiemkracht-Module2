@@ -1572,6 +1572,30 @@ Sub MaakMaandbestand()
             If wName(w) <> "" Then nWeg = w + 1
         Next w
 
+        ' Afrekening-tab indexeren op klant_id (en naam als fallback). Bedrag/TOTAAL/
+        ' weglatingen worden zo per klant op identiteit gelezen, niet op rijnummer:
+        ' in handmatig bewerkte _definitief-bestanden staat de afrekening-tab soms
+        ' verschoven t.o.v. het datablad (ingevoegde rijen -> formules schuiven mee).
+        ' Binnen één afrekening-rij verwijzen alle cellen naar dezelfde (verschoven)
+        ' datarij, dus de rij waar kolom F = klant_id bevat het juiste bedrag.
+        nAf = 0 : arBlanks = 0 : ar = 6
+        Do While arBlanks < 50 And ar < 5000
+            sArNaam = oAfr.getCellByPosition(0, ar).getString()
+            sArKid  = Trim(oAfr.getCellByPosition(caKid, ar).getString())
+            If sArNaam = "" And sArKid = "" Then
+                arBlanks = arBlanks + 1
+            Else
+                arBlanks = 0
+                If nAf <= UBound(afKid) Then
+                    afKid(nAf)   = sArKid
+                    afNaamL(nAf) = LCase(sArNaam)
+                    afRow(nAf)   = ar
+                    nAf = nAf + 1
+                End If
+            End If
+            ar = ar + 1
+        Loop
+
         ' Klantrijen (vanaf rij 7 = index 6)
         blanks = 0 : rr = 6
         Do While blanks < 10 And rr < 5000
