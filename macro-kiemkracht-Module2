@@ -1752,9 +1752,18 @@ Sub MaakMaandbestand()
             rr = rr + 1
         Loop
 
+        ' Onafhankelijk WEEKTOTAAL uit het weekbestand zelf (afrekening G5/H5) voor de
+        ' kruiscontrole. Oude weekbestanden zonder die samenvatting -> geen controle.
+        If oAfr.getCellByPosition(6, 4).getString() = "WEEKTOTAAL" Then
+            mWeekFile(wi) = oAfr.getCellByPosition(7, 4).getValue()
+            bWeekWT(wi) = True
+        End If
+
         If bSluiten Then oWeek.close(True)
         nVerwerkt = nVerwerkt + 1
-        sWeekLijst = sWeekLijst & "  - week " & wkNr(wi) & ": " & Mid(sPad, Len(sWeekMap) + 1) & Chr(10)
+        bWeekDone(wi) = True
+        sWeekNaam(wi) = Mid(sPad, Len(sWeekMap) + 1)
+        sWeekLijst = sWeekLijst & "  - week " & wkNr(wi) & ": " & sWeekNaam(wi) & Chr(10)
 
         VolgendeWeek:
     Next wi
