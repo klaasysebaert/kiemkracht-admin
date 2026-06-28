@@ -3738,21 +3738,36 @@ Sub VerwerkStopStart()
     Dim nMailFout As Integer : nMailFout = 0
     If bStuurMails Then
         Dim m As Integer
+        Dim bAnnGedaan(MAX_ITEM) As Boolean   ' annulatie-record al in een bundel meegestuurd
         For m = 0 To nMail - 1
             Dim bOk As Boolean : bOk = False
             Select Case mType(m)
-                Case "annulatie", "stopzetting"
-                    Dim iWeekStop As Integer
-                    If mType(m) = "stopzetting" Then iWeekStop = mWeek(m) Else iWeekStop = 0
+                Case "annulatie"
+                    ' Alle annulaties van dezelfde klant in één gebundelde mail.
+                    If Not bAnnGedaan(m) Then
+                        Dim sItems As String : sItems = ""
+                        Dim mm As Integer
+                        For mm = m To nMail - 1
+                            If mType(mm) = "annulatie" And mKlantId(mm) = mKlantId(m) And Not bAnnGedaan(mm) Then
+                                If sItems <> "" Then sItems = sItems & ","
+                                sItems = sItems & "{""week"":" & mWeek(mm) & ",""jaar"":" & mJaar(mm) & "}"
+                                bAnnGedaan(mm) = True
+                            End If
+                        Next mm
+                        bOk = VerstuurAnnulatieBundel(mEmail(m), mVoor(m), mVoor2(m), mKlantId(m), sItems)
+                        If bOk Then nMailOk = nMailOk + 1 Else nMailFout = nMailFout + 1
+                    End If
+                Case "stopzetting"
                     bOk = VerstuurAnnulatieMail(mEmail(m), mVoor(m), mVoor2(m), mWeek(m), mJaar(m), _
-                                                mDatum(m), iWeekStop, mKlantId(m))
+                                                mDatum(m), mWeek(m), mKlantId(m))
+                    If bOk Then nMailOk = nMailOk + 1 Else nMailFout = nMailFout + 1
                 Case "vooruitbestelling", "abonnementsstart"
                     Dim iWeekStart As Integer
                     If mType(m) = "abonnementsstart" Then iWeekStart = mWeek(m) Else iWeekStart = 0
                     bOk = VerstuurVooruitbestellingMail(mEmail(m), mVoor(m), mVoor2(m), mWeek(m), mJaar(m), _
                                                         mDatum(m), iWeekStart, mKlantId(m), mFormaat(m))
+                    If bOk Then nMailOk = nMailOk + 1 Else nMailFout = nMailFout + 1
             End Select
-            If bOk Then nMailOk = nMailOk + 1 Else nMailFout = nMailFout + 1
         Next m
     End If
 
