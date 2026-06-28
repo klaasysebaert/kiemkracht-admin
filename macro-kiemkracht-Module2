@@ -2211,14 +2211,24 @@ Sub MaakMaandbestand()
     If sWeekLijst <> "" Then
         sMsgWeken = Chr(10) & Chr(10) & "Verwerkte weekbestanden (per week):" & Chr(10) & sWeekLijst
     End If
+    ' Weekcontrole-blok + icoon: waarschuwing als maand en weekbestand afwijken.
+    Dim sMsgCtrl As String, iIcon As Integer : iIcon = 64
+    If sMsgControle <> "" Then
+        sMsgCtrl = Chr(10) & Chr(10) & "!! WEEKCONTROLE - AFWIJKING tussen maand-aggregaat en weektotaal:" & Chr(10) & _
+                   sMsgControle & "Zie tabblad 'weekcontrole'."
+        iIcon = 48
+    Else
+        sMsgCtrl = Chr(10) & Chr(10) & "Weekcontrole OK: maand-aggregaat = weektotaal voor alle gecontroleerde weken (tabblad 'weekcontrole')."
+    End If
     MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
            (ro - 6) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
            sMaandNaam & " " & iJaar & ")." & _
+           sMsgCtrl & _
            sMsgWeken & Chr(10) & Chr(10) & _
            "Ruwe kolommen 'Pakket week n'/'Bijbestellingen week n' + " & _
            "mailmerge-kolommen 'Pakket n als'/'Bijb n als' (lege week -> ""|"")." & _
            sMsgWijz & sMsgVorig & sMsgKid, _
-           64, "Maandafrekening"
+           iIcon, "Maandafrekening"
 
 End Sub
 
