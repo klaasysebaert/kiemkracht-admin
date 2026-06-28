@@ -1957,7 +1957,11 @@ Sub MaakMaandbestand()
         If Trim(mKid(idx)) = "" Then sGeenKid = sGeenKid & "  - " & mNaam(idx) & Chr(10)
         If Trim(mEmail(idx)) = "" Then sGeenEmail = sGeenEmail & "  - " & mNaam(idx) & Chr(10)
         For wi = 0 To NWEKEN - 1
-            ' ruwe inhoud (enkel voor weken die deze maand bestaan)
+            ' ruwe inhoud (enkel voor weken die deze maand bestaan).
+            ' Enkel mBijA (" & "-variant) gaat naar een kolom; mBijN (regeleindes)
+            ' wordt bewust NIET weggeschreven — latente stroom voor een latere
+            ' geautomatiseerde verzending (bv. EmailLabs). Voeg hier een extra
+            ' kolom + setString(mBijN...) toe om die stroom te activeren.
             If wi < nWk Then
                 If mPak(idx, wi)  <> "" Then oS.getCellByPosition(12 + wi * 2,     ro).setString(mPak(idx, wi))
                 If mBijA(idx, wi) <> "" Then oS.getCellByPosition(12 + wi * 2 + 1, ro).setString(mBijA(idx, wi))
