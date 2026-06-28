@@ -2198,6 +2198,23 @@ Sub MaakWeekbestand()
     SluitSSHTunnels()
     Exit Sub
 
+OpkuisWB:
+    ' Fout tijdens de opbouw van het weekbestand: schermopbouw/herberekening van
+    ' het nieuwe document ALTIJD herstellen (anders blijft een bevroren venster
+    ' achter), tunnels sluiten en de fout tonen.
+    Dim sFoutWB As String
+    sFoutWB = "Fout " & Err & " op regel " & Erl & ": " & Error
+    On Error Resume Next
+    If Not IsNull(oNieuwDoc) Then
+        oNieuwDoc.enableAutomaticCalculation(bAutoCalc)
+        If bLocked Then oNieuwDoc.unlockControllers()
+    End If
+    SluitSSHTunnels()
+    On Error GoTo 0
+    MsgBox sFoutWB & Chr(10) & Chr(10) & _
+           "Het weekbestand is NIET volledig aangemaakt.", 16, "Aanmaken mislukt"
+    Exit Sub
+
 VerbindingsFout:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is (poort 5433).", 16, "Fout"
