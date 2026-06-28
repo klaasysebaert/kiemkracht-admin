@@ -2081,6 +2081,74 @@ Sub MaakMaandbestand()
     oOp.Columns.getByIndex(8).Width = 5000   ' I Email
     oOp.Columns.getByIndex(9).Width = 2400   ' J Voornaam = 2,40 cm
 
+    ' --- Tabblad "weekcontrole": kruiscontrole per week ---
+    ' Per week: wat het maandbestand uit dat weekbestand samentelde (maand-aggregaat)
+    ' vs het WEEKTOTAAL dat het weekbestand zelf bovenaan berekent. Wijken ze af, dan
+    ' is er iets mis (overgeslagen klant, kapotte/verschoven rij, ontbrekend definitief).
+    Dim sMsgControle As String : sMsgControle = ""
+    Dim oWc As Object
+    oOut.Sheets.insertNewByName("weekcontrole", 2)
+    oWc = oOut.Sheets.getByName("weekcontrole")
+    Dim oLocWc As New com.sun.star.lang.Locale
+    oLocWc.Language = "nl" : oLocWc.Country = "BE"
+    Dim nCurWc As Long
+    nCurWc = oOut.getNumberFormats().queryKey("#.##0,00"" " & Chr(8364) & """", oLocWc, False)
+    If nCurWc = -1 Then nCurWc = oOut.getNumberFormats().addNew("#.##0,00"" " & Chr(8364) & """", oLocWc)
+    oWc.getCellByPosition(0, 0).setString("WEEKCONTROLE - " & sMaandNaam & " " & iJaar)
+    oWc.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oWc.getCellByPosition(0, 1).setString("Vergelijkt per week het maand-aggregaat (som van wat dit maandbestand uit het " & _
+        "weekbestand telde) met het WEEKTOTAAL dat het weekbestand zelf berekent.")
+    oWc.getCellByPosition(0, 3).setString("week")
+    oWc.getCellByPosition(1, 3).setString("weekbestand")
+    oWc.getCellByPosition(2, 3).setString("maand-aggregaat")
+    oWc.getCellByPosition(3, 3).setString("weektotaal (weekbestand)")
+    oWc.getCellByPosition(4, 3).setString("verschil")
+    oWc.getCellByPosition(5, 3).setString("status")
+    oWc.getCellRangeByPosition(0, 3, 5, 3).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    Dim rc As Integer : rc = 4
+    Dim dSomMaand As Double, dSomWeek As Double
+    dSomMaand = 0 : dSomWeek = 0
+    For wi = 0 To nWk - 1
+        oWc.getCellByPosition(0, rc).setValue(wkNr(wi))
+        If Not bWeekDone(wi) Then
+            oWc.getCellByPosition(1, rc).setString("ontbreekt")
+            oWc.getCellByPosition(5, rc).setString("OVERGESLAGEN (geen _definitief)")
+        Else
+            oWc.getCellByPosition(1, rc).setString(sWeekNaam(wi))
+            oWc.getCellByPosition(2, rc).setValue(mWeekMaand(wi))
+            dSomMaand = dSomMaand + mWeekMaand(wi)
+            If bWeekWT(wi) Then
+                oWc.getCellByPosition(3, rc).setValue(mWeekFile(wi))
+                oWc.getCellByPosition(4, rc).setFormula("=C" & (rc + 1) & "-D" & (rc + 1))
+                dSomWeek = dSomWeek + mWeekFile(wi)
+                If Abs(mWeekMaand(wi) - mWeekFile(wi)) < 0.005 Then
+                    oWc.getCellByPosition(5, rc).setString("OK")
+                Else
+                    oWc.getCellByPosition(5, rc).setString("AFWIJKING")
+                    sMsgControle = sMsgControle & "  - week " & wkNr(wi) & ": maand " & FmtNum2(mWeekMaand(wi)) & _
+                        " " & Chr(8364) & " vs weekbestand " & FmtNum2(mWeekFile(wi)) & " " & Chr(8364) & _
+                        " (verschil " & FmtNum2(mWeekMaand(wi) - mWeekFile(wi)) & " " & Chr(8364) & ")" & Chr(10)
+                End If
+            Else
+                oWc.getCellByPosition(3, rc).setString("-")
+                oWc.getCellByPosition(5, rc).setString("geen weektotaal-cel (oud weekbestand)")
+            End If
+        End If
+        rc = rc + 1
+    Next wi
+    oWc.getCellByPosition(0, rc).setString("TOTAAL")
+    oWc.getCellByPosition(2, rc).setValue(dSomMaand)
+    oWc.getCellByPosition(3, rc).setValue(dSomWeek)
+    oWc.getCellByPosition(4, rc).setFormula("=C" & (rc + 1) & "-D" & (rc + 1))
+    oWc.getCellRangeByPosition(0, rc, 5, rc).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oWc.getCellRangeByPosition(2, 4, 4, rc).NumberFormat = nCurWc
+    oWc.Columns.getByIndex(0).Width = 1400
+    oWc.Columns.getByIndex(1).Width = 8000
+    oWc.Columns.getByIndex(2).Width = 3500
+    oWc.Columns.getByIndex(3).Width = 4400
+    oWc.Columns.getByIndex(4).Width = 2400
+    oWc.Columns.getByIndex(5).Width = 6800
+
     ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
     ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
     Dim sUit As String : sUit = JaarMap(iJaar) & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
