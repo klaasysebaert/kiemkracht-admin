@@ -2135,6 +2135,14 @@ Sub MaakWeekbestand()
     oAfr.Columns.getByIndex(cGeen).Width = 9000
     oAfr.getCellRangeByName(KolomLetter(cGeen) & "7:" & KolomLetter(cGeen) & nLaatsteForm).IsTextWrapped = True
 
+    ' Eénmalig herberekenen en schermopbouw terug aanzetten vóór opslaan/tonen
+    oNieuwDoc.calculateAll()
+    oNieuwDoc.enableAutomaticCalculation(bAutoCalc)
+    If bLocked Then
+        oNieuwDoc.unlockControllers()
+        bLocked = False
+    End If
+
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
     ' --- Opslaan ---
