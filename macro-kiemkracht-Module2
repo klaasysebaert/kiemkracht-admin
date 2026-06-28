@@ -1389,11 +1389,16 @@ End Sub
 '   - per leverweek n: "Pakket n als" + "Bijb n als"
 '       Pakket n als : "<leverdatum>: 1 x <Pakket>, <bedrag> €"
 '       Bijb n als   : "<leverdatum>: <losse groenten> & <weglatingen>"
-'   Losse groenten en weglatingen worden in TWEE varianten geschreven:
-'       "Bijb n als"               -> items met " & " (Thunderbird-mailmerge,
-'                                     waar echte regeleindes lastig zijn)
-'       "Bijb n als (regeleindes)" -> items met echte regeleindes (CHAR 10),
-'                                     voor de PHP/ZeptoMail-flow
+'   Losse groenten en weglatingen worden in TWEE varianten samengesteld:
+'       mBijA (" & ")        -> items op één regel, gescheiden met " & ".
+'                               Dit is de ENIGE die echt wordt weggeschreven
+'                               (kolom "Bijb n als"), voor de Thunderbird-
+'                               mailmerge waar echte regeleindes lastig zijn.
+'       mBijN (regeleindes)  -> dezelfde items met echte regeleindes (CHAR 10).
+'                               LATENTE stroom: wordt momenteel NIET in een
+'                               kolom weggeschreven, enkel berekend en klaar-
+'                               gehouden voor een eventuele toekomstige
+'                               geautomatiseerde verzending (bv. via EmailLabs).
 '   Weglatingen worden per groente getoond ("geen rabarber: -3,00 €"),
 '   met de waarde uit de afrekening-detailkolommen (AZ+).
 '
