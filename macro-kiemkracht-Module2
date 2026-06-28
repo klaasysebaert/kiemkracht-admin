@@ -1463,6 +1463,9 @@ Sub MaakMaandbestand()
     dJan4  = DateSerial(iJaar, 1, 4)
     dWk1Ma = dJan4 - (Weekday(dJan4, 2) - 1)   ' maandag van ISO-week 1
     Dim wkNr(60) As Integer, wkThu(60) As Date, nWk As Integer
+    ' Kruiscontrole per week: maand-aggregaat vs het WEEKTOTAAL uit het weekbestand zelf
+    Dim mWeekMaand(60) As Double, mWeekFile(60) As Double
+    Dim bWeekWT(60) As Boolean, bWeekDone(60) As Boolean, sWeekNaam(60) As String
     Dim wk As Integer
     nWk = 0
     For wk = 1 To 53
