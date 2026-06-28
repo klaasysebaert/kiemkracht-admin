@@ -1738,6 +1738,9 @@ Sub MaakMaandbestand()
             If sPak <> "" Then mPak(kFound, wi) = sPak
             If sItemsA <> "" Then
                 mBijA(kFound, wi) = sDatum & ": " & sItemsA
+                ' mBijN = latente regeleindes-variant: enkel hier berekend,
+                ' wordt verderop bewust NIET in een kolom weggeschreven (klaar
+                ' voor een toekomstige geautomatiseerde verzending, bv. EmailLabs).
                 mBijN(kFound, wi) = sDatum & ": " & sItemsN
             End If
 
