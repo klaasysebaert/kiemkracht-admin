@@ -1675,8 +1675,17 @@ Sub MaakMaandbestand()
             For g = 0 To nGroenten - 1
                 q = oData.getCellByPosition(cdGroent0 + g, rr).getValue()
                 If q > 0 Then
-                    sItem = gName(g) & ": " & FmtNumTrim(q) & " " & gEenh(g) & _
-                            " aan " & FmtNumTrim(gPrice(g)) & Chr(8364)
+                    ' Beknopt: "<naam>: <totaal> EUR". Bij meer dan 1 eenheid de
+                    ' detail erachter tussen haakjes: "(<aantal> <eenheid> a <prijs> EUR)".
+                    ' a via Chr(224), EUR via Chr(8364) tegen mojibake.
+                    dItemTot = q * gPrice(g)
+                    If q = 1 Then
+                        sItem = gName(g) & ": " & FmtNum2(dItemTot) & " " & Chr(8364)
+                    Else
+                        sItem = gName(g) & ": " & FmtNum2(dItemTot) & " " & Chr(8364) & _
+                                " (" & FmtNumTrim(q) & " " & gEenh(g) & " " & Chr(224) & " " & _
+                                FmtNum2(gPrice(g)) & " " & Chr(8364) & ")"
+                    End If
                     If sItemsA <> "" Then sItemsA = sItemsA & " & " : sItemsN = sItemsN & Chr(10)
                     sItemsA = sItemsA & sItem
                     sItemsN = sItemsN & sItem
