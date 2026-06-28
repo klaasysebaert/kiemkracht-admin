@@ -1085,6 +1085,9 @@ Sub MaakWeekbestand()
     Dim oDesktop  As Object
     Dim oNieuwDoc As Object
     Dim oSheet    As Object
+    Dim bAutoCalc As Boolean    ' stond automatische herberekening aan?
+    Dim bLocked   As Boolean    ' zijn de controllers van het nieuwe doc vergrendeld?
+    bAutoCalc = True : bLocked = False
 
     oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
     Dim aLaadProps(0) As New com.sun.star.beans.PropertyValue
@@ -1093,6 +1096,17 @@ Sub MaakWeekbestand()
     oNieuwDoc = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aLaadProps())
     oSheet = oNieuwDoc.Sheets.getByIndex(0)
     oSheet.Name = "Week " & iWeek & " - " & iJaar
+
+    ' Snelheid: schermopbouw en automatische herberekening uit tijdens het opbouwen
+    ' van het weekbestand (honderden cel- en formuleschrijfacties — anders hertekent
+    ' en herberekent LO bij élke schrijfactie). Vanaf hier ALTIJD via OpkuisWB
+    ' afronden, zodat de vergrendeling ook bij een fout halverwege hersteld wordt
+    ' (geen bevroren venster).
+    On Error GoTo OpkuisWB
+    bAutoCalc = oNieuwDoc.isAutomaticCalculationEnabled()
+    oNieuwDoc.lockControllers()
+    bLocked = True
+    oNieuwDoc.enableAutomaticCalculation(False)
 
     ' Kolomindices (0-based)
     Const cNaam     = 0   ' voornaam + familienaam
