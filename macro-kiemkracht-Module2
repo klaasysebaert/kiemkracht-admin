@@ -703,7 +703,7 @@ Sub BereidKoffieMailmergeVoor()
     End If
 
     ' --- Stap 3: kolomhoofden schrijven ---
-    Dim hoofden(14) As String
+    Dim hoofden(15) As String
     hoofden(0)  = "Voornaam"
     hoofden(1)  = "Familienaam"
     hoofden(2)  = "Email"
