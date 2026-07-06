@@ -762,6 +762,12 @@ Sub BereidKoffieMailmergeVoor()
         If kEmail3(k) <> "" Then oSheet.getCellByPosition(11, r).setString(kEmail3(k))
         If kEmail4(k) <> "" Then oSheet.getCellByPosition(14, r).setString(kEmail4(k))
 
+        ' Uitschrijflink (koffie-stream) — wijst naar de bestel-app; leeg als de
+        ' klant nog geen token heeft (tokens-vullen.php vult die server-side).
+        If kUnsub(k) <> "" Then _
+            oSheet.getCellByPosition(15, r).setString( _
+                BESTEL_URL & "uitschrijven.php?u=" & kID(k) & "." & kUnsub(k) & "&type=koffie")
+
         r = r + 1
     Next k
 
@@ -769,10 +775,11 @@ Sub BereidKoffieMailmergeVoor()
     Dim oKolommen As Object
     oKolommen = oSheet.getColumns()
     Dim cIdx As Integer
-    For cIdx = 0 To 14
+    For cIdx = 0 To 15
         oKolommen.getByIndex(cIdx).OptimalWidth = True
     Next cIdx
     oKolommen.getByIndex(5).Width = 12000  ' ~12 cm voor URL-kolom
+    oKolommen.getByIndex(15).Width = 9000  ' uitschrijflink
 
     ' --- Klaar ---
     Dim nRijen As Integer
