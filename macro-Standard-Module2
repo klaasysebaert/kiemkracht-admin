@@ -23,17 +23,23 @@ End Function
 
 Sub ReloadKiemkracht()
     Dim sPath As String, sCode As String
+    Dim oLib As Object
     If Not GlobalScope.BasicLibraries.isLibraryLoaded("Kiemkracht") Then
         GlobalScope.BasicLibraries.loadLibrary("Kiemkracht")
     End If
-    For Each sModule In Array("Module1", "Module2", "Module3")
+    oLib = GlobalScope.BasicLibraries.getByName("Kiemkracht")
+    For Each sModule In Array("Module1", "Module2", "Module3", "Module4")
         sPath = Environ("APPDATA") & "\LibreOffice\4\user\basic\Kiemkracht\" & sModule & ".bas"
         If Not FileExists(sPath) Then
             MsgBox "Bestand niet gevonden: " & sPath, 16, "Fout"
             Exit Sub
         End If
         sCode = LeesBasUtf8(sPath)
-        GlobalScope.BasicLibraries.getByName("Kiemkracht").replaceByName(sModule, sCode)
+        If oLib.hasByName(sModule) Then
+            oLib.replaceByName(sModule, sCode)
+        Else
+            oLib.insertByName(sModule, sCode)   ' nieuw module (bv. Module4) nog niet geladen
+        End If
     Next
 End Sub
 
