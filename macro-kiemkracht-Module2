@@ -2471,6 +2471,7 @@ Sub BereidHeractivatieMailmergeVoor()
         oSheets.insertNewByName("Heractivatie", 0)  ' eerste positie
         oSheet = oSheets.getByName("Heractivatie")
     End If
+    TraceHeract "5 sheet klaar"
 
     ' --- Stap 3: kolomhoofden schrijven ---
     Dim hoofden(14) As String
