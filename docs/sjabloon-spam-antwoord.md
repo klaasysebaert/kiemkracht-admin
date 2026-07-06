@@ -67,7 +67,11 @@ Geverifieerd 2026-07-06 (menunamen verschillen per provider!):
 
 Bulk-aankondiging na de kanaal-switch (week 28, 2026-07): vanaf het oude
 vertrouwde Gmail-adres, omdat dat wél inbox-historie heeft bij de klanten.
-Doelgroep: het Mailmerge-tabblad van de week (= wie de aanbodmail kreeg).
+Doelgroep: sheet "Reddingsmail" (macro `BereidReddingsmailVoor`, Module4):
+374 unieke adressen van alle actieve + gepauzeerde klanten incl.
+email2/3/4, gesorteerd per provider, met merge-veld {{ProviderTip}}
+(provider-specifieke whitelist-instructie; leeg bij onbekend domein).
+on_hold-klanten apart (heractivatiemail).
 
 **Onderwerp:** krijg je de mails van info@kiemkracht.be?
 
