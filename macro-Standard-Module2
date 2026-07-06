@@ -109,6 +109,11 @@ Sub StartBereidHeractivatieMailmergeVoor()
     BereidHeractivatieMailmergeVoor()
 End Sub
 
+Sub StartBereidReddingsmailVoor()
+    ReloadKiemkracht()
+    BereidReddingsmailVoor()
+End Sub
+
 Sub StartVerwerkStopStart()
     ReloadKiemkracht()
     VerwerkStopStart()
