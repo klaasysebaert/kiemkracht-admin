@@ -13,6 +13,7 @@ $modules = @(
     @{ Source = "$PSScriptRoot\macro-kiemkracht-Module1"; Name = "Module1"; Dir = $libDir; Bas = $true  },
     @{ Source = "$PSScriptRoot\macro-kiemkracht-Module2"; Name = "Module2"; Dir = $libDir; Bas = $true  },
     @{ Source = "$PSScriptRoot\macro-kiemkracht-Module3"; Name = "Module3"; Dir = $libDir; Bas = $true  },
+    @{ Source = "$PSScriptRoot\macro-kiemkracht-Module4"; Name = "Module4"; Dir = $libDir; Bas = $true  },
     @{ Source = "$PSScriptRoot\macro-Standard-Module1";   Name = "Module1"; Dir = $stdDir; Bas = $true  },
     @{ Source = "$PSScriptRoot\macro-Standard-Module2";   Name = "Module2"; Dir = $stdDir; Bas = $false },
     @{ Source = "$PSScriptRoot\macro-Standard-Module3";   Name = "Module3"; Dir = $stdDir; Bas = $false }

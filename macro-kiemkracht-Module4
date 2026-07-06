@@ -1,0 +1,269 @@
+' =============================================
+' Kiemkracht - Module4
+' ---------------------------------------------
+' Apart module voor de eenmalige heractivatie-mailmerge.
+' BEWUST NIET in Module2: toen de Sub daar aan het staart-
+' einde stond, faalde de AANROEP al met 'Onjuiste waarde
+' voor eigenschap' (BASIC-runtime) nog voor de eerste regel
+' uitvoerde - vermoedelijk een interne modulegrootte-limiet
+' (gecompileerd image), Module2 was 110 KB bron. In een eigen
+' klein module speelt dat niet.
+' =============================================
+
+' Diagnostische trace naar C:\tmp — enkel voor het debuggen van
+' BereidHeractivatieMailmergeVoor. Mag later weg.
+Sub TraceHeract(s As String)
+    On Error Resume Next
+    Dim f As Integer
+    f = FreeFile
+    Open "C:\tmp\heract_trace.txt" For Append As #f
+    Print #f, Format(Now(), "HH:MM:SS") & "  " & s
+    Close #f
+End Sub
+
+' =============================================
+' Kiemkracht - Heractivatie-mailmerge (EENMALIG)
+' ---------------------------------------------
+' Vult sheet "Heractivatie" in kiemkracht-data.ods met, per
+' on_hold-klant (die "al lang niets meer gehoord" heeft):
+'   - een gepersonaliseerde GROENTEN-bestellink (los, type=weekperweek)
+'   - een gepersonaliseerde KOFFIE-bestellink (koffie + honing)
+'   - een uitschrijflink die groenten EN koffie ineens afzet (?type=beide)
+'
+' Doelgroep: klanten.status = 'on_hold', met email1, niet al
+'            uitgeschreven (groenten noch koffie).
+' Extra adressen (email2/3/4) worden meegenomen — zelfde kolom-
+' indeling als de Koffiemailmerge-sheet.
+'
+' Bron voor een EENMALIGE Thunderbird-mailmerge (verstuurd vanuit
+' Klaas' eigen adres). Raakt BereidMailmergeVoor NIET aan; geen
+' week-logica, geen mailmerge_runs/recipients.
+' =============================================
+Sub BereidHeractivatieMailmergeVoor()
+
+    On Error Resume Next
+    If FileExists("C:\tmp\heract_trace.txt") Then Kill "C:\tmp\heract_trace.txt"
+    On Error GoTo Fout   ' diagnostisch: rapporteert exacte regel bij runtime-fout
+    TraceHeract "1 entry"
+
+    ' Doel-URL's volgen de omgeving (dev-bestand -> dev-formulieren)
+    Dim BESTEL_URL As String
+    Dim KOFFIE_URL As String
+    If BepaalOmgeving() = "dev" Then
+        BESTEL_URL = "https://bestel.dev.kiemkracht.be/"
+        KOFFIE_URL = "https://koffie.dev.kiemkracht.be/"
+    Else
+        BESTEL_URL = "https://bestel.kiemkracht.be/"
+        KOFFIE_URL = "https://koffie.kiemkracht.be/"
+    End If
+
+    Dim sAntwoord As Integer
+    sAntwoord = MsgBox( _
+        "EENMALIGE heractivatie-mailmerge voorbereiden voor alle" & Chr(10) & _
+        "on_hold-klanten (met e-mailadres, niet uitgeschreven)." & Chr(10) & Chr(10) & _
+        "Vult sheet 'Heractivatie' met per klant:" & Chr(10) & _
+        "  - gepersonaliseerde GROENTEN-bestellink (los, type=weekperweek)" & Chr(10) & _
+        "  - gepersonaliseerde KOFFIE-bestellink (koffie + honing)" & Chr(10) & _
+        "  - uitschrijflink die groenten EN koffie ineens afzet" & Chr(10) & Chr(10) & _
+        "Doelomgeving: " & BESTEL_URL & Chr(10) & Chr(10) & _
+        "Doorgaan?", _
+        36, "BereidHeractivatieMailmergeVoor")
+    If sAntwoord <> 6 Then  ' 6 = Ja
+        SluitSSHTunnels()
+        Exit Sub
+    End If
+
+    TraceHeract "2 na confirm, ga verbinden (omgeving=" & BepaalOmgeving() & ")"
+
+    ' --- JDBC-verbinding (juiste omgeving via MaakDBVerbinding) ---
+    Dim oConn As Object
+    oConn = MaakDBVerbinding()
+    TraceHeract "3 verbonden"
+
+    Dim oStmt As Object
+    Dim oRS   As Object
+
+    ' --- Stap 1: on_hold-klanten ophalen ---
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT k.voornaam, k.familienaam, k.email1, " & _
+        "COALESCE(a.naam, '') AS afhaalnaam, " & _
+        "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
+        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,''), " & _
+        "COALESCE(k.unsub_token,'') " & _
+        "FROM klanten k " & _
+        "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
+        "WHERE k.status = 'on_hold' " & _
+        "AND COALESCE(k.mail_opt_out, false) = false " & _
+        "AND COALESCE(k.koffie_opt_out, false) = false " & _
+        "AND COALESCE(k.email1, '') <> '' " & _
+        "ORDER BY k.familienaam, k.voornaam")
+
+    Dim kVoor(500)   As String
+    Dim kFam(500)    As String
+    Dim kEmail(500)  As String
+    Dim kAfhaal(500) As String
+    Dim kID(500)     As String
+    Dim kEmail2(500) As String
+    Dim kEmail3(500) As String
+    Dim kEmail4(500) As String
+    Dim kVoor2(500)  As String
+    Dim kFam2(500)   As String
+    Dim kUnsub(500)  As String
+    Dim nKlanten      As Integer
+    nKlanten = 0
+
+    Do While oRS.next()
+        kVoor(nKlanten)   = oRS.getString(1)
+        kFam(nKlanten)    = oRS.getString(2)
+        kEmail(nKlanten)  = oRS.getString(3)
+        kAfhaal(nKlanten) = oRS.getString(4)
+        kID(nKlanten)     = oRS.getString(5)
+        kEmail2(nKlanten) = oRS.getString(6)
+        kEmail3(nKlanten) = oRS.getString(7)
+        kEmail4(nKlanten) = oRS.getString(8)
+        kVoor2(nKlanten)  = oRS.getString(9)
+        kFam2(nKlanten)   = oRS.getString(10)
+        kUnsub(nKlanten)  = oRS.getString(11)
+        nKlanten = nKlanten + 1
+    Loop
+    oRS.close() : oStmt.close()
+    oConn.close()
+    TraceHeract "4 query klaar, nKlanten=" & nKlanten
+
+    ' --- Stap 2: sheet "Heractivatie" aanmaken of leegmaken ---
+    Dim oDoc    As Object
+    Dim oSheets As Object
+    Dim oSheet  As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        SluitSSHTunnels()
+        Exit Sub
+    End If
+    oSheets = oDoc.Sheets
+
+    If oSheets.hasByName("Heractivatie") Then
+        oSheet = oSheets.getByName("Heractivatie")
+        oSheet.clearContents(7)
+    Else
+        oSheets.insertNewByName("Heractivatie", 0)  ' eerste positie
+        oSheet = oSheets.getByName("Heractivatie")
+    End If
+    TraceHeract "5 sheet klaar"
+
+    ' --- Stap 3: kolomhoofden schrijven ---
+    Dim hoofden(14) As String
+    hoofden(0)  = "Voornaam"
+    hoofden(1)  = "Familienaam"
+    hoofden(2)  = "Email"
+    hoofden(3)  = "GroentenURL"
+    hoofden(4)  = "KoffieURL"
+    hoofden(5)  = "Voornaam2"
+    hoofden(6)  = "Familienaam2"
+    hoofden(7)  = "Email2"
+    hoofden(8)  = "Voornaam3"
+    hoofden(9)  = "Familienaam3"
+    hoofden(10) = "Email3"
+    hoofden(11) = "Voornaam4"
+    hoofden(12) = "Familienaam4"
+    hoofden(13) = "Email4"
+    hoofden(14) = "UitschrijfURL"
+
+    Dim c As Integer
+    For c = 0 To 14
+        Dim oCell As Object
+        oCell = oSheet.getCellByPosition(c, 0)
+        oCell.setString(hoofden(c))
+        oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oCell.CellBackColor = RGB(204, 204, 204)
+    Next c
+    TraceHeract "6 hoofden geschreven"
+
+    ' --- Stap 4: klanten verwerken en rijen schrijven ---
+    Dim r As Integer
+    r = 1  ' rij 1 = eerste datarij (rij 0 = hoofden)
+
+    Dim k As Integer
+    Dim sQGroenten   As String
+    Dim sQKoffie     As String
+    Dim sGroentenURL As String
+    Dim sKoffieURL   As String
+    For k = 0 To nKlanten - 1
+
+        ' Groenten-bestellink: vrijblijvend los bestellen (type=weekperweek), base64 ?d=
+        sQGroenten = "voornaam="    & UrlEncodeValue(kVoor(k))   & _
+                     "&naam="       & UrlEncodeValue(kFam(k))    & _
+                     "&email="      & UrlEncodeValue(kEmail(k))  & _
+                     "&klant_id="   & kID(k)                     & _
+                     "&type=weekperweek" & _
+                     "&afhaalpunt=" & UrlEncodeValue(kAfhaal(k))
+        sGroentenURL = BESTEL_URL & "?d=" & Base64UrlEncode(sQGroenten)
+
+        ' Koffie-bestellink (koffie + honing) — zelfde formaat als het koffie-form (?d=)
+        sQKoffie = "voornaam="    & UrlEncodeValue(kVoor(k))   & _
+                   "&naam="       & UrlEncodeValue(kFam(k))    & _
+                   "&email="      & UrlEncodeValue(kEmail(k))  & _
+                   "&klant_id="   & kID(k)                     & _
+                   "&afhaalpunt=" & UrlEncodeValue(kAfhaal(k))
+        sKoffieURL = KOFFIE_URL & "?d=" & Base64UrlEncode(sQKoffie)
+
+        oSheet.getCellByPosition(0, r).setString(kVoor(k))
+        oSheet.getCellByPosition(1, r).setString(kFam(k))
+        oSheet.getCellByPosition(2, r).setString(kEmail(k))
+        oSheet.getCellByPosition(3, r).setString(sGroentenURL)
+        oSheet.getCellByPosition(4, r).setString(sKoffieURL)
+
+        ' Partner-naam (kol F, G) + extra e-mailadressen (kol H, K, N — zelfde patroon als Koffiemailmerge)
+        If kVoor2(k)  <> "" Then oSheet.getCellByPosition(5, r).setString(kVoor2(k))
+        If kFam2(k)   <> "" Then oSheet.getCellByPosition(6, r).setString(kFam2(k))
+        If kEmail2(k) <> "" Then oSheet.getCellByPosition(7, r).setString(kEmail2(k))
+        If kEmail3(k) <> "" Then oSheet.getCellByPosition(10, r).setString(kEmail3(k))
+        If kEmail4(k) <> "" Then oSheet.getCellByPosition(13, r).setString(kEmail4(k))
+
+        ' Uitschrijflink — zet groenten EN koffie ineens af (?type=beide).
+        ' Leeg als de klant nog geen token heeft (tokens-vullen.php vult die server-side).
+        If kUnsub(k) <> "" Then _
+            oSheet.getCellByPosition(14, r).setString( _
+                BESTEL_URL & "uitschrijven.php?u=" & kID(k) & "." & kUnsub(k) & "&type=beide")
+
+        r = r + 1
+    Next k
+    TraceHeract "7 schrijfloop klaar, r=" & r
+
+    ' --- Stap 5: kolombreedte aanpassen ---
+    Dim oKolommen As Object
+    oKolommen = oSheet.getColumns()
+    Dim cIdx As Integer
+    For cIdx = 0 To 14
+        oKolommen.getByIndex(cIdx).OptimalWidth = True
+    Next cIdx
+    TraceHeract "8 optimalwidth klaar"
+    oKolommen.getByIndex(3).Width = 12000   ' GroentenURL
+    oKolommen.getByIndex(4).Width = 12000   ' KoffieURL
+    oKolommen.getByIndex(14).Width = 9000   ' uitschrijflink
+    TraceHeract "9 breedtes klaar"
+
+    ' --- Klaar ---
+    Dim nRijen As Integer
+    nRijen = r - 1
+    MsgBox "Heractivatie-mailmerge klaar!" & Chr(10) & Chr(10) & _
+           nRijen & " on_hold-klanten opgenomen in sheet 'Heractivatie'." & Chr(10) & Chr(10) & _
+           "Placeholders voor je Thunderbird-sjabloon:" & Chr(10) & _
+           "  {{Voornaam}} {{GroentenURL}} {{KoffieURL}} {{UitschrijfURL}}" & Chr(10) & _
+           "Extra adressen: Email2 / Email3 / Email4." & Chr(10) & _
+           "Doelomgeving: " & BESTEL_URL, _
+           64, "BereidHeractivatieMailmergeVoor")
+
+    SluitSSHTunnels()
+    Exit Sub
+
+Fout:
+    TraceHeract "FOUT regel " & Erl & " code " & Err & ": " & Error$
+    MsgBox "Fout op regel " & Erl & " (code " & Err & "): " & Error$ & Chr(10) & _
+           "(Bij een verbindingsfout: controleer of de SSH-tunnel actief is.)", _
+           16, "BereidHeractivatieMailmergeVoor"
+    SluitSSHTunnels()
+
+End Sub
