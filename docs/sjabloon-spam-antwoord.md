@@ -42,14 +42,23 @@ Groeten,
 
 ## Varianten per mailprogramma (indien de klant doorvraagt)
 
+Geverifieerd 2026-07-06 (menunamen verschillen per provider!):
+
 - **Outlook-app (telefoon):** open de mail → menu ⋮ → "Melden" →
   "Geen ongewenste e-mail".
-- **Telenet Webmail:** instellingen → ongewenste e-mail → afzender
-  toevoegen aan veilige afzenders.
-- **Gmail (app of web):** open de mail in Spam → "Geen spam". Daarna
-  afzender toevoegen aan Contacten.
-- **Proximus/Skynet Webmail:** mail in spammap openen → "Geen spam" /
-  afzender whitelisten in de instellingen.
+- **Hotmail/Outlook.com/Live (webmail):** Instellingen → E-mail →
+  Ongewenste e-mail → **"Veilige afzenders en domeinen"** → adres
+  toevoegen.
+- **Telenet Webmail:** Instellingen → **"Vertrouwde adressen"** → adres
+  (of @kiemkracht.be) toevoegen. Mails van die lijst belanden nooit in
+  de spammap.
+- **Gmail (app of web):** GEEN veilige-afzenderslijst — open de mail in
+  Spam → "Geen spam", daarna afzender toevoegen aan Contacten.
+  (Power-users: filter aanmaken met "Nooit naar spam sturen".)
+- **Proximus/Skynet/Scarlet Webmail:** menu rechtsboven → E-mail →
+  **"Veilige afzenders"** → adres toevoegen.
+- **Yahoo / iCloud:** geen lijst; "geen spam" markeren + contact
+  toevoegen.
 
 ## Eenmalige "reddingsmail" (verzonden vanaf klaas.ysebaert@gmail.com)
 
