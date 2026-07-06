@@ -290,6 +290,8 @@ Sub LaadAlleTabellen()
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
     If nUit > 0 Then MsgBox sUit, 48, nUit & " nieuwe uitschrijver(s) voor de aanbodmail" & _
         Chr(10) & "(zie ook de mail_opt_out-kolommen in het klanten-tabblad)"
+    If nUitK > 0 Then MsgBox sUitK, 48, nUitK & " nieuwe KOFFIE-uitschrijver(s)" & _
+        Chr(10) & "(zie ook de koffie_opt_out-kolommen in het klanten-tabblad)"
     SluitSSHTunnels()
     Exit Sub
 
