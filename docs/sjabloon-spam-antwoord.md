@@ -102,9 +102,9 @@ terechtkomen:
    naar je Postvak IN).
 3. Voeg "info@kiemkracht.be" toe aan je contacten — dat is het sterkste
    signaal voor de spamfilter. Lees je je mail in een app én via webmail,
-   doe het dan op beide plaatsen. Veel providers hebben in hun
-   webmail-instellingen ook een lijst "veilige afzenders" of "vertrouwde
-   adressen" — ook daar toevoegen helpt.
+   doe het dan op beide plaatsen.
+
+{{ProviderTip}}
 
 Eventueel kan je antwoorden op de mail die je bij spam vond: antwoorden
 aan info@kiemkracht.be helpt om de mail in de toekomst beter te ontvangen
