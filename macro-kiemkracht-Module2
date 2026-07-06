@@ -499,8 +499,29 @@ Sub BereidMailmergeVoor()
             nE = nE + 1
         End If
 
-        ' INSERT per email
+        ' INSERT per email — elk adres krijgt een EIGEN bestel-URL met
+        ' zichzelf als email-parameter. Het bestelformulier vult dat adres
+        ' in en de bevestigingsmail volgt het formulier-adres; met een
+        ' gedeelde email1-URL kwam de bevestiging van een bestelling via
+        ' de email2-mail op email1 terecht (casus Dekyvere 2026-07-06).
+        ' Naam/voornaam blijven klant-niveau (bestelling blijft op het
+        ' huishouden staan); enkel het e-mailadres varieert.
         For e = 0 To nE - 1
+            sQsE = "voornaam="    & UrlEncodeValue(kVoor(k))   & _
+                   "&naam="       & UrlEncodeValue(kFam(k))    & _
+                   "&email="      & UrlEncodeValue(sEmails(e)) & _
+                   "&klant_id="   & kID(k)                     & _
+                   "&type="       & UrlEncodeValue(sTypeURL)   & _
+                   "&leverdag="   & UrlEncodeValue(sLevdag)    & _
+                   "&afhaalpunt=" & UrlEncodeValue(sAfhaal)
+            If sPakketURL <> "" Then
+                sQsE = sQsE & "&formaat=" & UrlEncodeValue(sPakketURL)
+            End If
+            If kVoor2(k) <> "" Then
+                sQsE = sQsE & "&voornaam2=" & UrlEncodeValue(kVoor2(k))
+            End If
+            sBestelURLe = BESTEL_URL & "?d=" & Base64UrlEncode(sQsE)
+
             sSqlRcp = "INSERT INTO mailmerge_recipients " & _
                       "(run_id, klant_id, naar_email, voornaam, familienaam, " & _
                       " klant_type, mailtype, bestel_url, pakket, leverdag, afhaalpunt) " & _
@@ -510,7 +531,7 @@ Sub BereidMailmergeVoor()
                       SqlStr(sFamnamen(e))  & ", " & _
                       SqlStr(sType)         & ", " & _
                       SqlStr(sMailtype)     & ", " & _
-                      SqlStr(sBestelURL)    & ", " & _
+                      SqlStr(sBestelURLe)   & ", " & _
                       SqlStr(sPakketURL)    & ", " & _
                       SqlStr(sLevdag)       & ", " & _
                       SqlStr(sAfhaal)       & ")"
