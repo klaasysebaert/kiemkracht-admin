@@ -2,12 +2,11 @@
 ' Kiemkracht - Module4
 ' ---------------------------------------------
 ' Apart module voor de eenmalige heractivatie-mailmerge.
-' BEWUST NIET in Module2: toen de Sub daar aan het staart-
-' einde stond, faalde de AANROEP al met 'Onjuiste waarde
-' voor eigenschap' (BASIC-runtime) nog voor de eerste regel
-' uitvoerde - vermoedelijk een interne modulegrootte-limiet
-' (gecompileerd image), Module2 was 110 KB bron. In een eigen
-' klein module speelt dat niet.
+' Oorspronkelijk in Module2; daar brak een verdwaalde ')' op de
+' slot-MsgBox de COMPILATIE van heel Module2 -> de aanroep faalde
+' met het misleidende 'Onjuiste waarde voor eigenschap' nog voor
+' regel 1. In dit kleine eigen module blijft zo'n fout geisoleerd
+' van de wekelijkse flow, en toont de Basic-IDE de echte fout.
 ' =============================================
 
 ' Diagnostische trace naar C:\tmp — enkel voor het debuggen van
