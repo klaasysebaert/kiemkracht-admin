@@ -195,19 +195,23 @@ Sub BereidMailmergeVoor()
     oRS.close() : oStmt.close()
 
     ' --- Stap 2: vooruitbestellingen deze week ---
+    ' klant_id mee ophalen: bestellingen via een email2/3/4-link dragen
+    ' dat adres als klant_email, dus matchen op email1 alleen mist ze.
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT klant_email, formaat " & _
+        "SELECT klant_email, formaat, COALESCE(klant_id, 0) " & _
         "FROM vooruitbestellingen " & _
         "WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek)
 
     Dim vbEmail(1000)   As String
     Dim vbFormaat(1000) As String
+    Dim vbKlantId(1000) As String
     Dim nVB As Integer
     nVB = 0
     Do While oRS.next()
         vbEmail(nVB)   = oRS.getString(1)
         vbFormaat(nVB) = oRS.getString(2)
+        vbKlantId(nVB) = oRS.getString(3)
         nVB = nVB + 1
     Loop
     oRS.close() : oStmt.close()
@@ -215,15 +219,17 @@ Sub BereidMailmergeVoor()
     ' --- Stap 2b: annulaties deze week ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT klant_email " & _
+        "SELECT klant_email, COALESCE(klant_id, 0) " & _
         "FROM annulaties " & _
         "WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek)
 
-    Dim annEmail(1000) As String
+    Dim annEmail(1000)   As String
+    Dim annKlantId(1000) As String
     Dim nAnn As Integer
     nAnn = 0
     Do While oRS.next()
-        annEmail(nAnn) = oRS.getString(1)
+        annEmail(nAnn)   = oRS.getString(1)
+        annKlantId(nAnn) = oRS.getString(2)
         nAnn = nAnn + 1
     Loop
     oRS.close() : oStmt.close()
@@ -963,19 +969,23 @@ Sub BereidCombiMailmergeVoor()
     oRS.close() : oStmt.close()
 
     ' --- Stap 2: vooruitbestellingen deze week ---
+    ' klant_id mee ophalen: bestellingen via een email2/3/4-link dragen
+    ' dat adres als klant_email, dus matchen op email1 alleen mist ze.
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT klant_email, formaat " & _
+        "SELECT klant_email, formaat, COALESCE(klant_id, 0) " & _
         "FROM vooruitbestellingen " & _
         "WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek)
 
     Dim vbEmail(1000)   As String
     Dim vbFormaat(1000) As String
+    Dim vbKlantId(1000) As String
     Dim nVB As Integer
     nVB = 0
     Do While oRS.next()
         vbEmail(nVB)   = oRS.getString(1)
         vbFormaat(nVB) = oRS.getString(2)
+        vbKlantId(nVB) = oRS.getString(3)
         nVB = nVB + 1
     Loop
     oRS.close() : oStmt.close()
@@ -983,15 +993,17 @@ Sub BereidCombiMailmergeVoor()
     ' --- Stap 2b: annulaties deze week ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT klant_email " & _
+        "SELECT klant_email, COALESCE(klant_id, 0) " & _
         "FROM annulaties " & _
         "WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek)
 
-    Dim annEmail(1000) As String
+    Dim annEmail(1000)   As String
+    Dim annKlantId(1000) As String
     Dim nAnn As Integer
     nAnn = 0
     Do While oRS.next()
-        annEmail(nAnn) = oRS.getString(1)
+        annEmail(nAnn)   = oRS.getString(1)
+        annKlantId(nAnn) = oRS.getString(2)
         nAnn = nAnn + 1
     Loop
     oRS.close() : oStmt.close()
