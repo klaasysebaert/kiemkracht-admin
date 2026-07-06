@@ -244,6 +244,32 @@ Sub LaadAlleTabellen()
             oStu.close()
         End If
     End If
+
+    ' --- Nieuwe KOFFIE-uitschrijvers (aparte opt-out, los van groenten) ---
+    oStu = oConn.createStatement()
+    oRSu = oStu.executeQuery( _
+        "SELECT voornaam, familienaam, COALESCE(email1,''), " & _
+        "COALESCE(to_char(koffie_opt_out_op,'DD/MM/YYYY'),''), COALESCE(koffie_opt_out_reden,'') " & _
+        "FROM klanten WHERE koffie_opt_out = true AND koffie_opt_out_gemeld = false " & _
+        "ORDER BY koffie_opt_out_op")
+    If Err = 0 Then
+        Do While oRSu.next()
+            nUitK = nUitK + 1
+            sUitK = sUitK & "- " & Trim(oRSu.getString(1) & " " & oRSu.getString(2)) & _
+                   " (" & oRSu.getString(3) & ")"
+            If oRSu.getString(4) <> "" Then sUitK = sUitK & " - " & oRSu.getString(4)
+            If oRSu.getString(5) <> "" Then sUitK = sUitK & " - reden: " & oRSu.getString(5)
+            sUitK = sUitK & Chr(10)
+        Loop
+        oRSu.close()
+        oStu.close()
+        If nUitK > 0 Then
+            oStu = oConn.createStatement()
+            oStu.executeUpdate("UPDATE klanten SET koffie_opt_out_gemeld = true " & _
+                "WHERE koffie_opt_out = true AND koffie_opt_out_gemeld = false")
+            oStu.close()
+        End If
+    End If
     On Error GoTo 0
 
     ' Het opt-out-blok hierboven zette de errorhandler uit (On Error GoTo 0);
