@@ -121,7 +121,13 @@ Klaas
 
 **Verzend-nota's:** via smtp.gmail.com (Gmail-identiteit, NIET de
 EmailLabs-relay — anders lijkt het gespooft en beland je zelf in spam);
-Gmail-limiet ±500/dag dus 366 past, maar met pauze tussen de mails.
+Gmail-limiet ±500/dag dus 374 past. Pauze-instelling van de add-on werkt
+alleen bij direct verzenden, niet bij "Later verzenden" → workflow:
+merge naar Postvak UIT (geen pauze) → steekproef controleren (o.a.
+{{ProviderTip}} per provider) → "Niet-verzonden berichten verzenden".
+De wachtrij verstuurt sequentieel (~1-2 s/mail = natuurlijke pacing);
+bij een tijdelijke Gmail-weigering blijft de rest in Postvak UIT staan
+(geen dubbels) → half uur wachten en opnieuw verzenden.
 
 ## Nota voor onszelf
 
