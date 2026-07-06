@@ -2499,6 +2499,7 @@ Sub BereidHeractivatieMailmergeVoor()
         oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
         oCell.CellBackColor = RGB(204, 204, 204)
     Next c
+    TraceHeract "6 hoofden geschreven"
 
     ' --- Stap 4: klanten verwerken en rijen schrijven ---
     Dim r As Integer
