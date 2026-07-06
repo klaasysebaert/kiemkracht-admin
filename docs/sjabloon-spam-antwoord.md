@@ -57,8 +57,11 @@ Geverifieerd 2026-07-06 (menunamen verschillen per provider!):
   (Power-users: filter aanmaken met "Nooit naar spam sturen".)
 - **Proximus/Skynet/Scarlet Webmail:** menu rechtsboven → E-mail →
   **"Veilige afzenders"** → adres toevoegen.
-- **Yahoo / iCloud:** geen lijst; "geen spam" markeren + contact
-  toevoegen.
+- **Yahoo:** geen veilige-afzenderslijst. Sterkste signaal = mail in de
+  spammap openen → **"Niet spam"** (Yahoo leert dan per afzender), plus
+  contact toevoegen. LET OP: een eigen filter "naar Postvak IN" helpt
+  bij Yahoo NIET betrouwbaar — de spamfilter draait vóór de filters.
+- **iCloud:** geen lijst; "geen spam" markeren + contact toevoegen.
 
 ## Eenmalige "reddingsmail" (verzonden vanaf klaas.ysebaert@gmail.com)
 
