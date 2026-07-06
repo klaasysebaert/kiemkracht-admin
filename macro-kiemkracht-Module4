@@ -266,3 +266,182 @@ Fout:
     SluitSSHTunnels()
 
 End Sub
+
+
+' Provider-specifieke whitelist-tip voor de reddingsmail, per maildomein.
+' Menunamen geverifieerd 2026-07-06 (zie docs/sjabloon-spam-antwoord.md).
+' Leeg voor onbekende domeinen: de mailtekst is ook zonder tip compleet.
+Function ProviderTip(sDomein As String) As String
+    Select Case LCase(sDomein)
+        Case "telenet.be"
+            ProviderTip = "Tip voor Telenet: in Telenet Webmail kan je via Instellingen > Vertrouwde adressen het adres info@kiemkracht.be toevoegen; mails van die lijst belanden nooit in de spammap."
+        Case "hotmail.com", "hotmail.be", "live.be", "live.com", "outlook.com", "outlook.be", "msn.com"
+            ProviderTip = "Tip voor Hotmail/Outlook: via Instellingen > E-mail > Ongewenste e-mail > Veilige afzenders en domeinen kan je info@kiemkracht.be toevoegen."
+        Case "skynet.be", "proximus.be", "scarlet.be", "belgacom.net"
+            ProviderTip = "Tip voor Proximus/Skynet: in de webmail kan je via het menu rechtsboven > E-mail > Veilige afzenders het adres info@kiemkracht.be toevoegen."
+        Case "gmail.com", "googlemail.com"
+            ProviderTip = "Tip voor Gmail: Gmail heeft geen lijst met veilige afzenders - de mail openen in de map Spam en op 'Geen spam' tikken plus het adres aan je contacten toevoegen is daar de juiste weg."
+        Case "yahoo.com", "yahoo.be"
+            ProviderTip = "Tip voor Yahoo: open de mail in de map Spam en kies 'Niet spam' - dat is bij Yahoo het sterkste signaal - en voeg info@kiemkracht.be toe aan je contacten."
+        Case "icloud.com", "me.com", "mac.com"
+            ProviderTip = "Tip voor iCloud: markeer de mail als 'Geen reclame' en voeg info@kiemkracht.be toe aan je contacten."
+        Case Else
+            ProviderTip = ""
+    End Select
+End Function
+
+
+' =============================================
+' Kiemkracht - Reddingsmail-lijst (EENMALIG)
+' ---------------------------------------------
+' Vult sheet "Reddingsmail" met 1 rij per UNIEK e-mailadres van alle
+' relevante klanten (actief + gepauzeerd, niet uitgeschreven), incl.
+' email2/3/4 - want ook die adressen krijgen de wekelijkse mail van
+' info@kiemkracht.be. Gesorteerd per provider(domein), dan familienaam.
+'
+' Doel: eenmalige Thunderbird-mailmerge VANAF klaas.ysebaert@gmail.com
+' (oud vertrouwd adres = inbox-historie) met uitleg over de kanaal-
+' switch + niet-spam-tips. Tekst: docs/sjabloon-spam-antwoord.md.
+' Kolom ProviderTip = optioneel merge-veld {{ProviderTip}} met de
+' provider-specifieke whitelist-instructie (leeg bij onbekend domein).
+'
+' on_hold-klanten NIET inbegrepen: die krijgen de aparte heractivatie-
+' mail (sheet "Heractivatie").
+' =============================================
+Sub BereidReddingsmailVoor()
+
+    On Error GoTo FoutR
+
+    Dim sAntwoord As Integer
+    sAntwoord = MsgBox( _
+        "Reddingsmail-lijst voorbereiden: 1 rij per uniek e-mailadres" & Chr(10) & _
+        "van alle actieve (+ gepauzeerde) klanten, incl. email2/3/4," & Chr(10) & _
+        "gesorteerd per provider, met provider-specifieke whitelist-tip." & Chr(10) & Chr(10) & _
+        "Voor de eenmalige mailmerge vanaf klaas.ysebaert@gmail.com." & Chr(10) & Chr(10) & _
+        "Doorgaan?", _
+        36, "BereidReddingsmailVoor")
+    If sAntwoord <> 6 Then
+        SluitSSHTunnels()
+        Exit Sub
+    End If
+
+    ' --- JDBC-verbinding ---
+    Dim oConn As Object
+    oConn = MaakDBVerbinding()
+
+    ' --- Alle unieke adressen: email1-4 via UNION, ontdubbeld, per domein ---
+    ' Voor email2 wordt de partnernaam (voornaam2/familienaam2) gebruikt
+    ' als die bestaat; email3/4 vallen terug op de hoofdnaam.
+    Dim sFilter As String
+    sFilter = "status IN ('actief','gepauzeerd') AND COALESCE(mail_opt_out,false) = false"
+
+    Dim oStmt As Object
+    Dim oRS   As Object
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT voornaam, familienaam, email, dom FROM ( " & _
+        "  SELECT DISTINCT ON (lower(email)) voornaam, familienaam, email, " & _
+        "         lower(split_part(email,'@',2)) AS dom " & _
+        "  FROM ( " & _
+        "    SELECT voornaam, familienaam, email1 AS email FROM klanten WHERE " & sFilter & _
+        "    UNION ALL " & _
+        "    SELECT CASE WHEN COALESCE(voornaam2,'') <> '' THEN voornaam2 ELSE voornaam END, " & _
+        "           CASE WHEN COALESCE(familienaam2,'') <> '' THEN familienaam2 ELSE familienaam END, " & _
+        "           email2 FROM klanten WHERE " & sFilter & _
+        "    UNION ALL " & _
+        "    SELECT voornaam, familienaam, email3 FROM klanten WHERE " & sFilter & _
+        "    UNION ALL " & _
+        "    SELECT voornaam, familienaam, email4 FROM klanten WHERE " & sFilter & _
+        "  ) x " & _
+        "  WHERE COALESCE(email,'') <> '' " & _
+        "  ORDER BY lower(email) " & _
+        ") t ORDER BY dom, familienaam, voornaam")
+
+    Dim rVoor(700)  As String
+    Dim rFam(700)   As String
+    Dim rEmail(700) As String
+    Dim rDom(700)   As String
+    Dim nRijen As Integer
+    nRijen = 0
+    Do While oRS.next()
+        rVoor(nRijen)  = oRS.getString(1)
+        rFam(nRijen)   = oRS.getString(2)
+        rEmail(nRijen) = oRS.getString(3)
+        rDom(nRijen)   = oRS.getString(4)
+        nRijen = nRijen + 1
+    Loop
+    oRS.close() : oStmt.close()
+    oConn.close()
+
+    ' --- Sheet "Reddingsmail" aanmaken of leegmaken ---
+    Dim oDoc    As Object
+    Dim oSheets As Object
+    Dim oSheet  As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief.", 16, "Fout"
+        SluitSSHTunnels()
+        Exit Sub
+    End If
+    oSheets = oDoc.Sheets
+    If oSheets.hasByName("Reddingsmail") Then
+        oSheet = oSheets.getByName("Reddingsmail")
+        oSheet.clearContents(7)
+    Else
+        oSheets.insertNewByName("Reddingsmail", 0)
+        oSheet = oSheets.getByName("Reddingsmail")
+    End If
+
+    ' --- Kolomhoofden ---
+    Dim hoofden(4) As String
+    hoofden(0) = "Voornaam"
+    hoofden(1) = "Familienaam"
+    hoofden(2) = "Email"
+    hoofden(3) = "Provider"
+    hoofden(4) = "ProviderTip"
+    Dim c As Integer
+    For c = 0 To 4
+        Dim oCell As Object
+        oCell = oSheet.getCellByPosition(c, 0)
+        oCell.setString(hoofden(c))
+        oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oCell.CellBackColor = RGB(204, 204, 204)
+    Next c
+
+    ' --- Rijen schrijven ---
+    Dim i As Integer
+    For i = 0 To nRijen - 1
+        oSheet.getCellByPosition(0, i + 1).setString(rVoor(i))
+        oSheet.getCellByPosition(1, i + 1).setString(rFam(i))
+        oSheet.getCellByPosition(2, i + 1).setString(rEmail(i))
+        oSheet.getCellByPosition(3, i + 1).setString(rDom(i))
+        oSheet.getCellByPosition(4, i + 1).setString(ProviderTip(rDom(i)))
+    Next i
+
+    ' --- Kolombreedtes ---
+    Dim oKolommen As Object
+    oKolommen = oSheet.getColumns()
+    Dim cIdx As Integer
+    For cIdx = 0 To 3
+        oKolommen.getByIndex(cIdx).OptimalWidth = True
+    Next cIdx
+    oKolommen.getByIndex(4).Width = 14000  ' tip-kolom
+
+    MsgBox "Reddingsmail-lijst klaar!" & Chr(10) & Chr(10) & _
+           nRijen & " unieke adressen in sheet 'Reddingsmail'," & Chr(10) & _
+           "gesorteerd per provider." & Chr(10) & Chr(10) & _
+           "Merge-velden: {{Voornaam}} {{Email}} {{ProviderTip}}" & Chr(10) & _
+           "Versturen VANAF klaas.ysebaert@gmail.com via smtp.gmail.com" & Chr(10) & _
+           "(niet via de EmailLabs-relay!), met pauze tussen de mails.", _
+           64, "BereidReddingsmailVoor"
+
+    SluitSSHTunnels()
+    Exit Sub
+
+FoutR:
+    MsgBox "Fout op regel " & Erl & " (code " & Err & "): " & Error$ & Chr(10) & _
+           "(Bij een verbindingsfout: controleer of de SSH-tunnel actief is.)", _
+           16, "BereidReddingsmailVoor"
+    SluitSSHTunnels()
+
+End Sub
