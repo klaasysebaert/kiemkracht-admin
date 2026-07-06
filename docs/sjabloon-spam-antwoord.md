@@ -51,6 +51,60 @@ Groeten,
 - **Proximus/Skynet Webmail:** mail in spammap openen → "Geen spam" /
   afzender whitelisten in de instellingen.
 
+## Eenmalige "reddingsmail" (verzonden vanaf klaas.ysebaert@gmail.com)
+
+Bulk-aankondiging na de kanaal-switch (week 28, 2026-07): vanaf het oude
+vertrouwde Gmail-adres, omdat dat wél inbox-historie heeft bij de klanten.
+Doelgroep: het Mailmerge-tabblad van de week (= wie de aanbodmail kreeg).
+
+**Onderwerp:** krijg je de mails van info@kiemkracht.be?
+
+**Tekst:**
+
+Dag {{Voornaam}}
+
+Sinds vorige week gebruiken we het nieuwe mailadres info@kiemkracht.be om
+het aanbod van de week te versturen op maandagvoormiddag.
+
+Een delicate switch, niet zonder reden: mijn persoonlijke Gmail-adres
+botste op de grenzen van wat het toelaat voor professioneel gebruik.
+
+Een overgang naar Google Workspace was voor de hand liggend, maar ik
+verkoos een pad weg van Amerikaanse techgiganten die de hielen likken van
+de president die het spel niet eerlijk speelt (hah!).
+
+EmailLabs bood een kwalitatief alternatief en gebruikt eigen Europese
+infrastructuur. Op termijn zou de aflevering van de mails uitstekend
+moeten zijn, maar de eerste weken kunnen mijn mails onbedoeld botsen op
+spamfilters.
+
+Verwacht je een mail, maar zie je die niet, dan is de mail waarschijnlijk
+in je map Ongewenste e-mail / Spam beland.
+
+Met deze stappen komen de mails voortaan in je Postvak IN terecht:
+
+1. Kijk in je map "Ongewenste e-mail" of "Spam" en open de mail van
+   Kiemkracht (afzender info@kiemkracht.be — zoek eventueel op
+   "kiemkracht").
+2. Markeer hem als "Geen ongewenste e-mail" / "Geen spam" (of versleep
+   hem naar je Postvak IN).
+3. Voeg info@kiemkracht.be toe aan je contacten — dat is het sterkste
+   signaal voor de spamfilter. Gebruik je ook Telenet Webmail, voeg het
+   adres daar dan eveneens toe aan je veilige afzenders (instellingen →
+   ongewenste e-mail).
+
+Eventueel kan je antwoorden op de mail die je bij spam vond: ook dat
+helpt om de mails in de toekomst beter te ontvangen, en het laat ons zien
+bij welke providers we problemen ondervinden.
+
+Vriendelijke groet,
+
+Klaas
+
+**Verzend-nota's:** via smtp.gmail.com (Gmail-identiteit, NIET de
+EmailLabs-relay — anders lijkt het gespooft en beland je zelf in spam);
+Gmail-limiet ±500/dag dus 366 past, maar met pauze tussen de mails.
+
 ## Nota voor onszelf
 
 - Verzendcontrole: in `mailmerge_recipients` nakijken of de klant in de
