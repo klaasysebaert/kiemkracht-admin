@@ -639,11 +639,12 @@ Sub BereidKoffieMailmergeVoor()
         "SELECT k.voornaam, k.familienaam, k.email1, k.type, " & _
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
         "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
-        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,'') " & _
+        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,''), " & _
+        "COALESCE(k.unsub_token,'') " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "WHERE k.type NOT IN ('stop-tijdelijk', 'stop-definitief') " & _
-        "AND COALESCE(k.mail_opt_out, false) = false " & _
+        "AND COALESCE(k.koffie_opt_out, false) = false " & _
         "AND COALESCE(k.email1, '') <> '' " & _
         "ORDER BY k.familienaam, k.voornaam")
 
