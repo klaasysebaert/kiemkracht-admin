@@ -341,10 +341,13 @@ Sub BereidMailmergeVoor()
         sAfhaal  = kAfhaal(k)
         sLevdag  = kLevdag(k)
 
-        ' Vooruitbesteld?
+        ' Vooruitbesteld? Match op klant_id (bestelling kan via een
+        ' email2/3/4-link geplaatst zijn); e-mail als terugval voor
+        ' oude records zonder klant_id.
         bVooruit = False
         For v = 0 To nVB - 1
-            If LCase(vbEmail(v)) = LCase(kEmail(k)) Then
+            If (vbKlantId(v) <> "0" And vbKlantId(v) = kID(k)) _
+                Or (vbKlantId(v) = "0" And LCase(vbEmail(v)) = LCase(kEmail(k))) Then
                 bVooruit = True
                 If vbFormaat(v) <> "" Then sFormaat = vbFormaat(v)
                 Exit For
@@ -1090,10 +1093,13 @@ Sub BereidCombiMailmergeVoor()
         sAfhaal  = kAfhaal(k)
         sLevdag  = kLevdag(k)
 
-        ' Vooruitbesteld?
+        ' Vooruitbesteld? Match op klant_id (bestelling kan via een
+        ' email2/3/4-link geplaatst zijn); e-mail als terugval voor
+        ' oude records zonder klant_id.
         bVooruit = False
         For v = 0 To nVB - 1
-            If LCase(vbEmail(v)) = LCase(kEmail(k)) Then
+            If (vbKlantId(v) <> "0" And vbKlantId(v) = kID(k)) _
+                Or (vbKlantId(v) = "0" And LCase(vbEmail(v)) = LCase(kEmail(k))) Then
                 bVooruit = True
                 If vbFormaat(v) <> "" Then sFormaat = vbFormaat(v)
                 Exit For
