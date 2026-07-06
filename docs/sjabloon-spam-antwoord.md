@@ -59,43 +59,44 @@ Doelgroep: het Mailmerge-tabblad van de week (= wie de aanbodmail kreeg).
 
 **Onderwerp:** krijg je de mails van info@kiemkracht.be?
 
-**Tekst:**
+**Tekst (definitieve versie Klaas, 2026-07-06):**
 
 Dag {{Voornaam}}
 
 Sinds vorige week gebruiken we het nieuwe mailadres info@kiemkracht.be om
 het aanbod van de week te versturen op maandagvoormiddag.
 
-Een delicate switch, niet zonder reden: mijn persoonlijke Gmail-adres
-botste op de grenzen van wat het toelaat voor professioneel gebruik.
+Een delicate switch, niet zonder reden: mijn persoonlijke mailadres botst
+op de limiet van de mogelijkheden voor professioneel gebruik.
 
 Een overgang naar Google Workspace was voor de hand liggend, maar ik
 verkoos een pad weg van Amerikaanse techgiganten die de hielen likken van
 de president die het spel niet eerlijk speelt (hah!).
 
-EmailLabs bood een kwalitatief alternatief en gebruikt eigen Europese
-infrastructuur. Op termijn zou de aflevering van de mails uitstekend
-moeten zijn, maar de eerste weken kunnen mijn mails onbedoeld botsen op
-spamfilters.
+EmailLabs biedt een kwalitatief alternatief en gebruikt eigen Europese
+infrastructuur. Op termijn zou de kwaliteit van de aflevering van de
+mails uitstekend moeten zijn, maar de eerste weken kunnen mijn mails
+onbedoeld botsen op spamfilters.
 
 Verwacht je een mail, maar zie je die niet, dan is de mail waarschijnlijk
 in je map Ongewenste e-mail / Spam beland.
 
-Met deze stappen komen de mails voortaan in je Postvak IN terecht:
+Ik kan volgende tips geven om de mails voortaan in je Postvak IN te laten
+terechtkomen:
 
 1. Kijk in je map "Ongewenste e-mail" of "Spam" en open de mail van
-   Kiemkracht (afzender info@kiemkracht.be — zoek eventueel op
-   "kiemkracht").
-2. Markeer hem als "Geen ongewenste e-mail" / "Geen spam" (of versleep
-   hem naar je Postvak IN).
-3. Voeg info@kiemkracht.be toe aan je contacten — dat is het sterkste
-   signaal voor de spamfilter. Gebruik je ook Telenet Webmail, voeg het
-   adres daar dan eveneens toe aan je veilige afzenders (instellingen →
-   ongewenste e-mail).
+   Kiemkracht (afzender info@kiemkracht.be).
+2. Markeer hem als "Geen ongewenste e-mail/Geen spam" (of versleep hem
+   naar je Postvak IN).
+3. Voeg "info@kiemkracht.be" toe aan je contacten — dat is het sterkste
+   signaal voor de spamfilter. Lees je je mail in een app én via webmail,
+   doe het dan op beide plaatsen. In Telenet Webmail kan je het adres
+   toevoegen aan je veilige afzenders (instellingen → ongewenste e-mail).
 
-Eventueel kan je antwoorden op de mail die je bij spam vond: ook dat
-helpt om de mails in de toekomst beter te ontvangen, en het laat ons zien
-bij welke providers we problemen ondervinden.
+Eventueel kan je antwoorden op de mail die je bij spam vond: antwoorden
+aan info@kiemkracht.be helpt om de mail in de toekomst beter te ontvangen
+en kan ons helpen om te zien bij welke providers we problemen
+ondervinden.
 
 Vriendelijke groet,
 
