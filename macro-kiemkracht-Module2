@@ -719,9 +719,10 @@ Sub BereidKoffieMailmergeVoor()
     hoofden(12) = "Voornaam4"
     hoofden(13) = "Familienaam4"
     hoofden(14) = "Email4"
+    hoofden(15) = "UitschrijfURL"
 
     Dim c As Integer
-    For c = 0 To 14
+    For c = 0 To 15
         Dim oCell As Object
         oCell = oSheet.getCellByPosition(c, 0)
         oCell.setString(hoofden(c))
