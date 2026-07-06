@@ -43,6 +43,7 @@ $xlbInhoud = '<?xml version="1.0" encoding="UTF-8"?>' + "`r`n" +
     ' <library:element library:name="Module1"/>' + "`r`n" +
     ' <library:element library:name="Module2"/>' + "`r`n" +
     ' <library:element library:name="Module3"/>' + "`r`n" +
+    ' <library:element library:name="Module4"/>' + "`r`n" +
     '</library:library>'
 [System.IO.File]::WriteAllText($xlbKiemkracht, $xlbInhoud, $utf8NoBom)
 Write-Output "  Kiemkracht\script.xlb bijgewerkt."
