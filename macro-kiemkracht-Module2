@@ -333,6 +333,8 @@ Sub BereidMailmergeVoor()
     Dim nE            As Integer
     Dim e             As Integer
     Dim sSqlRcp       As String
+    Dim sQsE          As String
+    Dim sBestelURLe   As String
 
     For k = 0 To nKlanten - 1
 
