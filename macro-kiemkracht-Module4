@@ -254,7 +254,7 @@ Sub BereidHeractivatieMailmergeVoor()
            "  {{Voornaam}} {{GroentenURL}} {{KoffieURL}} {{UitschrijfURL}}" & Chr(10) & _
            "Extra adressen: Email2 / Email3 / Email4." & Chr(10) & _
            "Doelomgeving: " & BESTEL_URL, _
-           64, "BereidHeractivatieMailmergeVoor")
+           64, "BereidHeractivatieMailmergeVoor"
 
     SluitSSHTunnels()
     Exit Sub
