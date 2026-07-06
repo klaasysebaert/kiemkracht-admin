@@ -602,10 +602,13 @@ Sub BereidKoffieMailmergeVoor()
 
     ' Doel-URL volgt de omgeving (dev-bestand -> dev-formulier)
     Dim KOFFIE_URL As String
+    Dim BESTEL_URL As String   ' voor de uitschrijflink (uitschrijven.php leeft op de bestel-app)
     If BepaalOmgeving() = "dev" Then
         KOFFIE_URL = "https://koffie.dev.kiemkracht.be/"
+        BESTEL_URL = "https://bestel.dev.kiemkracht.be/"
     Else
         KOFFIE_URL = "https://koffie.kiemkracht.be/"
+        BESTEL_URL = "https://bestel.kiemkracht.be/"
     End If
 
     ' Bevestiging aan gebruiker
