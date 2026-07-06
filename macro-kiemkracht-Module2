@@ -390,7 +390,8 @@ Sub BereidMailmergeVoor()
         Else
             bGean = False
             For a = 0 To nAnn - 1
-                If LCase(annEmail(a)) = LCase(kEmail(k)) Then
+                If (annKlantId(a) <> "0" And annKlantId(a) = kID(k)) _
+                    Or (annKlantId(a) = "0" And LCase(annEmail(a)) = LCase(kEmail(k))) Then
                     bGean = True : Exit For
                 End If
             Next a
@@ -1142,7 +1143,8 @@ Sub BereidCombiMailmergeVoor()
         Else
             bGean = False
             For a = 0 To nAnn - 1
-                If LCase(annEmail(a)) = LCase(kEmail(k)) Then
+                If (annKlantId(a) <> "0" And annKlantId(a) = kID(k)) _
+                    Or (annKlantId(a) = "0" And LCase(annEmail(a)) = LCase(kEmail(k))) Then
                     bGean = True : Exit For
                 End If
             Next a
