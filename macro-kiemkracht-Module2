@@ -659,6 +659,7 @@ Sub BereidKoffieMailmergeVoor()
     Dim kEmail4(1000) As String
     Dim kVoor2(1000)  As String
     Dim kFam2(1000)   As String
+    Dim kUnsub(1000)  As String
     Dim nKlanten      As Integer
     nKlanten = 0
 
@@ -674,6 +675,7 @@ Sub BereidKoffieMailmergeVoor()
         kEmail4(nKlanten) = oRS.getString(9)
         kVoor2(nKlanten)  = oRS.getString(10)
         kFam2(nKlanten)   = oRS.getString(11)
+        kUnsub(nKlanten)  = oRS.getString(12)
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
