@@ -147,6 +147,8 @@ Sub LaadAlleTabellen()
     Dim i          As Integer
     Dim sUit       As String     ' lijst nieuwe uitschrijvers (opt-out aanbodmail)
     Dim nUit       As Integer
+    Dim sUitK      As String     ' lijst nieuwe koffie-uitschrijvers (koffie-opt-out)
+    Dim nUitK      As Integer
     Dim bAutoCalc  As Boolean    ' stond automatische herberekening aan?
     Dim bLocked    As Boolean    ' zijn de controllers vergrendeld?
     sUit = "" : nUit = 0 : bAutoCalc = True : bLocked = False
