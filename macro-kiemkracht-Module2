@@ -2350,6 +2350,8 @@ End Function
 ' =============================================
 Sub BereidHeractivatieMailmergeVoor()
 
+    On Error GoTo Fout   ' diagnostisch: rapporteert exacte regel bij runtime-fout
+
     ' Doel-URL's volgen de omgeving (dev-bestand -> dev-formulieren)
     Dim BESTEL_URL As String
     Dim KOFFIE_URL As String
