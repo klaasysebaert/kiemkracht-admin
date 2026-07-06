@@ -2556,9 +2556,10 @@ Sub BereidHeractivatieMailmergeVoor()
     SluitSSHTunnels()
     Exit Sub
 
-VerbindingsFout:
-    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
-           "Controleer of de SSH-tunnel actief is.", 16, "Fout"
+Fout:
+    MsgBox "Fout op regel " & Erl & " (code " & Err & "): " & Error$ & Chr(10) & _
+           "(Bij een verbindingsfout: controleer of de SSH-tunnel actief is.)", _
+           16, "BereidHeractivatieMailmergeVoor"
     SluitSSHTunnels()
 
 End Sub
