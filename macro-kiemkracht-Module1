@@ -3528,6 +3528,9 @@ Sub VerwerkStopStart()
     Dim mFormaat(MAX_ITEM)  As String    ' enkel relevant voor vooruitbestelling/abonnementsstart
     Dim mDatum(MAX_ITEM)    As String    ' YYYY-MM-DD
     Dim mJaar(MAX_ITEM)     As Integer
+    Dim mDoel(MAX_ITEM)     As String    ' stop-doel (enkel bij "stopzetting"): definitief/tijdelijk/weekperweek
+    Dim mHerstartW(MAX_ITEM) As Integer  ' herstart-week (0 = geen) — stuurt de pauze-variant van de mail
+    Dim mHerstartJ(MAX_ITEM) As Integer
     Dim nMail As Integer : nMail = 0
 
     Dim i As Integer, k As Integer, kIdx As Integer
