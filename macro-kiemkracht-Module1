@@ -3811,6 +3811,10 @@ Sub VerwerkStopStart()
     If nStart > 0 Then
         sVraag = sVraag & "Elke start zet de klant ook op een toekomst-abonneetype." & Chr(10) & Chr(10)
     End If
+    If nOpvolg > 0 Then
+        sVraag = sVraag & nOpvolg & " tijdelijke stop(s) zonder herstart-week: je krijgt " & _
+                 "2 maanden na de stopweek een opvolg-sein (mail + ToonOpvolgingen)." & Chr(10) & Chr(10)
+    End If
     sVraag = sVraag & "Akkoord?"
     If MsgBox(sVraag, 33, "VerwerkStopStart") <> 1 Then
         oConn.close()
