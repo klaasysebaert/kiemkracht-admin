@@ -58,8 +58,6 @@ Sub BereidHeractivatieMailmergeVoor()
         Exit Sub
     End If
 
-    TraceHeract "2 na confirm, ga verbinden (omgeving=" & BepaalOmgeving() & ")"
-
     ' --- JDBC-verbinding (juiste omgeving via MaakDBVerbinding) ---
     Dim oConn As Object
     oConn = MaakDBVerbinding()
