@@ -119,6 +119,11 @@ Sub StartVerwerkStopStart()
     VerwerkStopStart()
 End Sub
 
+Sub StartToonOpvolgingen()
+    ReloadKiemkracht()
+    ToonOpvolgingen()
+End Sub
+
 Sub StartMaakOverzichten()
     ReloadKiemkracht()
     MaakOverzichten()
