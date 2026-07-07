@@ -3801,6 +3801,15 @@ Sub VerwerkStopStart()
     For it = 0 To nItem - 1
         oStmt.executeUpdate(aSql(it))
     Next it
+    ' Leidt klanten.type/status meteen af (dezelfde recompute als de nachtelijke
+    ' flip-cron, nu gebundeld in de Postgres-functie flip_abonnementen()) zodat
+    ' klanten_beheer/LaadAlleTabellen direct de juiste toestand toont i.p.v. tot
+    ' 6:00 te wachten. Enkel reeds-actieve wijzigingen flippen; toekomst-stops en
+    ' -starts blijven terecht ongewijzigd tot hun week aanbreekt. Raakt enkel de
+    ' omgeving waarmee de macro verbonden is (de cron blijft prod EN dev doen).
+    Dim oFlipRS As Object
+    oFlipRS = oStmt.executeQuery("SELECT flip_abonnementen()")
+    oFlipRS.close()
     oStmt.close()
     oConn.close()
     On Error GoTo 0
