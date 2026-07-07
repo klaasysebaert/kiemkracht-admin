@@ -4075,6 +4075,105 @@ Function JsonEsc(s As String) As String
 End Function
 
 ' =============================================
+' OPVOLGINGEN — tijdelijk gestopte klanten zonder herstart-week
+' Toont de klanten waarvan de opvolgdatum (~2 maanden na de stopweek)
+' bereikt is, zodat je ze opnieuw kunt contacteren. Per klant kan de
+' opvolging afgevinkt worden (= opvolg_datum leegmaken); niet afvinken =
+' de klant blijft in de lijst staan tot een volgende run. De maandag-
+' digest (pauze-herinnering.php) herhaalt intussen niet, dankzij
+' opvolg_gemaild_op. Omgeving (dev/prod) volgt het actieve data-bestand.
+' =============================================
+Sub ToonOpvolgingen()
+
+    Dim oConn As Object
+    Dim oStmt As Object
+    Dim oRS As Object
+    Dim aId(500) As Long
+    Dim aRegel(500) As String
+    Dim nDue As Integer
+    Dim nToekomst As Integer
+    Dim sContact As String
+    Dim sLijst As String
+    Dim sGeen As String
+    Dim sKlaar As String
+    Dim nAf As Integer
+    Dim i As Integer
+
+    On Error GoTo VerbindingsFoutOpv
+    oConn = MaakDBVerbinding()
+    On Error GoTo 0
+
+    oStmt = oConn.createStatement()
+    nDue = 0 : nToekomst = 0
+    oRS = oStmt.executeQuery( _
+        "SELECT id, voornaam, familienaam, COALESCE(email1,''), COALESCE(telefoon,''), " & _
+        "COALESCE(pauze_vanaf_jaar,0), COALESCE(pauze_vanaf_week,0), " & _
+        "to_char(opvolg_datum,'DD/MM/YYYY'), (opvolg_datum <= CURRENT_DATE) " & _
+        "FROM klanten WHERE opvolg_datum IS NOT NULL " & _
+        "ORDER BY opvolg_datum, familienaam, voornaam")
+    Do While oRS.next()
+        If oRS.getBoolean(9) And nDue <= 500 Then
+            aId(nDue) = CLng(oRS.getString(1))
+            sContact = oRS.getString(4)
+            If sContact = "" Then sContact = "geen e-mail"
+            If oRS.getString(5) <> "" Then sContact = sContact & " / " & oRS.getString(5)
+            aRegel(nDue) = oRS.getString(2) & " " & oRS.getString(3) & _
+                "  (klant " & oRS.getString(1) & ")" & Chr(10) & _
+                "    gestopt sinds week " & oRS.getString(7) & " (" & oRS.getString(6) & ")" & _
+                ", op te volgen sinds " & oRS.getString(8) & Chr(10) & _
+                "    contact: " & sContact
+            nDue = nDue + 1
+        Else
+            nToekomst = nToekomst + 1
+        End If
+    Loop
+    oRS.close()
+
+    If nDue = 0 Then
+        oStmt.close() : oConn.close() : SluitSSHTunnels()
+        sGeen = "Geen klanten aan opvolging toe."
+        If nToekomst > 0 Then
+            sGeen = sGeen & Chr(10) & nToekomst & " klant(en) hebben een opvolgdatum in de toekomst."
+        End If
+        MsgBox sGeen, 64, "Opvolgingen"
+        Exit Sub
+    End If
+
+    sLijst = ""
+    For i = 0 To nDue - 1
+        sLijst = sLijst & aRegel(i) & Chr(10) & Chr(10)
+    Next i
+    MsgBox nDue & " klant(en) aan opvolging toe (tijdelijk gestopt zonder herstart-week):" & _
+           Chr(10) & Chr(10) & sLijst & _
+           "Hierna kun je per klant de opvolging afvinken (= uit de lijst halen)." & Chr(10) & _
+           "Niet afvinken = de klant blijft in deze lijst staan.", 64, "Opvolgingen"
+
+    ' Per klant afvinken (Ja = afgehandeld, Nee = laten staan)
+    nAf = 0
+    For i = 0 To nDue - 1
+        If MsgBox("Opvolging afvinken voor:" & Chr(10) & Chr(10) & aRegel(i) & Chr(10) & Chr(10) & _
+                  "Ja = afgehandeld (uit de lijst)" & Chr(10) & _
+                  "Nee = laten staan", 36, "Opvolging afvinken") = 6 Then
+            oStmt.executeUpdate("UPDATE klanten SET opvolg_datum = NULL, opvolg_gemaild_op = NULL " & _
+                                "WHERE id = " & aId(i))
+            nAf = nAf + 1
+        End If
+    Next i
+
+    oStmt.close() : oConn.close() : SluitSSHTunnels()
+    sKlaar = nAf & " opvolging(en) afgevinkt, " & (nDue - nAf) & " blijven staan."
+    If nToekomst > 0 Then
+        sKlaar = sKlaar & Chr(10) & nToekomst & " klant(en) hebben een opvolgdatum in de toekomst."
+    End If
+    MsgBox sKlaar, 64, "Opvolgingen"
+    Exit Sub
+
+VerbindingsFoutOpv:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error, 16, "Fout"
+    SluitSSHTunnels()
+End Sub
+
+' =============================================
 ' KOFFIE WEEKBESTAND
 ' Snapshot van alle koffie-bestellingen (geen abonnement of vooruitbestelling-
 ' logica). Vraagt twee DB-verbindingen: koffie-DB voor de bestellingen,
