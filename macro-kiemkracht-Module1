@@ -3606,6 +3606,30 @@ Sub VerwerkStopStart()
             Dim sDoelI As String : sDoelI = riDoel(i)
             If sDoelI = "" Then sDoelI = "definitief"
 
+            ' Registratie-rij in annulaties: maakt de stop zichtbaar in het
+            ' tabblad 'annulaties' van kiemkracht-data.ods (zoals de formulier-
+            ' stop). week_stopzetten_abonnement ALLEEN bij definitief/tijdelijk-
+            ' open — het Fase-0-mailmerge-vangnet sluit zo'n rij de rest van het
+            ' jaar uit, en dat mag niet voor weekperweek of tijdelijk-met-herstart
+            ' (die klanten moeten later weer aanbodsmails krijgen). De windows
+            ' blijven de bron van waarheid; dedup via dezelfde sleutel als kolom Q.
+            Dim sStopzCol As String
+            If sDoelI = "weekperweek" Or riHerstart(i) > 0 Then
+                sStopzCol = "NULL"
+            Else
+                sStopzCol = CStr(w)
+            End If
+            sSleutel = sKid & "#" & iJaar & "#" & w
+            If InStr(sBestAnn, "|" & sSleutel & "|") = 0 Then
+                aSql(nItem) = "INSERT INTO annulaties " & _
+                    "(voornaam, familienaam, klant_email, klant_id, datum, " & _
+                    "week_annulatie, week_stopzetten_abonnement, jaar) VALUES (" & _
+                    sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & sDatum & "', " & _
+                    w & ", " & sStopzCol & ", " & iJaar & ")"
+                nItem = nItem + 1
+                sBestAnn = sBestAnn & sSleutel & "|"
+            End If
+
             ' Levering-window sluiten: lopende primair-abonnementen eindigen op week w.
             aSql(nItem) = "UPDATE abonnementen SET eind_jaar = " & iJaar & ", eind_week = " & w & _
                 ", gewijzigd_op = now() WHERE klant_id = " & sKid & " AND bron = 'primair' AND eind_jaar IS NULL"
