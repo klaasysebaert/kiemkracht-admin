@@ -9,17 +9,6 @@
 ' van de wekelijkse flow, en toont de Basic-IDE de echte fout.
 ' =============================================
 
-' Diagnostische trace naar C:\tmp — enkel voor het debuggen van
-' BereidHeractivatieMailmergeVoor. Mag later weg.
-Sub TraceHeract(s As String)
-    On Error Resume Next
-    Dim f As Integer
-    f = FreeFile
-    Open "C:\tmp\heract_trace.txt" For Append As #f
-    Print #f, Format(Now(), "HH:MM:SS") & "  " & s
-    Close #f
-End Sub
-
 ' =============================================
 ' Kiemkracht - Heractivatie-mailmerge (EENMALIG)
 ' ---------------------------------------------
