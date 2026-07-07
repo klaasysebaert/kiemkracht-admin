@@ -236,7 +236,6 @@ Sub BereidHeractivatieMailmergeVoor()
     Exit Sub
 
 Fout:
-    TraceHeract "FOUT regel " & Erl & " code " & Err & ": " & Error$
     MsgBox "Fout op regel " & Erl & " (code " & Err & "): " & Error$ & Chr(10) & _
            "(Bij een verbindingsfout: controleer of de SSH-tunnel actief is.)", _
            16, "BereidHeractivatieMailmergeVoor"
