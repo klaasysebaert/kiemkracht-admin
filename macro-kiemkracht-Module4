@@ -29,10 +29,7 @@
 ' =============================================
 Sub BereidHeractivatieMailmergeVoor()
 
-    On Error Resume Next
-    If FileExists("C:\tmp\heract_trace.txt") Then Kill "C:\tmp\heract_trace.txt"
-    On Error GoTo Fout   ' diagnostisch: rapporteert exacte regel bij runtime-fout
-    TraceHeract "1 entry"
+    On Error GoTo Fout   ' rapporteert de exacte regel bij een runtime-fout
 
     ' Doel-URL's volgen de omgeving (dev-bestand -> dev-formulieren)
     Dim BESTEL_URL As String
