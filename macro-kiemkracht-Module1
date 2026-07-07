@@ -3508,6 +3508,7 @@ Sub VerwerkStopStart()
     Dim aSql(MAX_ITEM) As String
     Dim nItem As Integer : nItem = 0
     Dim nAnn As Integer, nStopz As Integer, nVb As Integer, nStart As Integer, nDup As Integer
+    Dim nOpvolg As Integer   ' tijdelijke stops zonder herstart-week (open pauze + opvolging)
 
     ' Mail-eligible records: parallel aan de INSERTs voor Q/R/S/T-kolommen.
     ' Worden later (optioneel, na bevestigingsdialoog) als HTTP-POST verstuurd.
