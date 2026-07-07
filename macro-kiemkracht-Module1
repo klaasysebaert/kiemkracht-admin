@@ -2746,7 +2746,14 @@ Sub SchrijfWijzigingenTerug()
             Dim sPauzeClause As String : sPauzeClause = ""
             If sStatusKlant = "actief" Then
                 sPauzeClause = "pauze_vanaf_jaar = NULL, pauze_vanaf_week = NULL, " & _
-                               "pauze_tot_jaar = NULL, pauze_tot_week = NULL, "
+                               "pauze_tot_jaar = NULL, pauze_tot_week = NULL, " & _
+                               "opvolg_datum = NULL, opvolg_gemaild_op = NULL, "
+            ElseIf sStatusKlant = "gestopt" Then
+                ' Expliciet stop-definitief via klanten_beheer: einde en opvolging
+                ' wissen, anders zet de recompute (opvolg_datum-bewust) de status
+                ' weer op 'gepauzeerd'.
+                sPauzeClause = "pauze_tot_jaar = NULL, pauze_tot_week = NULL, " & _
+                               "opvolg_datum = NULL, opvolg_gemaild_op = NULL, "
             End If
 
             Dim sSQL As String
