@@ -3665,7 +3665,10 @@ Sub VerwerkStopStart()
 
             nStopz = nStopz + 1
 
-            ' Mail-eligible (stopzetting-bevestiging, alleen als klant een email1 heeft)
+            ' Mail-eligible (stopzetting-bevestiging, alleen als klant een email1 heeft).
+            ' Doel + herstart-week gaan mee zodat de mail de juiste variant kiest
+            ' (pauze-met-herstart / weekperweek / tijdelijk-open / definitief) —
+            ' let op: riDoel/riHerstart gebruiken, niet hW (stale over rijen heen).
             If klMail(kIdx) <> "" Then
                 mEmail(nMail)    = klMail(kIdx)
                 mVoor(nMail)     = klVn(kIdx)
@@ -3676,6 +3679,14 @@ Sub VerwerkStopStart()
                 mFormaat(nMail)  = ""
                 mDatum(nMail)    = sDatum
                 mJaar(nMail)     = iJaar
+                mDoel(nMail)     = sDoelI
+                If sDoelI <> "definitief" And riHerstart(i) > 0 Then
+                    mHerstartW(nMail) = riHerstart(i)
+                    mHerstartJ(nMail) = Year(WeekNaarDonderdag(riHerstart(i)))
+                Else
+                    mHerstartW(nMail) = 0
+                    mHerstartJ(nMail) = 0
+                End If
                 nMail = nMail + 1
             End If
         End If
