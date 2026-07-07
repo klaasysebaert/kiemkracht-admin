@@ -3966,17 +3966,31 @@ End Sub
 ' Returnt True bij HTTP 200, anders False.
 ' iWeekStop = 0  -> gewone annulatie
 ' iWeekStop > 0  -> stopzetting (proxy kiest dan stopzet-template)
+' sDoel + iHerstartWeek/Jaar sturen de variant van de stopzet-mail:
+'   herstart-week > 0        -> pauze-tekst met automatische hervatting
+'   doel = weekperweek       -> "aanbodsmail blijft komen"-zin
+'   doel = tijdelijk, geen H -> "we contacteren je over ±2 maanden"-zin
 ' =============================================
 Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, sVoornaam2 As String, _
                                 iWeek As Integer, iJaar As Integer, _
                                 sDatum As String, iWeekStop As Integer, _
-                                iKlantId As Long) As Boolean
+                                iKlantId As Long, _
+                                Optional sDoel As String, _
+                                Optional iHerstartWeek As Integer, _
+                                Optional iHerstartJaar As Integer) As Boolean
     Dim sUrl As String
     If BepaalOmgeving() = "dev" Then
         sUrl = "https://bestel.dev.kiemkracht.be/postgres-proxy.php?actie=annulatie_bevestiging_mail"
     Else
         sUrl = "https://bestel.kiemkracht.be/postgres-proxy.php?actie=annulatie_bevestiging_mail"
     End If
+
+    Dim sDoelN As String : sDoelN = ""
+    If Not IsMissing(sDoel) Then sDoelN = sDoel
+    Dim iHW As Integer : iHW = 0
+    If Not IsMissing(iHerstartWeek) Then iHW = iHerstartWeek
+    Dim iHJ As Integer : iHJ = 0
+    If Not IsMissing(iHerstartJaar) Then iHJ = iHerstartJaar
 
     Dim sJson As String
     sJson = "{""Sleutel"":""Kiemkracht2026BestelFormulierSleutel""," & _
@@ -3989,6 +4003,15 @@ Function VerstuurAnnulatieMail(sEmail As String, sVoornaam As String, sVoornaam2
             """Jaar"":" & iJaar
     If iWeekStop > 0 Then
         sJson = sJson & ",""WeekStopzettenAbonnement"":" & iWeekStop
+    End If
+    If iHW > 0 Then
+        If iHJ = 0 Then iHJ = iJaar
+        sJson = sJson & ",""HerstartWeek"":" & iHW & ",""HerstartJaar"":" & iHJ
+    End If
+    If sDoelN = "weekperweek" Then
+        sJson = sJson & ",""MailBlijven"":1"
+    ElseIf sDoelN = "tijdelijk" And iHW = 0 Then
+        sJson = sJson & ",""OpvolgenOk"":1"
     End If
     sJson = sJson & "}"
 
