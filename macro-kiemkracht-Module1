@@ -3618,10 +3618,25 @@ Sub VerwerkStopStart()
                 End If
 
                 If sDoelI = "tijdelijk" Then
-                    ' Relatie-poort dicht met einde => gepauzeerd; opent weer in de herstart-week.
-                    aSql(nItem) = "UPDATE klanten SET pauze_vanaf_jaar = " & iJaar & ", pauze_vanaf_week = " & w & _
-                        ", pauze_tot_jaar = " & iHJaar & ", pauze_tot_week = " & hW & " WHERE id = " & sKid
-                    nItem = nItem + 1
+                    If hW > 0 Then
+                        ' Relatie-poort dicht met einde => gepauzeerd; opent weer in de herstart-week.
+                        aSql(nItem) = "UPDATE klanten SET pauze_vanaf_jaar = " & iJaar & ", pauze_vanaf_week = " & w & _
+                            ", pauze_tot_jaar = " & iHJaar & ", pauze_tot_week = " & hW & _
+                            ", opvolg_datum = NULL, opvolg_gemaild_op = NULL WHERE id = " & sKid
+                        nItem = nItem + 1
+                    Else
+                        ' Geen herstart-week: open pauze (gepauzeerd, poort dicht) +
+                        ' opvolgdatum 2 maanden na de stopweek. De maandag-cron
+                        ' (pauze-herinnering.php) mailt dan een digest naar Klaas en
+                        ' ToonOpvolgingen toont de klant tot de opvolging afgevinkt is.
+                        Dim sOpvolg As String
+                        sOpvolg = Format(DateAdd("m", 2, dDo), "YYYY-MM-DD")
+                        aSql(nItem) = "UPDATE klanten SET pauze_vanaf_jaar = " & iJaar & ", pauze_vanaf_week = " & w & _
+                            ", pauze_tot_jaar = NULL, pauze_tot_week = NULL" & _
+                            ", opvolg_datum = '" & sOpvolg & "', opvolg_gemaild_op = NULL WHERE id = " & sKid
+                        nItem = nItem + 1
+                        nOpvolg = nOpvolg + 1
+                    End If
                 Else
                     ' weekperweek: geen pauzewindow; klant blijft actief en krijgt aanbod-los.
                     ' klanten.type wordt door de cron op 'weekperweek' afgeleid zolang geen abonnement actief is.
