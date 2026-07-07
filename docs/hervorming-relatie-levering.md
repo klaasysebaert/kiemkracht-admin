@@ -191,3 +191,28 @@ V=start, W=type, X=formaat (vaste indices `COL_VB..COL_FORMAAT` +2 in `VerwerkSt
   én dev gaf 0 wijzigingen op de huidige data; end-to-end testrun = overal `UPDATE 0`.
   Backup van het oude script: `kiemkracht-flip-abonnement.sh.bak-20260625`.
 - Fase 0-annulaties-guard blijft als vangnet tot de oude stops gebackfilld zijn.
+
+## Uitbreiding — tijdelijk zonder herstart-week + opvolging (2026-07-07)
+
+`stop-doel = tijdelijk` mag nu ook **zonder** herstart-week: de klant krijgt een
+open pauzewindow (`pauze_tot = NULL`) plus `klanten.opvolg_datum` = donderdag
+van de stopweek **+ 2 maanden**. Migratie 16 (dev + prod) voegt
+`opvolg_datum`/`opvolg_gemaild_op` toe en maakt `flip_abonnementen()`
+opvolg-bewust: open window **mét** opvolgdatum ⇒ `gepauzeerd`/`stop-tijdelijk`
+(intentie is tijdelijk), zonder ⇒ `gestopt`/`stop-definitief` zoals voorheen.
+
+Het sein, twee kanalen:
+- **Digest-mail** naar Klaas via `pauze-herinnering.php` (zelfde maandag-17u-cron
+  als de herstart-herinnering; aparte mail, `opvolg_gemaild_op` = anti-herhaal).
+- **Macro `ToonOpvolgingen`** (+ `StartToonOpvolgingen` in Standard/Module2):
+  lijst van klanten met bereikte opvolgdatum, per klant af te vinken
+  (= `opvolg_datum` leegmaken). Niet afgevinkt = blijft in de lijst.
+
+Opvolging wordt automatisch gewist door: een definitieve stop, een tijdelijke
+stop mét herstart-week, een abonnementsstart (kolom T/V), of un-stop via
+klanten_beheer. De start-tak sluit sindsdien ook het pauzewindow van een
+herstartende klant (`pauze_tot = startweek`, WHERE-guard op bestaand window) —
+voorheen bleef dat window openstaan en flipte de cron de klant terug naar
+gestopt. Expliciet `stop-definitief` via klanten_beheer wist nu einde +
+opvolging (anders zet de opvolg-bewuste recompute de status terug op
+gepauzeerd).
