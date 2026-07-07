@@ -111,7 +111,6 @@ Sub BereidHeractivatieMailmergeVoor()
     Loop
     oRS.close() : oStmt.close()
     oConn.close()
-    TraceHeract "4 query klaar, nKlanten=" & nKlanten
 
     ' --- Stap 2: sheet "Heractivatie" aanmaken of leegmaken ---
     Dim oDoc    As Object
