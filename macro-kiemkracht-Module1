@@ -3408,12 +3408,17 @@ Sub VerwerkStopStart()
                     Exit Sub
                 End If
                 If sDoelN = "tijdelijk" Then
-                    Dim sHerCsv As String : sHerCsv = ParseerWeken(sHerstart, True, sFout)
-                    If sFout <> "" Or sHerCsv = "" Then
-                        MsgBox "Rij " & (r + 1) & ": doel 'tijdelijk' vereist een geldige herstart-week.", 16, "Fout"
-                        Exit Sub
+                    ' Herstart-week optioneel: leeg = tijdelijk stoppen zonder afgesproken
+                    ' herstart -> open pauze + opvolgdatum ~2 maanden na de stopweek
+                    ' (digest-mail via pauze-herinnering.php + macro ToonOpvolgingen).
+                    If sHerstart <> "" Then
+                        Dim sHerCsv As String : sHerCsv = ParseerWeken(sHerstart, True, sFout)
+                        If sFout <> "" Or sHerCsv = "" Then
+                            MsgBox "Rij " & (r + 1) & ": ongeldige herstart-week bij doel 'tijdelijk'.", 16, "Fout"
+                            Exit Sub
+                        End If
+                        iHerstartN = CInt(sHerCsv)
                     End If
-                    iHerstartN = CInt(sHerCsv)
                 ElseIf sDoelN = "weekperweek" And sHerstart <> "" Then
                     ' weekperweek met optionele herstart-week: klant wordt in die week weer
                     ' volwaardig abonnee; de mail-poort blijft open in de tussentijd (aanbod-los).
