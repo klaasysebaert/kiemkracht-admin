@@ -216,3 +216,23 @@ voorheen bleef dat window openstaan en flipte de cron de klant terug naar
 gestopt. Expliciet `stop-definitief` via klanten_beheer wist nu einde +
 opvolging (anders zet de opvolg-bewuste recompute de status terug op
 gepauzeerd).
+
+### Doel-bewuste stopbevestiging + registratie-rij (2026-07-07, later op de dag)
+
+Casus klant 3197: tijdelijke stop met herstart-week (wk29→wk35) kreeg de
+definitief-mail. Oorzaak: de macro gaf doel/herstart niet door aan de
+mail-template. Fix door de hele keten:
+- `VerstuurAnnulatieMail` stuurt nu `HerstartWeek`/`HerstartJaar` (+
+  `MailBlijven`=1 bij doel weekperweek, `OpvolgenOk`=1 bij tijdelijk-open) mee;
+  de proxy kiest de **pauze-variant** ("pauzeert vanaf week W; vanaf week H
+  hervatten de leveringen automatisch") en bewaart de afscheidszin enkel voor
+  een écht afscheid.
+- **Registratie-rij in `annulaties` hersteld** (manco: stops waren onzichtbaar
+  in het tabblad `annulaties` van kiemkracht-data.ods sinds de stop-tak geen
+  `week_stopzetten` meer schreef). De stop-tak schrijft opnieuw één rij per
+  stop, mét `week_stopzetten_abonnement` bij definitief/tijdelijk-open maar
+  **NULL** bij weekperweek of herstart-week — het Fase-0-mailmerge-vangnet
+  sluit een `week_stopzetten`-rij immers de rest van het jaar uit, en die
+  klanten moeten later weer aanbodsmails krijgen. Zelfde reden: de
+  formulier-stop-rij krijgt `week_stopzetten = NULL` bij `MailBlijven=1`.
+  De windows blijven de bron van waarheid; de rij is registratie + vangnet.
