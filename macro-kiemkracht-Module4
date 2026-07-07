@@ -217,11 +217,9 @@ Sub BereidHeractivatieMailmergeVoor()
     For cIdx = 0 To 14
         oKolommen.getByIndex(cIdx).OptimalWidth = True
     Next cIdx
-    TraceHeract "8 optimalwidth klaar"
     oKolommen.getByIndex(3).Width = 12000   ' GroentenURL
     oKolommen.getByIndex(4).Width = 12000   ' KoffieURL
     oKolommen.getByIndex(14).Width = 9000   ' uitschrijflink
-    TraceHeract "9 breedtes klaar"
 
     ' --- Klaar ---
     Dim nRijen As Integer
