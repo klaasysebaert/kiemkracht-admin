@@ -45,7 +45,12 @@ Groeten,
 Geverifieerd 2026-07-06 (menunamen verschillen per provider!):
 
 - **Outlook-app (telefoon):** open de mail → menu ⋮ → "Melden" →
-  "Geen ongewenste e-mail".
+  "Geen ongewenste e-mail". LET OP — de Outlook-app splitst je Postvak IN
+  in **Gefocust** en **Overig**: een legitieme mail die "niet in de inbox
+  én niet in spam" zit, staat vaak gewoon in het tabblad **Overig**. Laat
+  de klant dat tabblad checken → mail lang indrukken → "Verplaatsen naar
+  Gefocust" → "Altijd verplaatsen". De **Veilige afzenders**-lijst zelf kan
+  NIET in de app, enkel via outlook.com in een browser (zie hieronder).
 - **Hotmail/Outlook.com/Live (webmail):** Instellingen → E-mail →
   Ongewenste e-mail → **"Veilige afzenders en domeinen"** → adres
   toevoegen.
