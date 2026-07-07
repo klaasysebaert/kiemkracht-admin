@@ -3909,7 +3909,8 @@ Sub VerwerkStopStart()
                     End If
                 Case "stopzetting"
                     bOk = VerstuurAnnulatieMail(mEmail(m), mVoor(m), mVoor2(m), mWeek(m), mJaar(m), _
-                                                mDatum(m), mWeek(m), mKlantId(m))
+                                                mDatum(m), mWeek(m), mKlantId(m), _
+                                                mDoel(m), mHerstartW(m), mHerstartJ(m))
                     If bOk Then nMailOk = nMailOk + 1 Else nMailFout = nMailFout + 1
                 Case "vooruitbestelling", "abonnementsstart"
                     Dim iWeekStart As Integer
