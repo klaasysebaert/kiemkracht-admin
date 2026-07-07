@@ -61,7 +61,6 @@ Sub BereidHeractivatieMailmergeVoor()
     ' --- JDBC-verbinding (juiste omgeving via MaakDBVerbinding) ---
     Dim oConn As Object
     oConn = MaakDBVerbinding()
-    TraceHeract "3 verbonden"
 
     Dim oStmt As Object
     Dim oRS   As Object
