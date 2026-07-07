@@ -2738,6 +2738,17 @@ Sub SchrijfWijzigingenTerug()
                 Case Else              : sStatusKlant = "actief"   ' abonnee* / weekperweek*
             End Select
 
+            ' Un-stop via klanten_beheer: bij terug 'actief' óók de pauze-window
+            ' wissen. Anders laat de achtergebleven window (pauze_tot NULL wordt
+            ' nooit auto-hervat) de nachtelijke flip-cron de status weer op
+            ' 'gestopt'/'gepauzeerd' zetten -> type terug 'stop-*'. Zo blijft
+            ' klanten_beheer self-sufficient om iemand uit een stop te halen.
+            Dim sPauzeClause As String : sPauzeClause = ""
+            If sStatusKlant = "actief" Then
+                sPauzeClause = "pauze_vanaf_jaar = NULL, pauze_vanaf_week = NULL, " & _
+                               "pauze_tot_jaar = NULL, pauze_tot_week = NULL, "
+            End If
+
             Dim sSQL As String
             sSQL = "UPDATE klanten SET " & _
                    "voornaam = "             & SqlStr(sVoornaam)     & ", " & _
@@ -2748,6 +2759,7 @@ Sub SchrijfWijzigingenTerug()
                    "type = "                 & SqlStr(sType)         & ", " & _
                    "formaat = "              & SqlStr(sFormaat)      & ", " & _
                    "status = '"              & sStatusKlant & "', "          & _
+                   sPauzeClause                                             & _
                    "email1 = "               & SqlStr(sEmail1)       & ", " & _
                    "email2 = "               & SqlStr(sEmail2)       & ", " & _
                    "email3 = "               & SqlStr(sEmail3)       & ", " & _
