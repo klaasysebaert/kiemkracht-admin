@@ -3733,9 +3733,18 @@ Sub VerwerkStopStart()
                     sDatum & "', " & w & ", " & w & ", " & iJaar & ")"
                 nItem = nItem + 1
                 ' Klant in toekomst-toestand zetten; de VPS-cron schakelt om op de startweek
-                ' (legacy klanten.type blijft transitie-mirror tot Fase F).
+                ' (legacy klanten.type blijft transitie-mirror tot Fase F). Een start
+                ' beantwoordt ook een eventuele lopende opvolging -> wissen.
                 aSql(nItem) = "UPDATE klanten SET type = '" & riType(i) & "-toekomst', " & _
-                    "formaat = '" & riFmt(i) & "' WHERE id = " & sKid
+                    "formaat = '" & riFmt(i) & "'" & _
+                    ", opvolg_datum = NULL, opvolg_gemaild_op = NULL WHERE id = " & sKid
+                nItem = nItem + 1
+                ' Herstart van een gestopte/gepauzeerde klant: het pauzewindow eindigt
+                ' op de startweek (mail-poort opent dan weer; de nachtelijke recompute
+                ' ruimt het verstreken window daarna op). Klanten zonder window blijven
+                ' onaangeroerd door de WHERE-guard.
+                aSql(nItem) = "UPDATE klanten SET pauze_tot_jaar = " & iJaar & ", pauze_tot_week = " & w & _
+                    " WHERE id = " & sKid & " AND pauze_vanaf_jaar IS NOT NULL"
                 nItem = nItem + 1
                 ' Nieuw model: primair abonnement als toekomst-rij. Combo-'extra'-rijen
                 ' blijven ongemoeid (DELETE enkel bron='primair'). De flip-cron zet
