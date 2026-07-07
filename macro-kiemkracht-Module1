@@ -3602,9 +3602,11 @@ Sub VerwerkStopStart()
             nItem = nItem + 1
 
             If sDoelI = "definitief" Then
-                ' Relatie-poort dicht zonder einde => gestopt.
+                ' Relatie-poort dicht zonder einde => gestopt. Eventuele lopende
+                ' opvolging (eerdere tijdelijke stop zonder herstart) vervalt.
                 aSql(nItem) = "UPDATE klanten SET pauze_vanaf_jaar = " & iJaar & ", pauze_vanaf_week = " & w & _
-                    ", pauze_tot_jaar = NULL, pauze_tot_week = NULL WHERE id = " & sKid
+                    ", pauze_tot_jaar = NULL, pauze_tot_week = NULL" & _
+                    ", opvolg_datum = NULL, opvolg_gemaild_op = NULL WHERE id = " & sKid
                 nItem = nItem + 1
             Else
                 ' tijdelijk of weekperweek (met optionele herstart): bepaal de herstart-week (0 = geen).
