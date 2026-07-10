@@ -349,9 +349,15 @@ Private Sub LaadTabelSnel(oSheets As Object, oConn As Object, sNaam As String)
     If oRS.next() Then nRows = oRS.getInt(1)
     oRS.close()
 
-    ' Gegevens + metadata ophalen
+    ' Gegevens + metadata ophalen. ORDER BY id: zonder expliciete sortering geeft
+    ' Postgres de fysieke scanvolgorde terug (na deletes/vacuum dus NIET chrono-
+    ' logisch) — nieuwe/backfilled rijen kunnen dan ergens middenin het tabblad
+    ' opduiken i.p.v. onderaan. Casus 2026-07-08: backfill-rijen voor klant 3177/
+    ' 3197 (annulaties) stonden op fysieke positie 64-65 van 114, niet aan het
+    ' eind — leek zo alsof de rijen ontbraken. Alle 12 geladen tabellen hebben
+    ' een id-kolom (geverifieerd), dus generiek toepasbaar.
     mStap = sNaam & " — query + kolommen"
-    oRS   = oStmt.executeQuery("SELECT * FROM " & sNaam)
+    oRS   = oStmt.executeQuery("SELECT * FROM " & sNaam & " ORDER BY id")
     oMeta = oRS.getMetaData()
     nKolommen = oMeta.getColumnCount()
 
