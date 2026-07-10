@@ -2648,4 +2648,341 @@ HttpFout:
 
 End Sub
 
+' =============================================
+' MailSelectie
+' Filtert de klantrijen van het geopende weekbestand op een combinatie
+' van pakketformaat, dag klaarmaken en weglatingen, en zet de gevonden
+' e-mailadressen (incl. plak-klare BCC-lijst) in een nieuw Calc-document.
+' Werkt op het weekbestand zoals het op het scherm staat, dus handmatige
+' correcties na aanmaak (extra weglating, aangepast e-mailadres) tellen mee.
+' =============================================
+Sub MailSelectie()
+    On Error GoTo DebugFout
+
+    ' Kolomindices weekblad (moeten overeenkomen met MaakWeekbestand)
+    Const cNaam     = 0
+    Const cAfh      = 1
+    Const cKlaarDag = 2
+    Const cEmail    = 6
+    Const cKG       = 17
+    Const cGG       = 18
+    Const cEGG      = 19
+    Const cMINI     = 20
+    Const cWeg0     = 51
+
+    Dim oDoc     As Object
+    Dim oWkSheet As Object
+    oDoc     = ThisComponent
+    oWkSheet = oDoc.Sheets.getByIndex(0)
+
+    ' Vangnet: draait dit wel op een weekbestand?
+    Dim sWeekLabel As String
+    sWeekLabel = oWkSheet.getCellByPosition(1, 0).getString()
+    If Left(sWeekLabel, 5) <> "Week " Then
+        MsgBox "Het actieve document lijkt geen weekbestand (cel B1 bevat geen 'Week ...')." & Chr(10) & _
+               "Open eerst het weekbestand en probeer opnieuw.", 48, "Mailselectie"
+        Exit Sub
+    End If
+
+    ' Weglating-groenten uit koprij 3 (rij-index 2). Scan een vaste reeks en
+    ' onthoud de laatste niet-lege kolom, zodat een handmatig toegevoegde
+    ' weglating in een niet-aansluitende kolom (gat ertussen) ook meetelt.
+    Dim wegNaam(39) As String
+    Dim nWeg        As Integer
+    Dim wScan       As Integer
+    nWeg = 0
+    For wScan = 0 To 39
+        wegNaam(wScan) = oWkSheet.getCellByPosition(cWeg0 + wScan, 2).getString()
+        If wegNaam(wScan) <> "" Then nWeg = wScan + 1
+    Next wScan
+
+    ' Keuzelijst 1..N over de niet-lege slots (toonnummer -> slotindex)
+    Dim wegSlot(39) As Integer
+    Dim nWegToon    As Integer
+    Dim sWegLijst   As String
+    nWegToon = 0 : sWegLijst = ""
+    For wScan = 0 To nWeg - 1
+        If wegNaam(wScan) <> "" Then
+            wegSlot(nWegToon) = wScan
+            nWegToon = nWegToon + 1
+            sWegLijst = sWegLijst & nWegToon & " = " & wegNaam(wScan) & Chr(10)
+        End If
+    Next wScan
+
+    ' --- Vraag 1: pakketformaten ---
+    Dim sPakIn As String
+    sPakIn = InputBox("Welke pakketformaten meenemen?" & Chr(10) & _
+        "k = klein, g = groot, e = extra groot, m = mini," & Chr(10) & _
+        "x = geen pakket (enkel losse bestelling)" & Chr(10) & Chr(10) & _
+        "Combineer letters, bv. kge:", "Mailselectie (1/3): pakketten", "kge")
+    If sPakIn = "" Then Exit Sub   ' Annuleren
+
+    Dim bWilKG As Boolean, bWilGG As Boolean, bWilEGG As Boolean
+    Dim bWilMINI As Boolean, bWilLos As Boolean
+    Dim iP   As Integer
+    Dim sKar As String
+    For iP = 1 To Len(sPakIn)
+        sKar = LCase(Mid(sPakIn, iP, 1))
+        Select Case sKar
+            Case "k" : bWilKG   = True
+            Case "g" : bWilGG   = True
+            Case "e" : bWilEGG  = True
+            Case "m" : bWilMINI = True
+            Case "x" : bWilLos  = True
+            Case " ", ","   ' scheidingstekens negeren
+            Case Else
+                MsgBox "Onbekende pakketletter: '" & sKar & "'", 48, "Mailselectie"
+                Exit Sub
+        End Select
+    Next iP
+
+    ' --- Vraag 2: dag klaarmaken ---
+    Dim sDagIn     As String
+    Dim sDagFilter As String
+    sDagIn = InputBox("Welke dag klaarmaken?" & Chr(10) & _
+        "d = donderdag, v = vrijdag, b = beide:", "Mailselectie (2/3): dag", "b")
+    If sDagIn = "" Then Exit Sub   ' Annuleren
+    Select Case LCase(Trim(sDagIn))
+        Case "d" : sDagFilter = "donderdag"
+        Case "v" : sDagFilter = "vrijdag"
+        Case "b" : sDagFilter = ""
+        Case Else
+            MsgBox "Onbekende dagkeuze: '" & sDagIn & "'", 48, "Mailselectie"
+            Exit Sub
+    End Select
+
+    ' --- Vraag 3: weglatingen ---
+    Dim sWegIn       As String
+    Dim iWegMode     As Integer     ' 0 = geen filter, 1 = uitsluiten, 2 = enkel
+    Dim bWegKies(39) As Boolean     ' per slotindex: doet mee in de filter
+    iWegMode = 0
+    If nWegToon > 0 Then
+        sWegIn = InputBox("Filteren op weglatingen? Pakketgroenten deze week:" & Chr(10) & _
+            sWegLijst & Chr(10) & _
+            "0 = niet filteren op weglatingen" & Chr(10) & _
+            "-1,3 = klanten die nr 1 of 3 weglieten UITSLUITEN" & Chr(10) & _
+            "+1,3 = ENKEL klanten die nr 1 of 3 weglieten:", _
+            "Mailselectie (3/3): weglatingen", "0")
+        If sWegIn = "" Then Exit Sub   ' Annuleren
+        sWegIn = Trim(sWegIn)
+        If sWegIn <> "0" Then
+            iWegMode = 1
+            If Left(sWegIn, 1) = "+" Then iWegMode = 2
+            If Left(sWegIn, 1) = "+" Or Left(sWegIn, 1) = "-" Then sWegIn = Mid(sWegIn, 2)
+            Dim aNr() As String
+            Dim iN    As Integer
+            Dim iNr   As Integer
+            aNr = Split(sWegIn, ",")
+            For iN = 0 To UBound(aNr)
+                If Not IsNumeric(Trim(aNr(iN))) Then
+                    MsgBox "Ongeldig weglating-nummer: '" & Trim(aNr(iN)) & "'", 48, "Mailselectie"
+                    Exit Sub
+                End If
+                iNr = CInt(Trim(aNr(iN)))
+                If iNr < 1 Or iNr > nWegToon Then
+                    MsgBox "Weglating-nummer buiten bereik: " & iNr, 48, "Mailselectie"
+                    Exit Sub
+                End If
+                bWegKies(wegSlot(iNr - 1)) = True
+            Next iN
+        End If
+    End If
+
+    ' --- Beschrijving van de actieve filters (komt in het resultaatdocument) ---
+    Dim sBeschr   As String
+    Dim sPakLijst As String
+    Dim w         As Integer
+    sPakLijst = ""
+    If bWilKG   Then sPakLijst = sPakLijst & ", klein"
+    If bWilGG   Then sPakLijst = sPakLijst & ", groot"
+    If bWilEGG  Then sPakLijst = sPakLijst & ", extra groot"
+    If bWilMINI Then sPakLijst = sPakLijst & ", mini"
+    If bWilLos  Then sPakLijst = sPakLijst & ", geen pakket"
+    If sPakLijst = "" Then
+        MsgBox "Geen pakketformaat gekozen.", 48, "Mailselectie"
+        Exit Sub
+    End If
+    sBeschr = "pakketten: " & Mid(sPakLijst, 3)
+    If sDagFilter <> "" Then sBeschr = sBeschr & "; dag: " & sDagFilter
+    If iWegMode > 0 Then
+        Dim sWegNamen As String
+        sWegNamen = ""
+        For w = 0 To nWeg - 1
+            If bWegKies(w) Then sWegNamen = sWegNamen & ", " & wegNaam(w)
+        Next w
+        If iWegMode = 1 Then
+            sBeschr = sBeschr & "; zonder weglating van: " & Mid(sWegNamen, 3)
+        Else
+            sBeschr = sBeschr & "; enkel met weglating van: " & Mid(sWegNamen, 3)
+        End If
+    End If
+
+    ' --- Laatste rij weekblad ---
+    Dim oCalcCursor As Object
+    oCalcCursor = oWkSheet.createCursor()
+    oCalcCursor.gotoEndOfUsedArea(True)
+    Dim nLastRow As Long
+    nLastRow = oCalcCursor.getRangeAddress().EndRow
+
+    ' --- Klantrijen aflopen en filteren ---
+    Dim rNaam(500) As String
+    Dim rAfh(500)  As String
+    Dim rDag(500)  As String
+    Dim rPak(500)  As String
+    Dim rMail(500) As String
+    Dim nRes        As Integer
+    Dim nZonderMail As Integer
+    nRes = 0 : nZonderMail = 0
+
+    Dim i         As Long
+    Dim sNm       As String
+    Dim sAf       As String
+    Dim sDg       As String
+    Dim sPak      As String
+    Dim sMail     As String
+    Dim bHeeftWeg As Boolean
+
+    For i = 6 To nLastRow
+        sNm = oWkSheet.getCellByPosition(cNaam, i).getString()
+        sAf = oWkSheet.getCellByPosition(cAfh,  i).getString()
+        ' Blokkoppen ("afhaalpunt/dag" in kolom B) en witregels overslaan
+        If sNm = "" Or sAf = "afhaalpunt/dag" Then GoTo VolgendeRijMS
+
+        ' Pakketformaat van deze rij (zelfde logica als MaakOverzichten)
+        If oWkSheet.getCellByPosition(cKG, i).getValue() > 0 Then
+            sPak = "klein"
+            If Not bWilKG Then GoTo VolgendeRijMS
+        ElseIf oWkSheet.getCellByPosition(cGG, i).getValue() > 0 Then
+            sPak = "groot"
+            If Not bWilGG Then GoTo VolgendeRijMS
+        ElseIf oWkSheet.getCellByPosition(cEGG, i).getValue() > 0 Then
+            sPak = "extra groot"
+            If Not bWilEGG Then GoTo VolgendeRijMS
+        ElseIf oWkSheet.getCellByPosition(cMINI, i).getValue() > 0 Then
+            sPak = "mini"
+            If Not bWilMINI Then GoTo VolgendeRijMS
+        Else
+            sPak = "geen pakket"
+            If Not bWilLos Then GoTo VolgendeRijMS
+        End If
+
+        ' Dagfilter
+        sDg = oWkSheet.getCellByPosition(cKlaarDag, i).getString()
+        If sDagFilter <> "" And sDg <> sDagFilter Then GoTo VolgendeRijMS
+
+        ' Weglatingfilter: heeft deze rij een van de gekozen groenten weggelaten?
+        If iWegMode > 0 Then
+            bHeeftWeg = False
+            For w = 0 To nWeg - 1
+                If bWegKies(w) Then
+                    If oWkSheet.getCellByPosition(cWeg0 + w, i).getString() <> "" Then
+                        bHeeftWeg = True
+                        Exit For
+                    End If
+                End If
+            Next w
+            If iWegMode = 1 And bHeeftWeg Then GoTo VolgendeRijMS
+            If iWegMode = 2 And Not bHeeftWeg Then GoTo VolgendeRijMS
+        End If
+
+        sMail = Trim(oWkSheet.getCellByPosition(cEmail, i).getString())
+        If sMail = "" Then nZonderMail = nZonderMail + 1
+
+        rNaam(nRes) = sNm
+        rAfh(nRes)  = sAf
+        rDag(nRes)  = sDg
+        rPak(nRes)  = sPak
+        rMail(nRes) = sMail
+        nRes = nRes + 1
+        If nRes > 500 Then Exit For
+
+        VolgendeRijMS:
+    Next i
+
+    If nRes = 0 Then
+        MsgBox "Geen klanten voldoen aan deze filters." & Chr(10) & "(" & sBeschr & ")", 48, "Mailselectie"
+        Exit Sub
+    End If
+
+    ' --- BCC-lijst: unieke adressen (kleine letters), komma-gescheiden ---
+    Dim uniekMail(500) As String
+    Dim sBcc   As String
+    Dim nUniek As Integer
+    Dim j      As Integer
+    Dim k2     As Integer
+    Dim bDub   As Boolean
+    sBcc = "" : nUniek = 0
+    For j = 0 To nRes - 1
+        If rMail(j) <> "" Then
+            bDub = False
+            For k2 = 0 To nUniek - 1
+                If uniekMail(k2) = LCase(rMail(j)) Then
+                    bDub = True
+                    Exit For
+                End If
+            Next k2
+            If Not bDub Then
+                uniekMail(nUniek) = LCase(rMail(j))
+                nUniek = nUniek + 1
+                If sBcc = "" Then
+                    sBcc = LCase(rMail(j))
+                Else
+                    sBcc = sBcc & ", " & LCase(rMail(j))
+                End If
+            End If
+        End If
+    Next j
+
+    ' --- Resultaatdocument ---
+    Dim oDesktop As Object
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
+    aArgs(0).Name  = "Hidden"
+    aArgs(0).Value = False
+    Dim oCalc   As Object
+    Dim oMSheet As Object
+    oCalc   = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aArgs())
+    oMSheet = oCalc.Sheets.getByIndex(0)
+    oMSheet.Name = "mailselectie"
+
+    oMSheet.getCellByPosition(0, 0).setString("Mailselectie " & sWeekLabel)
+    oMSheet.getCellByPosition(1, 0).setString(sBeschr)
+
+    oMSheet.getCellByPosition(0, 4).setString("naam")
+    oMSheet.getCellByPosition(1, 4).setString("afhaalpunt")
+    oMSheet.getCellByPosition(2, 4).setString("dag")
+    oMSheet.getCellByPosition(3, 4).setString("pakket")
+    oMSheet.getCellByPosition(4, 4).setString("e-mail")
+    For j = 0 To nRes - 1
+        oMSheet.getCellByPosition(0, 5 + j).setString(rNaam(j))
+        oMSheet.getCellByPosition(1, 5 + j).setString(rAfh(j))
+        oMSheet.getCellByPosition(2, 5 + j).setString(rDag(j))
+        oMSheet.getCellByPosition(3, 5 + j).setString(rPak(j))
+        oMSheet.getCellByPosition(4, 5 + j).setString(rMail(j))
+    Next j
+
+    ' Kolombreedtes optimaliseren VOOR de (lange) BCC-cel geschreven wordt,
+    ' anders wordt kolom B zo breed als de hele adreslijst.
+    Dim iKol As Integer
+    For iKol = 0 To 4
+        oMSheet.Columns.getByIndex(iKol).OptimalWidth = True
+    Next iKol
+
+    oMSheet.getCellByPosition(0, 2).setString("BCC (" & nUniek & "):")
+    oMSheet.getCellByPosition(1, 2).setString(sBcc)
+
+    Dim sMsg As String
+    sMsg = nRes & " klantrijen voldoen aan de filters; " & nUniek & " unieke e-mailadressen." & _
+           Chr(10) & "(" & sBeschr & ")"
+    If nZonderMail > 0 Then
+        sMsg = sMsg & Chr(10) & nZonderMail & " rij(en) zonder e-mailadres: wel in de tabel, niet in de BCC-lijst."
+    End If
+    MsgBox sMsg, 64, "Mailselectie"
+    Exit Sub
+
+DebugFout:
+    MsgBox "Fout " & Err & ": " & Error & Chr(10) & "Regel: " & Erl, 16, "Debug MailSelectie"
+
+End Sub
+
 
