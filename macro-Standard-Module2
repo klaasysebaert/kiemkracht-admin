@@ -164,3 +164,8 @@ Sub StartMaakPrint()
     ReloadKiemkracht()
     MaakPrint()
 End Sub
+
+Sub StartMailSelectie()
+    ReloadKiemkracht()
+    MailSelectie()
+End Sub
