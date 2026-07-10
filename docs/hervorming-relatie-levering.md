@@ -236,3 +236,17 @@ mail-template. Fix door de hele keten:
   klanten moeten later weer aanbodsmails krijgen. Zelfde reden: de
   formulier-stop-rij krijgt `week_stopzetten = NULL` bij `MailBlijven=1`.
   De windows blijven de bron van waarheid; de rij is registratie + vangnet.
+
+### Herstart-week zichtbaar in `annulaties` (2026-07-10, migratie 17)
+
+Casus klant 3197: `week_stopzetten_abonnement` staat bewust NULL bij een
+afgesproken herstart (zie hierboven) — maar dat liet de herstart-week
+volledig onzichtbaar in het tabblad `annulaties`: enkel `week_annulatie`
+stond er, geen spoor van "hervat op week 35". Migratie 17 voegt
+**`herstart_jaar`/`herstart_week`** toe aan `annulaties` — puur
+documentair, geen enkele WHERE-guard leest ze (de bron van waarheid
+blijft `klanten.pauze_tot_*`). `LaadAlleTabellen` pikt de kolommen
+automatisch op (`SELECT *`, geen loader-wijziging nodig). De stop-tak in
+`VerwerkStopStart` vult ze bij elke stop met `hW > 0` (tijdelijk of
+weekperweek + herstart-week). Backfill op prod voor de twee bestaande
+gevallen (3197 wk35, Annemie/3220 wk40).
