@@ -3612,6 +3612,16 @@ Sub VerwerkStopStart()
             Dim sDoelI As String : sDoelI = riDoel(i)
             If sDoelI = "" Then sDoelI = "definitief"
 
+            ' Herstart-week/-jaar vooraf berekenen (0/0 = geen afgesproken herstart) —
+            ' nodig voor zowel de registratie-rij hieronder als de klanten/abonnementen-
+            ' writes verderop.
+            Dim hW As Integer : hW = riHerstart(i)
+            Dim iHJaar As Integer : iHJaar = 0
+            If hW > 0 Then
+                Dim dHo As Date : dHo = WeekNaarDonderdag(hW)
+                iHJaar = Year(dHo)
+            End If
+
             ' Registratie-rij in annulaties: maakt de stop zichtbaar in het
             ' tabblad 'annulaties' van kiemkracht-data.ods (zoals de formulier-
             ' stop). week_stopzetten_abonnement ALLEEN bij definitief/tijdelijk-
@@ -3619,19 +3629,29 @@ Sub VerwerkStopStart()
             ' jaar uit, en dat mag niet voor weekperweek of tijdelijk-met-herstart
             ' (die klanten moeten later weer aanbodsmails krijgen). De windows
             ' blijven de bron van waarheid; dedup via dezelfde sleutel als kolom Q.
+            ' herstart_jaar/-week (migratie 17): zuiver documentair zodat de
+            ' afgesproken hervatting zichtbaar is in dit tabblad — casus 2026-07-10
+            ' (klant 3197) toonde enkel "29" zonder enig spoor van de herstart-week.
             Dim sStopzCol As String
-            If sDoelI = "weekperweek" Or riHerstart(i) > 0 Then
+            If sDoelI = "weekperweek" Or hW > 0 Then
                 sStopzCol = "NULL"
             Else
                 sStopzCol = CStr(w)
+            End If
+            Dim sHerstartColsN As String, sHerstartColsV As String
+            If hW > 0 Then
+                sHerstartColsN = ", herstart_jaar, herstart_week"
+                sHerstartColsV = ", " & iHJaar & ", " & hW
+            Else
+                sHerstartColsN = "" : sHerstartColsV = ""
             End If
             sSleutel = sKid & "#" & iJaar & "#" & w
             If InStr(sBestAnn, "|" & sSleutel & "|") = 0 Then
                 aSql(nItem) = "INSERT INTO annulaties " & _
                     "(voornaam, familienaam, klant_email, klant_id, datum, " & _
-                    "week_annulatie, week_stopzetten_abonnement, jaar) VALUES (" & _
+                    "week_annulatie, week_stopzetten_abonnement, jaar" & sHerstartColsN & ") VALUES (" & _
                     sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & sDatum & "', " & _
-                    w & ", " & sStopzCol & ", " & iJaar & ")"
+                    w & ", " & sStopzCol & ", " & iJaar & sHerstartColsV & ")"
                 nItem = nItem + 1
                 sBestAnn = sBestAnn & sSleutel & "|"
             End If
