@@ -3649,9 +3649,9 @@ Sub VerwerkStopStart()
             If InStr(sBestAnn, "|" & sSleutel & "|") = 0 Then
                 aSql(nItem) = "INSERT INTO annulaties " & _
                     "(voornaam, familienaam, klant_email, klant_id, datum, " & _
-                    "week_annulatie, week_stopzetten_abonnement, jaar" & sHerstartColsN & ") VALUES (" & _
+                    "week_annulatie, week_stopzetten_abonnement, jaar, stop_doel" & sHerstartColsN & ") VALUES (" & _
                     sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & sDatum & "', " & _
-                    w & ", " & sStopzCol & ", " & iJaar & sHerstartColsV & ")"
+                    w & ", " & sStopzCol & ", " & iJaar & ", '" & sDoelI & "'" & sHerstartColsV & ")"
                 nItem = nItem + 1
                 sBestAnn = sBestAnn & sSleutel & "|"
             End If
