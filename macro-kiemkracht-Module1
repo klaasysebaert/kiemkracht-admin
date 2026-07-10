@@ -3669,14 +3669,8 @@ Sub VerwerkStopStart()
                     ", opvolg_datum = NULL, opvolg_gemaild_op = NULL WHERE id = " & sKid
                 nItem = nItem + 1
             Else
-                ' tijdelijk of weekperweek (met optionele herstart): bepaal de herstart-week (0 = geen).
-                Dim hW As Integer : hW = riHerstart(i)
-                Dim iHJaar As Integer : iHJaar = 0
-                If hW > 0 Then
-                    Dim dHo As Date : dHo = WeekNaarDonderdag(hW)
-                    iHJaar = Year(dHo)
-                End If
-
+                ' tijdelijk of weekperweek (met optionele herstart): hW/iHJaar
+                ' zijn hierboven al berekend (0/0 = geen afgesproken herstart).
                 If sDoelI = "tijdelijk" Then
                     If hW > 0 Then
                         ' Relatie-poort dicht met einde => gepauzeerd; opent weer in de herstart-week.
