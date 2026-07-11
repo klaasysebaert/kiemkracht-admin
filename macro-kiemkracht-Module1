@@ -875,6 +875,7 @@ Sub MaakWeekbestand()
         "LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
         "WHERE a.status = 'actief' AND a.ritme IN (" & sParRitmes & ") " & _
         " AND (a.eind_jaar IS NULL OR (a.eind_jaar * 100 + a.eind_week) > " & iWeekNum & ") " & _
+        " AND (a.start_jaar IS NULL OR (a.start_jaar * 100 + a.start_week) <= " & iWeekNum & ") " & _
         sNietGepauzeerd & _
         " AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
         "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
