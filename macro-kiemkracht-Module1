@@ -909,7 +909,8 @@ Sub MaakWeekbestand()
         " AND NOT EXISTS (SELECT 1 FROM abonnementen a3 WHERE a3.klant_id = k.id " & _
         "   AND a3.status = 'actief' AND a3.ritme IN (" & sParRitmes & ") " & _
         "   AND (a3.pauze_vanaf_week IS NULL OR (a3.pauze_vanaf_jaar * 100 + a3.pauze_vanaf_week) > " & iWeekNum & ") " & _
-        "   AND (a3.eind_jaar IS NULL OR (a3.eind_jaar * 100 + a3.eind_week) > " & iWeekNum & ")) " & _
+        "   AND (a3.eind_jaar IS NULL OR (a3.eind_jaar * 100 + a3.eind_week) > " & iWeekNum & ") " & _
+        "   AND (a3.start_jaar IS NULL OR (a3.start_jaar * 100 + a3.start_week) <= " & iWeekNum & ")) " & _
         " AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
         "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
         "     AND (bx.klant_id = k.id OR (bx.klant_id IS NULL AND LOWER(bx.klant_email) = LOWER(k.email1)))) " & _
