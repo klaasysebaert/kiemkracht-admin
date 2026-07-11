@@ -2732,6 +2732,10 @@ Sub SchrijfWijzigingenTerug()
             Dim sOpmerkVolg   As String : sOpmerkVolg   = oKB.getCellByPosition(KBKolom(13), r).getString()
             Dim sOpmerkStat   As String : sOpmerkStat   = oKB.getCellByPosition(KBKolom(14), r).getString()
             Dim sNooit        As String : sNooit        = Trim(oKB.getCellByPosition(KBKolom(15), r).getString())
+            Dim sEmailAfr     As String : sEmailAfr     = Trim(oKB.getCellByPosition(KBKolom(16), r).getString())
+            Dim sVoorAfr      As String : sVoorAfr      = Trim(oKB.getCellByPosition(KBKolom(17), r).getString())
+            Dim sFamAfr       As String : sFamAfr       = Trim(oKB.getCellByPosition(KBKolom(18), r).getString())
+            Dim sNooitAfr     As String : sNooitAfr     = Trim(oKB.getCellByPosition(KBKolom(19), r).getString())
 
             Dim sAfhaalSql As String
             If sAfhaalId = "" Or Not IsNumeric(sAfhaalId) Then
