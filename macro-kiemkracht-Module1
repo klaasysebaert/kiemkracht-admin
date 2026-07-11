@@ -2605,12 +2605,12 @@ Sub SchrijfWijzigingenTerug()
 
     ' === Stap 2: klanten-tabblad in arrays laden ===
     Dim kID(2000)       As Long
-    Dim kVals(2000, 15) As String
+    Dim kVals(2000, 19) As String
     Dim nKlanten As Integer : nKlanten = 0
     Dim kr As Integer : kr = 1
     Do While oKlanten.getCellByPosition(klantenIdCol, kr).getString() <> ""
         kID(nKlanten) = CLng(oKlanten.getCellByPosition(klantenIdCol, kr).getValue())
-        For vi = 0 To 15
+        For vi = 0 To 19
             If kVeldCol(vi) >= 0 Then
                 If vi = 4 Then
                     If oKlanten.getCellByPosition(kVeldCol(vi), kr).getString() = "" Then
