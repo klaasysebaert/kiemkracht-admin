@@ -2869,8 +2869,22 @@ Sub MailSelectie()
             sPak = "mini"
             If Not bWilMINI Then GoTo VolgendeRijMS
         Else
+            ' "Geen pakket" telt enkel mee als er effectief losse groenten
+            ' besteld zijn: een van de 24 groente-slots (Y..AV) gevuld, of
+            ' een waarde in kolom X (vangt handmatig toegevoegde regels).
             sPak = "geen pakket"
             If Not bWilLos Then GoTo VolgendeRijMS
+            bHeeftLos = False
+            For g = 0 To nGroentSlots - 1
+                If oWkSheet.getCellByPosition(cGroent0 + g, i).getValue() > 0 Then
+                    bHeeftLos = True
+                    Exit For
+                End If
+            Next g
+            If Not bHeeftLos Then
+                If oWkSheet.getCellByPosition(cWaarde, i).getValue() > 0 Then bHeeftLos = True
+            End If
+            If Not bHeeftLos Then GoTo VolgendeRijMS
         End If
 
         ' Dagfilter
