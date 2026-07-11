@@ -2668,6 +2668,9 @@ Sub MailSelectie()
     Const cGG       = 18
     Const cEGG      = 19
     Const cMINI     = 20
+    Const cWaarde   = 23  ' € losse groenten (kolom X)
+    Const cGroent0  = 24  ' eerste losse groente (kolom Y)
+    Const nGroentSlots = 24
     Const cWeg0     = 51
 
     Dim oDoc     As Object
