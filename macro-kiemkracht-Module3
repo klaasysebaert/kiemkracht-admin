@@ -2769,22 +2769,24 @@ Sub MailSelectie()
             iWegMode = 1
             If Left(sWegIn, 1) = "+" Then iWegMode = 2
             If Left(sWegIn, 1) = "+" Or Left(sWegIn, 1) = "-" Then sWegIn = Mid(sWegIn, 2)
+            ' NB: geen 'iN' als loopvariabele — 'In' is een gereserveerd
+            ' woord in Basic (hoofdletterongevoelig) en breekt de compilatie.
             Dim aNr() As String
-            Dim iN    As Integer
+            Dim iPos  As Integer
             Dim iNr   As Integer
             aNr = Split(sWegIn, ",")
-            For iN = 0 To UBound(aNr)
-                If Not IsNumeric(Trim(aNr(iN))) Then
-                    MsgBox "Ongeldig weglating-nummer: '" & Trim(aNr(iN)) & "'", 48, "Mailselectie"
+            For iPos = 0 To UBound(aNr)
+                If Not IsNumeric(Trim(aNr(iPos))) Then
+                    MsgBox "Ongeldig weglating-nummer: '" & Trim(aNr(iPos)) & "'", 48, "Mailselectie"
                     Exit Sub
                 End If
-                iNr = CInt(Trim(aNr(iN)))
+                iNr = CInt(Trim(aNr(iPos)))
                 If iNr < 1 Or iNr > nWegToon Then
                     MsgBox "Weglating-nummer buiten bereik: " & iNr, 48, "Mailselectie"
                     Exit Sub
                 End If
                 bWegKies(wegSlot(iNr - 1)) = True
-            Next iN
+            Next iPos
         End If
     End If
 
