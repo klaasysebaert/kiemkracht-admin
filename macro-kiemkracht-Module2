@@ -1517,6 +1517,49 @@ Sub MaakMaandbestand()
         If InStr(LCase(oActief.getURL()), "-dev.ods") > 0 Then sOmg = "-dev"
     End If
 
+    ' --- afrekening-voorkeuren uit de klanten-tabel (email_afrekening,
+    '     voornaam/familienaam_afrekening, nooit_afrekening) ---
+    ' Zachte fout: lukt de DB-verbinding niet, dan mag de afrekening alsnog
+    ' gemaakt worden met email1 (zoals vroeger) — maar enkel na bevestiging,
+    ' want ook nooit_afrekening wordt dan NIET toegepast.
+    nAfrPref = 0 : bAfrPrefOk = False
+    On Error Resume Next
+    oConnAfr = MaakDBVerbinding()
+    On Error GoTo 0
+    If Not IsNull(oConnAfr) Then
+        On Error Resume Next
+        oStAfr = oConnAfr.createStatement()
+        oRsAfr = oStAfr.executeQuery( _
+            "SELECT id, COALESCE(email_afrekening,''), COALESCE(voornaam_afrekening,''), " & _
+            "COALESCE(familienaam_afrekening,''), nooit_afrekening FROM klanten " & _
+            "WHERE COALESCE(email_afrekening,'') <> '' OR COALESCE(voornaam_afrekening,'') <> '' " & _
+            "OR COALESCE(familienaam_afrekening,'') <> '' OR nooit_afrekening")
+        On Error GoTo 0
+        If Not IsNull(oRsAfr) Then
+            Do While oRsAfr.next() And nAfrPref <= UBound(afrId)
+                afrId(nAfrPref)    = Trim(oRsAfr.getString(1))
+                afrEmail(nAfrPref) = Trim(oRsAfr.getString(2))
+                afrVoorN(nAfrPref) = Trim(oRsAfr.getString(3))
+                afrFamN(nAfrPref)  = Trim(oRsAfr.getString(4))
+                afrNooit(nAfrPref) = oRsAfr.getBoolean(5)
+                nAfrPref = nAfrPref + 1
+            Loop
+            oRsAfr.close() : oStAfr.close()
+            bAfrPrefOk = True
+        End If
+        On Error Resume Next
+        oConnAfr.close()
+        SluitSSHTunnels()
+        On Error GoTo 0
+    End If
+    If Not bAfrPrefOk Then
+        If MsgBox("Kon de afrekening-voorkeuren niet uit de database ophalen." & Chr(10) & _
+                  "(email_afrekening / voornaam_afrekening / nooit_afrekening)" & Chr(10) & Chr(10) & _
+                  "Doorgaan zonder? Dan krijgt iedereen de afrekening op email1," & Chr(10) & _
+                  "en worden nooit_afrekening-klanten NIET overgeslagen.", _
+                  49, "Maandafrekening") <> 1 Then Exit Sub   ' 49 = OK/Annuleren + waarschuwing
+    End If
+
     ' --- kandidaat-weken: ISO-weken met donderdag in de doelmaand ---
     Dim dJan4 As Date, dWk1Ma As Date, dThu As Date
     dJan4  = DateSerial(iJaar, 1, 4)
