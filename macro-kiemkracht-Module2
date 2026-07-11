@@ -2112,7 +2112,7 @@ Sub MaakMaandbestand()
         ' als spook-saldo (bv. -0,01) blijft hangen of mee overgedragen wordt.
         oS.getCellByPosition(9, ro).setFormula("=ROUND(H" & (ro + 1) & ";2)-ROUND(I" & (ro + 1) & ";2)")   ' J Verschil
         If Trim(mKid(idx)) = "" Then sGeenKid = sGeenKid & "  - " & mNaam(idx) & Chr(10)
-        If Trim(mEmail(idx)) = "" Then sGeenEmail = sGeenEmail & "  - " & mNaam(idx) & Chr(10)
+        If Trim(sEffEmail) = "" Then sGeenEmail = sGeenEmail & "  - " & mNaam(idx) & Chr(10)
         For wi = 0 To NWEKEN - 1
             ' ruwe inhoud (enkel voor weken die deze maand bestaan).
             ' Enkel mBijA (" & "-variant) gaat naar een kolom; mBijN (regeleindes)
