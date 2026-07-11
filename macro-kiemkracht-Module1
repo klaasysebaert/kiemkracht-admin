@@ -2751,6 +2751,14 @@ Sub SchrijfWijzigingenTerug()
                 Case Else                      : sNooitSql = "NULL"
             End Select
 
+            ' nooit_afrekening (boolean NOT NULL): elke niet-lege, niet-expliciet-
+            ' onwaar waarde telt als aan — zo werkt "x", "ja" of het klant_id zelf.
+            Dim sNooitAfrSql As String
+            Select Case LCase(sNooitAfr)
+                Case "", "f", "false", "0", "nee" : sNooitAfrSql = "FALSE"
+                Case Else                          : sNooitAfrSql = "TRUE"
+            End Select
+
             ' Relatie-status (klant-niveau) afleiden uit het bewerkte type.
             Dim sStatusKlant As String
             Select Case sType
