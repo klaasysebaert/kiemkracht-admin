@@ -2506,10 +2506,10 @@ Function JaarMap(iJaar As Integer) As String
 End Function
 
 ' =============================================
-' Kolomindex in klanten_beheer voor veldindex vi (0-15).
+' Kolomindex in klanten_beheer voor veldindex vi (0-19).
 ' Kolom K (index 10) is gereserveerd voor gebruikersformules.
 '   vi 0-4  → col 5-9  (F t/m J)
-'   vi 5-15 → col 11-21 (L t/m V)
+'   vi 5-19 → col 11-25 (L t/m Z)
 ' =============================================
 Function KBKolom(vi As Integer) As Integer
     If vi < 5 Then
