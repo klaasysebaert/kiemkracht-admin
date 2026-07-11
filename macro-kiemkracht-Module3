@@ -2716,7 +2716,7 @@ Sub MailSelectie()
     Dim sPakIn As String
     sPakIn = InputBox("Welke pakketformaten meenemen?" & Chr(10) & _
         "k = klein, g = groot, e = extra groot, m = mini," & Chr(10) & _
-        "x = geen pakket (enkel losse bestelling)" & Chr(10) & Chr(10) & _
+        "x = losse bestelling (geen pakket, wel losse groenten)" & Chr(10) & Chr(10) & _
         "Combineer letters, bv. kge:", "Mailselectie (1/3): pakketten", "kge")
     If sPakIn = "" Then Exit Sub   ' Annuleren
 
