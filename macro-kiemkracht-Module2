@@ -2064,11 +2064,41 @@ Sub MaakMaandbestand()
         idx = ord(i2)
         ' Tonen zodra het totaal (deze maand + overgedragen saldo) niet ~0 is
         If Abs(mSaldo(idx) + mVorig(idx) - mOntv(idx)) < 0.005 Then GoTo VolgendeUit
+        ' Afrekening-voorkeuren van deze klant (koppeling op klant_id)
+        sAfrEmailKl = "" : sAfrVoorKl = "" : sAfrFamKl = "" : bNooitKl = False
+        If Trim(mKid(idx)) <> "" Then
+            For api = 0 To nAfrPref - 1
+                If afrId(api) = Trim(mKid(idx)) Then
+                    sAfrEmailKl = afrEmail(api) : sAfrVoorKl = afrVoorN(api)
+                    sAfrFamKl   = afrFamN(api)  : bNooitKl   = afrNooit(api)
+                    Exit For
+                End If
+            Next api
+        End If
+        ' nooit_afrekening: klant zou een afrekening krijgen maar is uitgesloten
+        ' (medewerker, depothouder, ...) -> rij overslaan, melden in eindpopup.
+        If bNooitKl Then
+            sNooitLijst = sNooitLijst & "  - " & mNaam(idx) & " (saldo " & _
+                FmtNum2(mSaldo(idx) + mVorig(idx) - mOntv(idx)) & " " & Chr(8364) & ")" & Chr(10)
+            GoTo VolgendeUit
+        End If
+        ' Effectief mailadres/aanspreek-voornaam: afrekening-voorkeur gaat voor
+        sEffEmail = mEmail(idx)
+        If sAfrEmailKl <> "" Then
+            sEffEmail = sAfrEmailKl
+            sAfwijkendAdres = sAfwijkendAdres & "  - " & mNaam(idx) & " -> " & sAfrEmailKl & Chr(10)
+        End If
+        sEffVoor = mVoor(idx)
+        If sAfrVoorKl <> "" Then sEffVoor = sAfrVoorKl
         oS.getCellByPosition(0, ro).setString(mNaam(idx))   ' Voornaam Familienaam
         oS.getCellByPosition(1, ro).setString(mKid(idx))    ' klant_id
-        ' kolom 2 = "Voornaam2 Familienaam2": leeg (manueel in te vullen)
-        oS.getCellByPosition(3, ro).setString(mEmail(idx))
-        oS.getCellByPosition(4, ro).setString(mVoor(idx))
+        ' kolom 2 = "Voornaam2 Familienaam2": afrekening-ontvanger indien gekend,
+        ' anders leeg (manueel in te vullen)
+        If sAfrVoorKl <> "" Or sAfrFamKl <> "" Then
+            oS.getCellByPosition(2, ro).setString(Trim(sAfrVoorKl & " " & sAfrFamKl))
+        End If
+        oS.getCellByPosition(3, ro).setString(sEffEmail)
+        oS.getCellByPosition(4, ro).setString(sEffVoor)
         oS.getCellByPosition(5, ro).setString(sMaandNaam)
         oS.getCellByPosition(11, ro).setString(mAfhDag(idx)) ' L = Afhaaldag (donderdag/vrijdag)
         oS.getCellByPosition(10, ro).setValue(mSaldo(idx))  ' K = Besteld in maand (hardgetal)
