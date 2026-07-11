@@ -2351,6 +2351,19 @@ Sub MaakMaandbestand()
     If sGeenEmail <> "" Then
         sMsgKid = sMsgKid & Chr(10) & Chr(10) & "Klanten zonder e-mail (kunnen geen mail ontvangen):" & Chr(10) & sGeenEmail
     End If
+    Dim sMsgAfr As String : sMsgAfr = ""
+    If Not bAfrPrefOk Then
+        sMsgAfr = Chr(10) & Chr(10) & "LET OP: afrekening-voorkeuren NIET geladen (geen DB-verbinding):" & Chr(10) & _
+                  "  email_afrekening en nooit_afrekening zijn deze run niet toegepast."
+        iIcon = 48
+    Else
+        If sNooitLijst <> "" Then
+            sMsgAfr = sMsgAfr & Chr(10) & Chr(10) & "Overgeslagen (nooit_afrekening):" & Chr(10) & sNooitLijst
+        End If
+        If sAfwijkendAdres <> "" Then
+            sMsgAfr = sMsgAfr & Chr(10) & Chr(10) & "Afwijkend afrekening-adres (email_afrekening):" & Chr(10) & sAfwijkendAdres
+        End If
+    End If
     Dim sMsgWeken As String : sMsgWeken = ""
     If sWeekLijst <> "" Then
         sMsgWeken = Chr(10) & Chr(10) & "Verwerkte weekbestanden (per week):" & Chr(10) & sWeekLijst
