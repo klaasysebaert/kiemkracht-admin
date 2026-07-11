@@ -2805,6 +2805,10 @@ Sub SchrijfWijzigingenTerug()
                    "opmerkingen = "          & SqlStr(sOpmerk)       & ", " & _
                    "opmerkingen_volgend = "  & SqlStr(sOpmerkVolg)   & ", " & _
                    "opmerking_status = "     & SqlStr(sOpmerkStat)   & ", " & _
+                   "email_afrekening = "     & SqlStr(sEmailAfr)     & ", " & _
+                   "voornaam_afrekening = "  & SqlStr(sVoorAfr)      & ", " & _
+                   "familienaam_afrekening = " & SqlStr(sFamAfr)     & ", " & _
+                   "nooit_afrekening = "     & sNooitAfrSql          & ", " & _
                    "nooit_groenten = "       & sNooitSql & _
                    " WHERE id = "            & CStr(nID)
 
