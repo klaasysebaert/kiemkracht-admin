@@ -416,12 +416,12 @@ End Sub
 
 ' ---------------------------------------------------------------------------
 ' LaadKlantenBeheer — schrijft de geselecteerde klanten-kolommen naar twee
-' aaneengesloten blokken: F-J (5-9) en L-V (11-21). Kolom K (10) bevat
+' aaneengesloten blokken: F-J (5-9) en L-Z (11-25). Kolom K (10) bevat
 ' gebruikersformules en blijft ongemoeid. Bulk via setDataArray.
 ' ---------------------------------------------------------------------------
 Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Dim oKB As Object, oStmt As Object, oRS As Object, oRngA As Object, oRngB As Object
-    Dim kbKol(15) As String
+    Dim kbKol(19) As String
     Dim j As Integer
     Dim nRows As Long, r As Long
     Dim sVal As String
@@ -435,6 +435,8 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     kbKol(10) = "email4"           : kbKol(11) = "telefoon"
     kbKol(12) = "opmerkingen"      : kbKol(13) = "opmerkingen_volgend"
     kbKol(14) = "opmerking_status" : kbKol(15) = "nooit_groenten"
+    kbKol(16) = "email_afrekening"       : kbKol(17) = "voornaam_afrekening"
+    kbKol(18) = "familienaam_afrekening" : kbKol(19) = "nooit_afrekening"
 
     If oSheets.hasByName("klanten_beheer") Then
         oKB = oSheets.getByName("klanten_beheer")
