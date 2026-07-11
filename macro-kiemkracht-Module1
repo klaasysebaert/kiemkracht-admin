@@ -491,7 +491,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Next j
     aOutA(0) = aRij
     aRij = aOutB(0)
-    For j = 0 To 10
+    For j = 0 To 14
         aRij(j) = kbKol(j + 5)
     Next j
     aOutB(0) = aRij
