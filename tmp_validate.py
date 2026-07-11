@@ -6,7 +6,8 @@ PORT = "2107"
 BASE = r"C:\Users\klaas\projects\kiemkracht-admin"
 PATHS = [BASE + r"\macro-kiemkracht-Module1",
          BASE + r"\macro-kiemkracht-Module2",
-         BASE + r"\macro-kiemkracht-Module3"]
+         BASE + r"\macro-kiemkracht-Module3",
+         BASE + r"\macro-kiemkracht-Module4"]
 
 def boot(profile):
     args = [SOFFICE, "--headless", "--norestore", "--invisible", "--nologo",
