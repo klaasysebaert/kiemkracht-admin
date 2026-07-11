@@ -2534,7 +2534,7 @@ Sub SchrijfWijzigingenTerug()
 
     ' =============================================
     ' Kiemkracht - Klantwijzigingen terugschrijven
-    ' Vergelijkt klanten_beheer (kol C=id, F-U=data) met klanten-tabblad.
+    ' Vergelijkt klanten_beheer (kol C=id, F-Z=data) met klanten-tabblad.
     ' Stuurt alleen UPDATE voor rijen die werkelijk gewijzigd zijn.
     ' =============================================
 
