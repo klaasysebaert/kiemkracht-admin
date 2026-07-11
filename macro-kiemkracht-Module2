@@ -2376,6 +2376,7 @@ Sub MaakMaandbestand()
     Else
         sMsgCtrl = Chr(10) & Chr(10) & "Weekcontrole OK: maand-aggregaat = weektotaal voor alle gecontroleerde weken (tabblad 'weekcontrole')."
     End If
+    If Not bAfrPrefOk Then iIcon = 48
     MsgBox "Maandafrekening klaar:" & Chr(10) & sUit & Chr(10) & Chr(10) & _
            (ro - 6) & " klanten met saldo, uit " & nVerwerkt & " weekbestand(en) (" & _
            sMaandNaam & " " & iJaar & ")." & _
@@ -2383,7 +2384,7 @@ Sub MaakMaandbestand()
            sMsgWeken & Chr(10) & Chr(10) & _
            "Ruwe kolommen 'Pakket week n'/'Bijbestellingen week n' + " & _
            "mailmerge-kolommen 'Pakket n als'/'Bijb n als' (lege week -> ""|"")." & _
-           sMsgWijz & sMsgVorig & sMsgKid, _
+           sMsgWijz & sMsgVorig & sMsgKid & sMsgAfr, _
            iIcon, "Maandafrekening"
 
 End Sub
