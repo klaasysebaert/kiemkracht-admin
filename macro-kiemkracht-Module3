@@ -2846,6 +2846,8 @@ Sub MailSelectie()
     Dim sPak      As String
     Dim sMail     As String
     Dim bHeeftWeg As Boolean
+    Dim bHeeftLos As Boolean
+    Dim g         As Integer
 
     For i = 6 To nLastRow
         sNm = oWkSheet.getCellByPosition(cNaam, i).getString()
