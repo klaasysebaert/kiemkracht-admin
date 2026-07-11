@@ -2802,7 +2802,7 @@ Sub MailSelectie()
     If bWilGG   Then sPakLijst = sPakLijst & ", groot"
     If bWilEGG  Then sPakLijst = sPakLijst & ", extra groot"
     If bWilMINI Then sPakLijst = sPakLijst & ", mini"
-    If bWilLos  Then sPakLijst = sPakLijst & ", geen pakket"
+    If bWilLos  Then sPakLijst = sPakLijst & ", losse bestelling (geen pakket)"
     If sPakLijst = "" Then
         MsgBox "Geen pakketformaat gekozen.", 48, "Mailselectie"
         Exit Sub
