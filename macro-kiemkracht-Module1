@@ -509,7 +509,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         Next j
         aOutA(r) = aRij
         aRij = aOutB(r)
-        For j = 0 To 10
+        For j = 0 To 14
             sVal = oRS.getString(j + 6)
             If oRS.wasNull() Then sVal = ""
             aRij(j) = sVal
