@@ -1547,11 +1547,12 @@ Sub MaakMaandbestand()
             oRsAfr.close() : oStAfr.close()
             bAfrPrefOk = True
         End If
-        On Error Resume Next
-        oConnAfr.close()
-        SluitSSHTunnels()
-        On Error GoTo 0
     End If
+    ' Tunnel kan ook bij een mislukte verbinding al gestart zijn -> altijd opkuisen
+    On Error Resume Next
+    If Not IsNull(oConnAfr) Then oConnAfr.close()
+    SluitSSHTunnels()
+    On Error GoTo 0
     If Not bAfrPrefOk Then
         If MsgBox("Kon de afrekening-voorkeuren niet uit de database ophalen." & Chr(10) & _
                   "(email_afrekening / voornaam_afrekening / nooit_afrekening)" & Chr(10) & Chr(10) & _
