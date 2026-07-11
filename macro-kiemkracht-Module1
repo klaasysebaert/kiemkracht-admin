@@ -458,12 +458,12 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     If oRS.next() Then nRows = oRS.getInt(1)
     oRS.close()
 
-    ' Data (zelfde volgorde als klanten-tabblad, geen ORDER BY)
+    ' Data (zelfde volgorde als klanten-tabblad: ORDER BY id, zie LaadTabelSnel)
     oRS = oStmt.executeQuery( _
         "SELECT voornaam, familienaam, voornaam2, familienaam2, afhaalpunt_id, " & _
         "type, formaat, email1, email2, email3, email4, telefoon, " & _
         "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten " & _
-        "FROM klanten")
+        "FROM klanten ORDER BY id")
 
     ' Twee sjablonen uit de doelbereiken zelf (juiste UNO-structuur); rechtstreeks
     ' invullen, geen geneste Basic-array opbouwen/doorgeven. F-J = querykolommen
