@@ -4692,11 +4692,17 @@ Sub KoffieWeekbestand()
     oSheet = oNieuwDoc.Sheets.getByIndex(0)
     oSheet.Name = "Koffie week " & iWeek
 
-    ' Producthoofding (rij 0/1/2)
-    For p = 0 To 17
-        oSheet.getCellByPosition(cProd0 + p, 0).setString(labels(p))
-        oSheet.getCellByPosition(cProd0 + p, 1).setValue(prijzen(p))
-        oSheet.getCellByPosition(cProd0 + p, 2).setString(gewicht(p))
+    ' Producthoofding (rij 0/1/2): vaste koffie-matrix + extra kolommen
+    For p = 0 To nProdTot - 1
+        If p <= 17 Then
+            oSheet.getCellByPosition(cProd0 + p, 0).setString(labels(p))
+            oSheet.getCellByPosition(cProd0 + p, 1).setValue(prijzen(p))
+            oSheet.getCellByPosition(cProd0 + p, 2).setString(gewicht(p))
+        Else
+            oSheet.getCellByPosition(cProd0 + p, 0).setString(eLab(p - 18))
+            oSheet.getCellByPosition(cProd0 + p, 1).setValue(ePrijs(p - 18))
+            oSheet.getCellByPosition(cProd0 + p, 2).setString(eGew(p - 18))
+        End If
     Next p
 
     ' Klantkolom-titels (rij 3)
