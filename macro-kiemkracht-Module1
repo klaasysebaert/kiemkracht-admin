@@ -4320,8 +4320,18 @@ Sub KoffieWeekbestand()
     Dim bBesteld(500) As String
     Dim bType(500)    As String
     Dim bKlaarDag(500) As String
-    Dim bAant(500, 17) As Integer
+    Dim bAant(500, 97) As Integer
     Dim nBest As Integer
+
+    ' Extra productkolommen naast de vaste koffie-matrix (honing, latere
+    ' categorieën, gewijzigde sleutels): opgebouwd uit de gedenormaliseerde
+    ' velden van de bestelregels zelf. Max 80 extra kolommen (18 + 80 = 98).
+    Dim eSl(79)    As String
+    Dim eLab(79)   As String
+    Dim eGew(79)   As String
+    Dim ePrijs(79) As Double
+    Dim nExtra     As Integer
+    Dim nProdTot   As Integer
 
     Dim sleutels(17)   As String
     Dim labels(17)     As String
