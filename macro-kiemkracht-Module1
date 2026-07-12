@@ -4519,32 +4519,75 @@ Sub KoffieWeekbestand()
     Next iVorm
 
     ' --- Stap 3: bestelregels koppelen aan kolom-index ---
+    ' Vaste koffie-matrix (kolommen 0-17) + dynamische extra kolommen voor
+    ' alle overige bestelde producten (honing, latere categorieën). Labels,
+    ' gewicht en prijs komen uit de gedenormaliseerde regel zelf, zodat ook
+    ' intussen gewijzigde/verwijderde producten correct verschijnen; de
+    ' kolomvolgorde volgt producten.sortering (onbekende sleutels achteraan).
     For b = 0 To nBest - 1
-        For p = 0 To 17
+        For p = 0 To 97
             bAant(b, p) = 0
         Next p
     Next b
+    nExtra = 0
 
     oStmt = oConnK.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT bestelling_id, product_sleutel, aantal FROM koffie_bestelregels")
+        "SELECT r.bestelling_id, r.product_sleutel, r.aantal, " & _
+        "       r.soort, r.vorm, r.gewicht_label, r.eenheidsprijs_eur " & _
+        "FROM koffie_bestelregels r " & _
+        "LEFT JOIN producten p ON p.sleutel = r.product_sleutel " & _
+        "ORDER BY COALESCE(p.sortering, 999999), r.product_sleutel, r.id")
     Do While oRS.next()
-        lBId  = CLng(oRS.getString(1))
-        sSl   = oRS.getString(2)
-        iAant = CInt(oRS.getString(3))
+        lBId   = CLng(oRS.getString(1))
+        sSl    = oRS.getString(2)
+        iAant  = CInt(oRS.getString(3))
+        sSoort = oRS.getString(4)
+        sVorm  = oRS.getString(5)
+        sGewL  = oRS.getString(6)
+        dPrijs = Val(oRS.getString(7))   ' Val: punt-decimaal, locale-onafhankelijk
+
+        ' Alleen bestellingen uit de gekozen maand (zit in bId).
+        bIdx = -1
         For b = 0 To nBest - 1
             If bId(b) = lBId Then
-                For p = 0 To 17
-                    If sleutels(p) = sSl Then
-                        bAant(b, p) = iAant
-                        Exit For
-                    End If
-                Next p
+                bIdx = b
                 Exit For
             End If
         Next b
+
+        If bIdx >= 0 Then
+            ' Kolom zoeken: eerst de vaste koffie-matrix...
+            pIdx = -1
+            For p = 0 To 17
+                If sleutels(p) = sSl Then
+                    pIdx = p
+                    Exit For
+                End If
+            Next p
+            ' ...dan reeds aangemaakte extra kolommen...
+            If pIdx = -1 Then
+                For e = 0 To nExtra - 1
+                    If eSl(e) = sSl Then
+                        pIdx = 18 + e
+                        Exit For
+                    End If
+                Next e
+            End If
+            ' ...anders een nieuwe extra kolom aanmaken.
+            If pIdx = -1 And nExtra <= 79 Then
+                eSl(nExtra)    = sSl
+                eLab(nExtra)   = Trim(sSoort & " " & sVorm)   ' vorm leeg bij honing
+                eGew(nExtra)   = sGewL
+                ePrijs(nExtra) = dPrijs
+                pIdx = 18 + nExtra
+                nExtra = nExtra + 1
+            End If
+            If pIdx >= 0 Then bAant(bIdx, pIdx) = bAant(bIdx, pIdx) + iAant
+        End If
     Loop
     oRS.close() : oStmt.close()
+    nProdTot = 18 + nExtra
 
     ' --- Stap 4a: afhaalpunten-map uit groenten-DB (fallback-match) ---
     For b = 0 To nBest - 1
