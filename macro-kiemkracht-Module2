@@ -36,6 +36,9 @@ Sub BereidMailmergeVoor()
     ' kolommen N/Q/T.
     ' =============================================
 
+    ' Diagnose: vang elke onverwachte fout en toon het regelnummer (Erl).
+    On Error GoTo FoutAlgemeen
+
     ' Webshop- en admin-URL volgen de omgeving
     Dim BESTEL_URL As String
     Dim ADMIN_URL  As String
