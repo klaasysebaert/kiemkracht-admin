@@ -4357,6 +4357,13 @@ Sub KoffieWeekbestand()
     Dim sSl    As String
     Dim lBId   As Long
     Dim iAant  As Integer
+    Dim sSoort As String
+    Dim sVorm  As String
+    Dim sGewL  As String
+    Dim dPrijs As Double
+    Dim bIdx   As Integer
+    Dim pIdx   As Integer
+    Dim e      As Integer
 
     Dim b     As Integer
     Dim p     As Integer
