@@ -582,6 +582,12 @@ Sub BereidMailmergeVoor()
 
     Exit Sub
 
+FoutAlgemeen:
+    MsgBox "Onverwachte fout " & Err & ": " & Error & Chr(10) & _
+           "Module2, regel " & Erl, 16, "BereidMailmergeVoor"
+    SluitSSHTunnels()
+    Exit Sub
+
 VerbindingsFout:
     MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
            "Controleer of de SSH-tunnel actief is (poort 5433/5434).", 16, "Fout"
