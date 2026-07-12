@@ -1649,13 +1649,8 @@ Sub MaakMaandbestand()
     Dim sGeenKid As String : sGeenKid = ""
     Dim sGeenEmail As String : sGeenEmail = ""
     Dim sWeekLijst As String : sWeekLijst = ""   ' verwerkte/overgeslagen weekbestanden (voor eindpopup)
-    ' Afrekening-voorkeuren uit de klanten-tabel: op het moment van aanmaak uit de
-    ' DB gelezen (niet uit de weekbestanden), zodat altijd het ACTUELE adres geldt.
-    Dim afrId(800) As String, afrEmail(800) As String
-    Dim afrVoorN(800) As String, afrFamN(800) As String, afrNooit(800) As Boolean
-    Dim nAfrPref As Integer, api As Integer
-    Dim bAfrPrefOk As Boolean
-    Dim oConnAfr As Object, oStAfr As Object, oRsAfr As Object
+    ' Afrekening-voorkeuren: arrays + DB-objecten staan hoger gedeclareerd,
+    ' vóór hun eerste gebruik (zie blok "afrekening-voorkeuren" bovenaan).
     Dim sAfrEmailKl As String, sAfrVoorKl As String, sAfrFamKl As String
     Dim bNooitKl As Boolean
     Dim sEffEmail As String, sEffVoor As String
