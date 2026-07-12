@@ -1533,6 +1533,15 @@ Sub MaakMaandbestand()
     ' Zachte fout: lukt de DB-verbinding niet, dan mag de afrekening alsnog
     ' gemaakt worden met email1 (zoals vroeger) — maar enkel na bevestiging,
     ' want ook nooit_afrekening wordt dan NIET toegepast.
+    ' Declaraties MOETEN vóór het eerste gebruik staan: zonder Option Explicit
+    ' maakt LO Basic een variabele bij gebruik impliciet aan, en botst een
+    ' latere Dim op "Variabele reeds gedefinieerd" — wat de hele bibliotheek
+    ' onbruikbaar maakt (compilefout raakt álle macro's).
+    Dim afrId(800) As String, afrEmail(800) As String
+    Dim afrVoorN(800) As String, afrFamN(800) As String, afrNooit(800) As Boolean
+    Dim nAfrPref As Integer, api As Integer
+    Dim bAfrPrefOk As Boolean
+    Dim oConnAfr As Object, oStAfr As Object, oRsAfr As Object
     nAfrPref = 0 : bAfrPrefOk = False
     On Error Resume Next
     oConnAfr = MaakDBVerbinding()
