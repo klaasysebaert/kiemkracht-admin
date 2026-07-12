@@ -124,7 +124,7 @@ Sub BereidMailmergeVoor()
     On Error GoTo VerbindingsFout
     Dim oConn As Object
     oConn = MaakDBVerbinding()
-    On Error GoTo 0
+    On Error GoTo FoutAlgemeen
 
     Dim oStmt As Object
     Dim oRS   As Object
