@@ -4731,7 +4731,7 @@ Sub KoffieWeekbestand()
         If bKlantId(b) <> "" Then
             oSheet.getCellByPosition(cKlId, r).setValue(CDbl(bKlantId(b)))
         End If
-        For p = 0 To 17
+        For p = 0 To nProdTot - 1
             If bAant(b, p) > 0 Then
                 oSheet.getCellByPosition(cProd0 + p, r).setValue(bAant(b, p))
             End If
