@@ -1390,9 +1390,26 @@ Sub KoffieOrderpicking()
         Exit Sub
     End If
 
+    ' Aantal productkolommen dynamisch bepalen: hoofdingrij 1 doorlopen
+    ' vanaf kolom J tot de eerste lege cel. Zo tellen de extra kolommen die
+    ' KoffieWeekbestand achter de vaste koffie-matrix zet (honing, latere
+    ' categorieën) automatisch mee.
+    Dim nProd As Integer
+    nProd = 0
+    Do While nProd <= 120
+        If oWkSheet.getCellByPosition(cProd0 + nProd, 0).getString() = "" Then Exit Do
+        nProd = nProd + 1
+    Loop
+    If nProd = 0 Then
+        MsgBox "Geen productkolommen gevonden in rij 1 (vanaf kolom J). " & _
+               "Is dit wel een koffie-weekbestand?", 16, "Orderpicking koffie"
+        Exit Sub
+    End If
+
     ' Productlabels: rij 1 = soort+vorm ("El Dorado gemalen"), rij 3 = gewicht
-    ' ("x250g"). Toon "El Dorado gemalen 250g".
-    Dim prodLabel(17) As String
+    ' ("x250g" bij koffie, "500 g"/"per stuk" bij extra kolommen). Toon
+    ' "El Dorado gemalen 250g" / "Acaciahoning 500 g".
+    Dim prodLabel(120) As String
     Dim p    As Integer
     Dim sLab As String
     Dim sGew As String
