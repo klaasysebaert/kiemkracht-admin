@@ -495,14 +495,10 @@ Sub BereidMailmergeVoor()
             sFamnamen(nE)  = kFam(k)
             nE = nE + 1
         End If
-        If kEmail4(k) <> "" And LCase(kEmail4(k)) <> LCase(kEmail(k)) _
-                            And LCase(kEmail4(k)) <> LCase(kEmail2(k)) _
-                            And LCase(kEmail4(k)) <> LCase(kEmail3(k)) Then
-            sEmails(nE) = kEmail4(k)
-            sVoornamen(nE) = kVoor(k)
-            sFamnamen(nE)  = kFam(k)
-            nE = nE + 1
-        End If
+        ' email4 krijgt BEWUST GEEN wekelijkse aanbodsmail (beslissing 2026-07-13):
+        ' enkel email1, email2 en email3 zijn mailing-adressen. email4 blijft wel
+        ' bewaard als contactadres (en staat nog in de Mailmerge-sheet-kolom), maar
+        ' wordt hier niet als recipient in mailmerge_recipients gezet.
 
         ' INSERT per email — elk adres krijgt een EIGEN bestel-URL met
         ' zichzelf als email-parameter. Het bestelformulier vult dat adres
