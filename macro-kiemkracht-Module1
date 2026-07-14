@@ -3920,6 +3920,25 @@ Sub VerwerkStopStart()
     ' Tweede vraag: bevestigingsmails versturen? Enkel als er kandidaten zijn.
     Dim bStuurMails As Boolean : bStuurMails = False
     If nMail > 0 Then
+        ' Tel het WERKELIJKE aantal mails (zelfde bundeling als Fase 5b):
+        ' alle annulaties van dezelfde klant gaan in één mail, de rest is
+        ' één mail per item. nMail zelf telt per week en overschat dus.
+        Dim nMailEcht As Integer : nMailEcht = 0
+        Dim bAnnTeld(MAX_ITEM) As Boolean
+        Dim mt As Integer, mt2 As Integer
+        For mt = 0 To nMail - 1
+            If mType(mt) = "annulatie" Then
+                If Not bAnnTeld(mt) Then
+                    For mt2 = mt To nMail - 1
+                        If mType(mt2) = "annulatie" And mKlantId(mt2) = mKlantId(mt) Then bAnnTeld(mt2) = True
+                    Next mt2
+                    nMailEcht = nMailEcht + 1
+                End If
+            Else
+                nMailEcht = nMailEcht + 1
+            End If
+        Next mt
+
         Dim sUrl As String
         If BepaalOmgeving() = "dev" Then
             sUrl = "https://bestel.dev.kiemkracht.be"
@@ -3928,9 +3947,9 @@ Sub VerwerkStopStart()
         End If
         Dim sMailVraag As String
         Dim sMailWoord As String
-        If nMail = 1 Then sMailWoord = "1 bevestigingsmail" Else sMailWoord = nMail & " bevestigingsmails"
+        If nMailEcht = 1 Then sMailWoord = "1 bevestigingsmail" Else sMailWoord = nMailEcht & " bevestigingsmails"
         sMailVraag = "Wil je ook " & sMailWoord & " versturen?" & Chr(10) & _
-                     "(annulaties + stopzettingen + vooruitbestellingen + abonnementsstarts — klanten zonder email1 zijn overgeslagen)" & Chr(10) & Chr(10) & _
+                     "(annulaties + stopzettingen + vooruitbestellingen + abonnementsstarts — klanten zonder email1 zijn overgeslagen; meerdere annulatieweken van dezelfde klant gaan in één mail)" & Chr(10) & Chr(10) & _
                      "Doelomgeving: " & sUrl & Chr(10) & Chr(10) & _
                      "Ja = inserts + mails" & Chr(10) & _
                      "Nee = enkel inserts, geen mails"
