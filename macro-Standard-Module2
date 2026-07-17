@@ -175,6 +175,11 @@ Sub StartMaakSamenstellingDoc()
     MaakSamenstellingDoc()
 End Sub
 
+Sub StartMaakSamenstellingKlassiek()
+    ReloadKiemkracht()
+    MaakSamenstellingKlassiek()
+End Sub
+
 Sub StartHerlaadSamenstelling()
     ReloadKiemkracht()
     HerlaadSamenstelling()
