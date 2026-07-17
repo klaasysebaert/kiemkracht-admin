@@ -550,7 +550,7 @@ Private Sub BouwEnVulSamenstelling(oDoc As Object, oConn As Object, _
 
     SamBouwTabSamenstelling(oDoc, oConn, iWeek, iJaar)
     SamBouwTabLos(oDoc, oConn, iWeek, iJaar)
-    SamBouwTabNotities(oDoc, oConn, iWeek, iJaar)
+    SamBouwTabNotities(oDoc, oConn, iWeek, iJaar, mSamBegTekst)
     SamBouwTabBestellijst(oDoc)
     SamVulBestellijst(oDoc, oConn, iWeek, iJaar)
 
