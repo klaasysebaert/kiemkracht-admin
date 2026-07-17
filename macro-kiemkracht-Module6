@@ -648,12 +648,12 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
             iRij = KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1 + iSlot
             sNaam = oSheet.getCellByPosition(3, iRij).getString()
             If sNaam <> "" Then
-                For iWg = 0 To nWg - 1
-                    If wgNaam(iWg) = sNaam And wgMaat(iWg) = iBlok Then
+                For iWg = 0 To mNWg - 1
+                    If mWgNaam(iWg) = sNaam And mWgMaat(iWg) = iBlok Then
                         oSheet.getCellByPosition(12, iRij).setValue( _
-                            wgDon(iWg) + wgVrij(iWg) + wgOnb(iWg))
-                        oSheet.getCellByPosition(13, iRij).setValue(wgDon(iWg))
-                        oSheet.getCellByPosition(14, iRij).setValue(wgVrij(iWg))
+                            mWgDon(iWg) + mWgVrij(iWg) + mWgOnb(iWg))
+                        oSheet.getCellByPosition(13, iRij).setValue(mWgDon(iWg))
+                        oSheet.getCellByPosition(14, iRij).setValue(mWgVrij(iWg))
                         Exit For
                     End If
                 Next iWg
