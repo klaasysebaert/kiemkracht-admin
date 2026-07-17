@@ -166,9 +166,9 @@ Sub MaakSamenstellingDoc()
     oDesktop = createUnoService("com.sun.star.frame.Desktop")
     oNieuwDoc = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aLaadProps())
     oNieuwDoc.Sheets.getByIndex(0).Name = TAB_SAM
-    SamZorgTab(oNieuwDoc, TAB_LOS)
-    SamZorgTab(oNieuwDoc, TAB_NOT)
-    SamZorgTab(oNieuwDoc, TAB_BST)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_LOS)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_NOT)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_BST)
 
     On Error GoTo SamMaakFout
     oConn = MaakDBVerbinding()
