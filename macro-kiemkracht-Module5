@@ -203,19 +203,27 @@ Sub HerlaadSamenstelling()
     Dim iWeek As Integer
     Dim iJaar As Integer
     Dim iAntw As Integer
+    Dim bKlassiek As Boolean
+    Dim sStatusNa As String
 
     oDoc = ThisComponent
-    If Not SamIsSamenstellingDoc(oDoc) Then
+    bKlassiek = SamIsKlassiekDoc(oDoc)
+    If Not (bKlassiek Or SamIsSamenstellingDoc(oDoc)) Then
         MsgBox "Het actieve document is geen samenstelling-bestand " & _
                "(tab '" & TAB_SAM & "' met marker in A1 ontbreekt).", 48, "Samenstelling"
         Exit Sub
     End If
     If Not SamOmgevingOk(oDoc) Then Exit Sub
 
-    iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(3, 0).getValue())
-    iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(5, 0).getValue())
+    If bKlassiek Then
+        iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(9, 0).getValue())
+        iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(11, 0).getValue())
+    Else
+        iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(3, 0).getValue())
+        iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(5, 0).getValue())
+    End If
     If iWeek < 1 Or iWeek > 53 Or iJaar < 2020 Then
-        MsgBox "Week/jaar niet leesbaar uit D1/F1.", 16, "Samenstelling"
+        MsgBox "Week/jaar niet leesbaar uit de kop-rij.", 16, "Samenstelling"
         Exit Sub
     End If
 
@@ -226,12 +234,18 @@ Sub HerlaadSamenstelling()
 
     On Error GoTo SamHerlaadFout
     oConn = MaakDBVerbinding()
-    BouwEnVulSamenstelling(oDoc, oConn, iWeek, iJaar)
+    If bKlassiek Then
+        KlasBouwEnVul(oDoc, oConn, iWeek, iJaar)
+        sStatusNa = KlasLaatsteStatus()
+    Else
+        BouwEnVulSamenstelling(oDoc, oConn, iWeek, iJaar)
+        sStatusNa = mSamStatus
+    End If
     oConn.close()
     On Error GoTo 0
     SluitSSHTunnels()
     MsgBox "Samenstelling week " & iWeek & "/" & iJaar & " herladen uit de DB " & _
-           "(status: " & mSamStatus & ").", 64, "Klaar"
+           "(status: " & sStatusNa & ").", 64, "Klaar"
     Exit Sub
 
 SamHerlaadFout:
