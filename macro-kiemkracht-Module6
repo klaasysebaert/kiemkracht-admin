@@ -810,7 +810,7 @@ Private Sub KlasVulOogstBestel(oDoc As Object, oConn As Object, _
                 oOgb.getCellByPosition(iBasisKol + 1, iRij).setValue(nAantalDag)
                 If gHoev(iG, iMaat) > 0 Then
                     oOgb.getCellByPosition(iBasisKol + 2, iRij).setString( _
-                        "x " & Format(gHoev(iG, iMaat), "0,00"))
+                        "x " & Format(gHoev(iG, iMaat), "0.00"))
                 End If
                 oOgb.getCellByPosition(iBasisKol + 3, iRij).setValue(dNodig)
                 If nWegDag > 0 Then
