@@ -595,15 +595,9 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
     Next iMaat
 
     ' --- 2. Weglatingen per (groente, maat, dag) ---
-    Dim wgNaam(199) As String
-    Dim wgMaat(199) As Integer
-    Dim wgDon(199)  As Long
-    Dim wgVrij(199) As Long
-    Dim wgOnb(199)  As Long      ' dag onbekend -> telt enkel in TOT mee
-    Dim nWg   As Integer
     Dim iWg   As Integer
     Dim iVind As Integer
-    nWg = 0
+    mNWg = 0
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT bw.groente_naam, " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
