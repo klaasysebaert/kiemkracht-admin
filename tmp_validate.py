@@ -78,3 +78,8 @@ run("MET opzettelijke fout", broken, "Module1", "KolomLetter", (5,))
 
 # 2) de echte huidige Module1 (KolomLetter forceert compilatie van de hele module)
 run("ECHTE Module1", None, "Module1", "KolomLetter", (5,))
+
+# 3) Module5-probes: compilatie + runtime van de pure helpers
+run("Module5 SamMaatIdx (verwacht 2)", None, "Module5", "SamMaatIdx", ("extra-groot",))
+run("Module5 SamBase64 (verwacht bG86dGVzdA==)", None, "Module5", "SamBase64", ("lo:test",))
+run("Module5 SamJsonTekst", None, "Module5", "SamJsonTekst", ('a"b\nc\\d',))
