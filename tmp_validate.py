@@ -87,3 +87,6 @@ run("Module5 SamBase64 (verwacht bG86dGVzdA==)", None, "Module5", "SamBase64", (
 run("Module5 SamJsonTekst", None, "Module5", "SamJsonTekst", ('a"b\nc\\d',))
 run("Module5 SamJsNum (verwacht 0.9)", None, "Module5", "SamJsNum", (0.9,))
 run("Module5 SamJsNum (verwacht -0.05)", None, "Module5", "SamJsNum", (-0.05,))
+
+# 4) Module6-probe (compilatie van de klassieke layout; pure accessor)
+run("Module6 KlasLaatsteStatus (verwacht '')", None, "Module6", "KlasLaatsteStatus", ())
