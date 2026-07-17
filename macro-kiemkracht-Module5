@@ -736,9 +736,10 @@ End Sub
 
 ' ---------------------------------------------------------------------------
 ' Tab Los: losse groenten (het aanbod dat het bestelformulier toont)
+' (publiek: ook gebruikt door de klassieke layout in Module6)
 ' ---------------------------------------------------------------------------
-Private Sub SamBouwTabLos(oDoc As Object, oConn As Object, _
-                          iWeek As Integer, iJaar As Integer)
+Sub SamBouwTabLos(oDoc As Object, oConn As Object, _
+                  iWeek As Integer, iJaar As Integer)
     Dim oSheet  As Object
     Dim oStmt   As Object
     Dim oRS     As Object
