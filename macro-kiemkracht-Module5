@@ -1009,6 +1009,7 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     Dim oRS   As Object
     Dim iMaat As Integer
     Dim iSlot As Integer
+    Dim iVind As Integer
     Dim sNaam As String
     Dim sParRitmes As String
     Dim iWeekNum   As Long
