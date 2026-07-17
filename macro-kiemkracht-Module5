@@ -472,7 +472,11 @@ Sub SchrijfSamenstelling()
 
     If oHttp.status = 200 Then
         If sStatus = "nieuw" Then sStatus = "concept"
-        oSam.getCellByPosition(7, 0).setString(sStatus)
+        If bKlassiek Then
+            oSam.getCellByPosition(15, 0).setString(sStatus)
+        Else
+            oSam.getCellByPosition(7, 0).setString(sStatus)
+        End If
         MsgBox "Week " & iWeek & "/" & iJaar & " teruggeschreven naar de database." & Chr(10) & _
                nPG & " pakketgroenten, " & nLos & " losse groenten, " & nNot & " notities." & Chr(10) & _
                "Status: " & sStatus & " (publiceren doe je in de cockpit).", 64, "Opgeslagen"
