@@ -972,6 +972,11 @@ Function KlasLeesPakketgroentenJson(oDoc As Object, ByRef nPG As Integer) As Str
         aBlokId(iBlok) = CLng(oSam.getCellByPosition(15, _
             KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1 + KLAS_SLOTS).getValue())
     Next iBlok
+    If aBlokId(0) = 0 And aBlokId(1) = 0 And aBlokId(2) = 0 And aBlokId(3) = 0 Then
+        nPG = -1   ' pakket_id's ontbreken -> aanroeper meldt "eerst (her)laden"
+        KlasLeesPakketgroentenJson = ""
+        Exit Function
+    End If
 
     nG = 0
     For iBlok = 0 To 3
