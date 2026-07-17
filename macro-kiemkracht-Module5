@@ -813,9 +813,10 @@ End Sub
 
 ' ---------------------------------------------------------------------------
 ' Tab Notities: week-notities (3 bestemmingen) + begeleidende tekst
+' (publiek: ook gebruikt door de klassieke layout in Module6)
 ' ---------------------------------------------------------------------------
-Private Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
-                               iWeek As Integer, iJaar As Integer)
+Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
+                       iWeek As Integer, iJaar As Integer, sBegTekst As String)
     Dim oSheet  As Object
     Dim oStmt   As Object
     Dim oRS     As Object
