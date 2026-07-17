@@ -582,8 +582,8 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
         nTel  = oRS.getLong(3)
         If iMaat >= 0 Then
             aAantTot(iMaat) = aAantTot(iMaat) + nTel
-            If sDag = "donderdag" Then aAant(iMaat, 0) = aAant(iMaat, 0) + nTel
-            If sDag = "vrijdag"   Then aAant(iMaat, 1) = aAant(iMaat, 1) + nTel
+            If sDag = "donderdag" Then mOgbAant(iMaat, 0) = mOgbAant(iMaat, 0) + nTel
+            If sDag = "vrijdag"   Then mOgbAant(iMaat, 1) = mOgbAant(iMaat, 1) + nTel
         End If
     Loop
     oRS.close() : oStmt.close()
