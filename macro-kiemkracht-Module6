@@ -1033,3 +1033,8 @@ Function KlasLeesPakketgroentenJson(oDoc As Object, ByRef nPG As Integer) As Str
     nPG = nG
     KlasLeesPakketgroentenJson = sJson
 End Function
+
+' Status van de laatst geladen/opgebouwde klassieke week (voor meldingen)
+Function KlasLaatsteStatus() As String
+    KlasLaatsteStatus = mKlasStatus
+End Function
