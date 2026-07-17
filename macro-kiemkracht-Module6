@@ -1,0 +1,1030 @@
+' ===========================================================================
+' Module6 — Samenstelling-document, KLASSIEKE layout
+' Getrouwe nabouw van de Google Sheet "Samenstelling_deze_week" (Blad1),
+' gemodelleerd naar het archief-exemplaar Samenstelling_260611:
+'   - bovenaan het overzicht: totaal / do / vrij + PAKKETTEN-matrix
+'     (don en vrij / don / vrij  x  KG GG EGG MINI)
+'   - vier maat-blokken met per pakketgroente: aantal-na-weglating,
+'     Grooth.EUR, Cons.EUR, Hoeveelh., EUR in pakket, Nodig en de
+'     weglatingen TOT/DON/VRIJ; onderaan elk blok Pakket EUR + doelprijs
+'   - tab OogstBestel: per groente een DONDERDAG- en VRIJDAG-blok
+'     ("aantal x hoeveelheid = nodig", met "N niet!"-markering) in twee
+'     kolommen, plus de oogst/bestel-verdeling: Nodig -> waarvan OOGST
+'     (eigen teelt, invulveld) -> BIJBESTELLEN groothandel + kost.
+' Kleuren: lichtblauw = invulvelden; maat-kleuren zoals het weekbestand
+' (KG groen, GG blauw, EGG grijs, MINI roze).
+'
+' De tabs Los en Notities zijn identiek aan het tab-document (Module5) en
+' worden daar herbruikt; SchrijfSamenstelling (Module5) herkent beide
+' layouts en schrijft ze via cockpit-api week_opslaan terug.
+' ===========================================================================
+
+Const KLAS_MARKER  = "Kiemkracht samenstelling klassiek"
+Const KLAS_TAB_SAM = "Samenstelling"
+Const KLAS_TAB_OGB = "OogstBestel"
+
+' Hoofdblad (0-based): rij 6 = kolomkoppen, blokken vanaf rij 7 (idx 6).
+' Per blok: 1 headerrij + 12 slots + 1 totaalrij = 14 rijen.
+Const KLAS_RIJ_KOP  = 5
+Const KLAS_BLOK0    = 6
+Const KLAS_BLOKH    = 14
+Const KLAS_SLOTS    = 12
+
+' OogstBestel (0-based): DONDERDAG-label rij 3, 6 blok-paren van 7 rijen;
+' VRIJDAG-label; daarna de oogst/bestel-tabel.
+Const OGB_DON_LBL  = 2
+Const OGB_DON0     = 3
+Const OGB_BLOKH    = 7
+Const OGB_VRIJ_LBL = 45
+Const OGB_VRIJ0    = 46
+Const OGB_TAB_LBL  = 89
+Const OGB_TAB_KOP  = 90
+Const OGB_TAB0     = 91
+Const OGB_LOS_MAX  = 40
+
+' Week-meta (gezet door KlasBouwEnVul)
+Private mKlasPakId(3)    As Long
+Private mKlasPakPrijs(3) As Double
+Private mKlasStatus      As String
+Private mKlasMarge       As Double
+Private mKlasBegTekst    As String
+
+' ===========================================================================
+' MaakSamenstellingKlassiek — nieuw klassiek samenstelling-bestand
+' ===========================================================================
+Sub MaakSamenstellingKlassiek()
+    Dim sOmg        As String
+    Dim sOmgSuffix  As String
+    Dim sWeekIn     As String
+    Dim iWeek       As Integer
+    Dim iJaar       As Integer
+    Dim iVoorstel   As Integer
+    Dim dDonderdag  As Date
+    Dim sWeekMap    As String
+    Dim sBestand    As String
+    Dim sUrl        As String
+    Dim oDesktop    As Object
+    Dim oNieuwDoc   As Object
+    Dim oConn       As Object
+    Dim oComp       As Object
+    Dim oEnum       As Object
+    Dim oTabTmp     As Object
+    Dim aLaadProps()
+
+    sOmg = BepaalOmgeving()
+    If sOmg = "prod" Then
+        MsgBox "De weekcockpit is nog niet op prod uitgerold. Werk met " & _
+               "kiemkracht-data-dev.ods of wacht op de prod-rollout.", 48, "Samenstelling"
+        Exit Sub
+    End If
+
+    iVoorstel = DatePart("ww", Now() + 7, 2, 2)
+    sWeekIn = InputBox("Weeknummer voor de samenstelling (ENTER = " & iVoorstel & "):", _
+                       "Samenstelling klassiek (" & sOmg & ")", CStr(iVoorstel))
+    If sWeekIn = "" Then Exit Sub
+    If Not IsNumeric(sWeekIn) Then
+        MsgBox "Geen geldig weeknummer: " & sWeekIn, 16, "Samenstelling"
+        Exit Sub
+    End If
+    iWeek = CInt(sWeekIn)
+    If iWeek < 1 Or iWeek > 53 Then
+        MsgBox "Weeknummer buiten bereik (1-53): " & iWeek, 16, "Samenstelling"
+        Exit Sub
+    End If
+    dDonderdag = WeekNaarDonderdag(iWeek)
+    If dDonderdag = 0 Then
+        MsgBox "Kon geen (komende) donderdag vinden voor week " & iWeek & ".", 16, "Samenstelling"
+        Exit Sub
+    End If
+    iJaar = Year(dDonderdag)
+
+    If sOmg = "dev" Then sOmgSuffix = "-dev" Else sOmgSuffix = ""
+    sWeekMap = JaarMap(iJaar) & iJaar & "_week_" & iWeek & "\"
+    If Not FileExists(sWeekMap) Then MkDir(sWeekMap)
+    sBestand = sWeekMap & "samenstelling_klassiek_" & iWeek & "_" & iJaar & sOmgSuffix & ".ods"
+    sUrl = ConvertToURL(sBestand)
+
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oComp = oEnum.nextElement()
+        If HasUnoInterfaces(oComp, "com.sun.star.lang.XServiceInfo") Then
+            If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+                If oComp.getURL() = sUrl Then
+                    If oComp Is ThisComponent Then
+                        MsgBox "Dit bestand is al open. Gebruik StartHerlaadSamenstelling " & _
+                               "om het te verversen uit de DB.", 48, "Samenstelling"
+                        Exit Sub
+                    End If
+                    oComp.close(True)
+                End If
+            End If
+        End If
+    Loop
+
+    oDesktop = createUnoService("com.sun.star.frame.Desktop")
+    oNieuwDoc = oDesktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, aLaadProps())
+    oNieuwDoc.Sheets.getByIndex(0).Name = KLAS_TAB_SAM
+    oTabTmp = SamZorgTab(oNieuwDoc, KLAS_TAB_OGB)
+    oTabTmp = SamZorgTab(oNieuwDoc, "Los")
+    oTabTmp = SamZorgTab(oNieuwDoc, "Notities")
+
+    On Error GoTo KlasMaakFout
+    oConn = MaakDBVerbinding()
+    KlasBouwEnVul(oNieuwDoc, oConn, iWeek, iJaar)
+    oConn.close()
+    On Error GoTo 0
+    SluitSSHTunnels()
+
+    Dim aSaveProps(0) As New com.sun.star.beans.PropertyValue
+    aSaveProps(0).Name  = "FilterName"
+    aSaveProps(0).Value = "calc8"
+    oNieuwDoc.storeAsURL(sUrl, aSaveProps())
+
+    oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByName(KLAS_TAB_SAM))
+    MsgBox "Klassiek samenstelling-bestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
+           "Week " & iWeek & "/" & iJaar & " — status in DB: " & mKlasStatus & Chr(10) & Chr(10) & _
+           "Terugschrijven: StartSchrijfSamenstelling. Aantallen/oogstlijst " & _
+           "verversen: StartVerversBestellijst.", 64, "Klaar"
+    Exit Sub
+
+KlasMaakFout:
+    MsgBox "Fout bij het opbouwen van de klassieke samenstelling:" & Chr(10) & Error$, 16, "Samenstelling"
+    SluitSSHTunnels()
+End Sub
+
+' Is dit een klassiek samenstelling-document (marker in Samenstelling.A1)?
+Function SamIsKlassiekDoc(oDoc As Object) As Boolean
+    SamIsKlassiekDoc = False
+    If IsNull(oDoc) Then Exit Function
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then Exit Function
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then Exit Function
+    If Not oDoc.Sheets.hasByName(KLAS_TAB_SAM) Then Exit Function
+    If oDoc.Sheets.getByName(KLAS_TAB_SAM).getCellByPosition(0, 0).getString() <> KLAS_MARKER Then Exit Function
+    SamIsKlassiekDoc = True
+End Function
+
+' ===========================================================================
+' KlasBouwEnVul — alle tabbladen (her)opbouwen en vullen uit de DB
+' ===========================================================================
+Sub KlasBouwEnVul(oDoc As Object, oConn As Object, iWeek As Integer, iJaar As Integer)
+    Dim oStmt As Object
+    Dim oRS   As Object
+    Dim iMaat As Integer
+
+    mKlasStatus   = "nieuw"
+    mKlasMarge    = 1.65
+    mKlasBegTekst = ""
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery("SELECT status, marge, COALESCE(begeleidende_tekst,'') " & _
+                             "FROM weken WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek)
+    If oRS.next() Then
+        mKlasStatus   = oRS.getString(1)
+        mKlasMarge    = oRS.getDouble(2)
+        mKlasBegTekst = oRS.getString(3)
+    End If
+    oRS.close() : oStmt.close()
+
+    For iMaat = 0 To 3
+        mKlasPakId(iMaat) = 0
+        mKlasPakPrijs(iMaat) = 0
+    Next iMaat
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery("SELECT sleutel, id, prijs FROM pakketten")
+    Do While oRS.next()
+        iMaat = SamMaatIdx(oRS.getString(1))
+        If iMaat >= 0 Then
+            mKlasPakId(iMaat)    = oRS.getLong(2)
+            mKlasPakPrijs(iMaat) = oRS.getDouble(3)
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+
+    KlasBouwHoofdblad(oDoc, oConn, iWeek, iJaar)
+    SamBouwTabLos(oDoc, oConn, iWeek, iJaar)
+    SamBouwTabNotities(oDoc, oConn, iWeek, iJaar, mKlasBegTekst)
+    KlasVulWeekcijfers(oDoc, oConn, iWeek, iJaar)
+
+    oDoc.calculateAll()
+End Sub
+
+' ---------------------------------------------------------------------------
+' Hoofdblad: overzicht + vier maat-blokken (layout + pakketgroente-data)
+' ---------------------------------------------------------------------------
+Private Sub KlasBouwHoofdblad(oDoc As Object, oConn As Object, _
+                              iWeek As Integer, iJaar As Integer)
+    Dim oSheet As Object
+    Dim oStmt  As Object
+    Dim oRS    As Object
+    Dim iBlok  As Integer
+    Dim iSlot  As Integer
+    Dim iRij   As Integer
+    Dim iKol   As Integer
+    Dim iKopRij As Integer
+    Dim iTotRij As Integer
+    Dim sRij   As String
+    Dim sMaatKol As String
+    Dim clBlauw As Long
+    Dim clGrijs As Long
+    Dim clLGrijs As Long
+    Dim aMaatKleur(3) As Long
+    Dim aMaatLabel(3) As String
+    Dim aBlokNaam(3)  As String
+
+    clBlauw  = RGB(204, 236, 255)   ' lichtblauw invulveld
+    clGrijs  = RGB(221, 221, 221)
+    clLGrijs = RGB(238, 238, 238)
+    aMaatKleur(0) = RGB(204, 255, 153)   ' KG groen
+    aMaatKleur(1) = RGB(153, 204, 255)   ' GG blauw
+    aMaatKleur(2) = RGB(178, 178, 178)   ' EGG grijs
+    aMaatKleur(3) = RGB(255, 153, 204)   ' MINI roze
+    aMaatLabel(0) = "KG" : aMaatLabel(1) = "GG"
+    aMaatLabel(2) = "EGG" : aMaatLabel(3) = "MINI"
+    aBlokNaam(0) = "Klein groentenpakket: "
+    aBlokNaam(1) = "Groot groentenpakket: "
+    aBlokNaam(2) = "Extra groot groentenpakket: "
+    aBlokNaam(3) = "Mini groentenpakket:"
+
+    oSheet = SamZorgTab(oDoc, KLAS_TAB_SAM)
+    oSheet.getCellRangeByPosition(0, 0, 16, KLAS_BLOK0 + 4 * KLAS_BLOKH + 2).clearContents(23)
+
+    ' --- Rij 1: marker + totaal do/vrij + week-meta ---
+    oSheet.getCellByPosition(0, 0).setString(KLAS_MARKER)
+    oSheet.getCellByPosition(3, 0).setFormula("=SUM(E3:H3)")
+    oSheet.getCellByPosition(3, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oSheet.getCellByPosition(4, 0).setString("do")
+    oSheet.getCellByPosition(5, 0).setFormula("=SUM(E4:H4)")
+    oSheet.getCellByPosition(6, 0).setString("vrij")
+    oSheet.getCellByPosition(7, 0).setFormula("=SUM(E5:H5)")
+    oSheet.getCellByPosition(8, 0).setString("week")
+    oSheet.getCellByPosition(9, 0).setValue(iWeek)
+    oSheet.getCellByPosition(10, 0).setString("jaar")
+    oSheet.getCellByPosition(11, 0).setValue(iJaar)
+    oSheet.getCellByPosition(12, 0).setString("marge")
+    oSheet.getCellByPosition(13, 0).setValue(mKlasMarge)
+    oSheet.getCellByPosition(13, 0).CellBackColor = clBlauw
+    oSheet.getCellByPosition(14, 0).setString("status")
+    oSheet.getCellByPosition(15, 0).setString(mKlasStatus)
+
+    ' --- Rijen 2-5: PAKKETTEN-matrix (aantallen via KlasVulWeekcijfers) ---
+    oSheet.getCellByPosition(2, 1).setFormula("=D1")
+    oSheet.getCellByPosition(3, 1).setString("PAKKETTEN")
+    oSheet.getCellByPosition(3, 1).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    For iBlok = 0 To 3
+        oSheet.getCellByPosition(4 + iBlok, 1).setString(aMaatLabel(iBlok))
+        oSheet.getCellByPosition(4 + iBlok, 1).CellBackColor = aMaatKleur(iBlok)
+        oSheet.getCellByPosition(4 + iBlok, 1).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    Next iBlok
+    oSheet.getCellByPosition(3, 2).setString("don en vrij")
+    oSheet.getCellByPosition(3, 3).setString("don")
+    oSheet.getCellByPosition(3, 4).setString("vrij")
+
+    ' --- Rij 6: kolomkoppen ---
+    oSheet.getCellByPosition(4, KLAS_RIJ_KOP).setString("Grooth. EUR")
+    oSheet.getCellByPosition(5, KLAS_RIJ_KOP).setString("Cons. EUR")
+    oSheet.getCellByPosition(6, KLAS_RIJ_KOP).setString("Hoeveelh.")
+    oSheet.getCellByPosition(7, KLAS_RIJ_KOP).setString("EUR in pakket")
+    oSheet.getCellByPosition(8, KLAS_RIJ_KOP).setString("Pakket EUR")
+    oSheet.getCellByPosition(9, KLAS_RIJ_KOP).setString("Doel")
+    oSheet.getCellByPosition(10, KLAS_RIJ_KOP).setString("Nodig")
+    oSheet.getCellByPosition(12, KLAS_RIJ_KOP).setString("TOT")
+    oSheet.getCellByPosition(13, KLAS_RIJ_KOP).setString("DON")
+    oSheet.getCellByPosition(14, KLAS_RIJ_KOP).setString("VRIJ")
+    oSheet.getCellByPosition(15, KLAS_RIJ_KOP).setString("id")
+    oSheet.getCellRangeByPosition(0, KLAS_RIJ_KOP, 15, KLAS_RIJ_KOP).CellBackColor = clGrijs
+    oSheet.getCellRangeByPosition(0, KLAS_RIJ_KOP, 15, KLAS_RIJ_KOP).CharWeight = _
+        com.sun.star.awt.FontWeight.BOLD
+
+    ' --- Vier maat-blokken ---
+    For iBlok = 0 To 3
+        iKopRij = KLAS_BLOK0 + iBlok * KLAS_BLOKH
+        iTotRij = iKopRij + 1 + KLAS_SLOTS
+        sMaatKol = Chr(69 + iBlok)   ' E/F/G/H
+
+        ' headerrij: aantal + bloknaam + omzet (aantal x doelprijs)
+        oSheet.getCellByPosition(0, iKopRij).setFormula("=" & sMaatKol & "$3")
+        oSheet.getCellByPosition(1, iKopRij).setString(aBlokNaam(iBlok))
+        oSheet.getCellByPosition(2, iKopRij).setFormula("=" & sMaatKol & "$3")
+        oSheet.getCellByPosition(11, iKopRij).setFormula( _
+            "=" & sMaatKol & "$3*J" & CStr(iTotRij + 1))
+        oSheet.getCellRangeByPosition(0, iKopRij, 10, iKopRij).CellBackColor = aMaatKleur(iBlok)
+        oSheet.getCellByPosition(1, iKopRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+
+        ' slots
+        For iSlot = 0 To KLAS_SLOTS - 1
+            iRij = iKopRij + 1 + iSlot
+            sRij = CStr(iRij + 1)
+            oSheet.getCellByPosition(2, iRij).setFormula( _
+                "=IF($D" & sRij & "="""";"""";" & sMaatKol & "$3-M" & sRij & ")")
+            oSheet.getCellByPosition(5, iRij).setFormula( _
+                "=IF($E" & sRij & "="""";"""";ROUND($E" & sRij & "*$N$1;2))")
+            oSheet.getCellByPosition(7, iRij).setFormula( _
+                "=IF(OR($E" & sRij & "="""";G" & sRij & "="""");"""";" & _
+                "ROUND(ROUND($E" & sRij & "*$N$1*G" & sRij & ";4);2))")
+            oSheet.getCellByPosition(10, iRij).setFormula( _
+                "=IF($D" & sRij & "="""";"""";ROUND(C" & sRij & "*G" & sRij & ";2))")
+            oSheet.getCellByPosition(3, iRij).CellBackColor = clBlauw
+            oSheet.getCellByPosition(4, iRij).CellBackColor = clBlauw
+            oSheet.getCellByPosition(6, iRij).CellBackColor = clBlauw
+            oSheet.getCellByPosition(12, iRij).CellBackColor = clLGrijs
+            oSheet.getCellByPosition(13, iRij).CellBackColor = clLGrijs
+            oSheet.getCellByPosition(14, iRij).CellBackColor = clLGrijs
+            oSheet.getCellByPosition(15, iRij).CellBackColor = clLGrijs
+        Next iSlot
+
+        ' totaalrij: Pakket EUR + doelprijs + pakket_id
+        oSheet.getCellByPosition(8, iTotRij).setFormula( _
+            "=SUM(H" & CStr(iKopRij + 2) & ":H" & CStr(iKopRij + 1 + KLAS_SLOTS) & ")")
+        oSheet.getCellByPosition(8, iTotRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oSheet.getCellByPosition(9, iTotRij).setValue(mKlasPakPrijs(iBlok))
+        oSheet.getCellByPosition(15, iTotRij).setValue(mKlasPakId(iBlok))
+        oSheet.getCellByPosition(15, iTotRij).CellBackColor = clLGrijs
+        oSheet.getCellRangeByPosition(8, iTotRij, 9, iTotRij).CellBackColor = aMaatKleur(iBlok)
+    Next iBlok
+
+    oSheet.getCellByPosition(0, KLAS_BLOK0 + 4 * KLAS_BLOKH + 1).setString( _
+        "Invulvelden = lichtblauw. Weglatingen (TOT/DON/VRIJ) en aantallen: " & _
+        "StartVerversBestellijst. Terugschrijven: StartSchrijfSamenstelling.")
+
+    ' Kolombreedtes
+    oSheet.Columns.getByIndex(0).Width = 1400
+    oSheet.Columns.getByIndex(1).Width = 4600
+    oSheet.Columns.getByIndex(2).Width = 1400
+    oSheet.Columns.getByIndex(3).Width = 4600
+    For iKol = 4 To 11
+        oSheet.Columns.getByIndex(iKol).Width = 2100
+    Next iKol
+    For iKol = 12 To 14
+        oSheet.Columns.getByIndex(iKol).Width = 1400
+    Next iKol
+    oSheet.Columns.getByIndex(15).Width = 1500
+
+    ' --- Pakketgroenten uit de DB in de blokken zetten ---
+    ' Volgorde per blok = volgende vrije rij; een groente zonder enige
+    ' hoeveelheid komt (met naam + prijs) enkel in het KG-blok te staan.
+    Dim aPgNaam(KLAS_SLOTS - 1)   As String
+    Dim aPgGrooth(KLAS_SLOTS - 1) As Double
+    Dim aPgGid(KLAS_SLOTS - 1)    As String
+    Dim aPgInBlok(KLAS_SLOTS - 1) As Boolean
+    Dim aVolgend(3) As Integer
+    Dim nPG    As Integer
+    Dim iVind  As Integer
+    Dim iMaat  As Integer
+    Dim sNaam  As String
+
+    nPG = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT groente_naam, groothandel_prijs, COALESCE(groente_id::text,'') " & _
+        "FROM week_pakketgroente WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & _
+        " ORDER BY volgorde, groente_naam")
+    Do While oRS.next()
+        If nPG < KLAS_SLOTS Then
+            aPgNaam(nPG)   = oRS.getString(1)
+            aPgGrooth(nPG) = oRS.getDouble(2)
+            aPgGid(nPG)    = oRS.getString(3)
+            aPgInBlok(nPG) = False
+            nPG = nPG + 1
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+
+    For iMaat = 0 To 3
+        aVolgend(iMaat) = 0
+    Next iMaat
+
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT pakket_id, groente_naam, hoeveelheid FROM pakket_inhoud " & _
+        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & _
+        " AND hoeveelheid IS NOT NULL ORDER BY id")
+    Do While oRS.next()
+        iVind = -1
+        sNaam = oRS.getString(2)
+        For iSlot = 0 To nPG - 1
+            If aPgNaam(iSlot) = sNaam Then
+                iVind = iSlot
+                Exit For
+            End If
+        Next iSlot
+        iMaat = -1
+        For iKol = 0 To 3
+            If mKlasPakId(iKol) = oRS.getLong(1) Then iMaat = iKol
+        Next iKol
+        If iVind >= 0 And iMaat >= 0 Then
+            If aVolgend(iMaat) < KLAS_SLOTS Then
+                iRij = KLAS_BLOK0 + iMaat * KLAS_BLOKH + 1 + aVolgend(iMaat)
+                oSheet.getCellByPosition(3, iRij).setString(aPgNaam(iVind))
+                oSheet.getCellByPosition(4, iRij).setValue(aPgGrooth(iVind))
+                oSheet.getCellByPosition(6, iRij).setValue(oRS.getDouble(3))
+                If aPgGid(iVind) <> "" Then
+                    oSheet.getCellByPosition(15, iRij).setValue(CLng(aPgGid(iVind)))
+                End If
+                aVolgend(iMaat) = aVolgend(iMaat) + 1
+                aPgInBlok(iVind) = True
+            End If
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' groenten zonder hoeveelheid in eender welke maat -> KG-blok
+    For iSlot = 0 To nPG - 1
+        If Not aPgInBlok(iSlot) Then
+            If aVolgend(0) < KLAS_SLOTS Then
+                iRij = KLAS_BLOK0 + 1 + aVolgend(0)
+                oSheet.getCellByPosition(3, iRij).setString(aPgNaam(iSlot))
+                oSheet.getCellByPosition(4, iRij).setValue(aPgGrooth(iSlot))
+                If aPgGid(iSlot) <> "" Then
+                    oSheet.getCellByPosition(15, iRij).setValue(CLng(aPgGid(iSlot)))
+                End If
+                aVolgend(0) = aVolgend(0) + 1
+            End If
+        End If
+    Next iSlot
+End Sub
+
+' ---------------------------------------------------------------------------
+' KlasVulWeekcijfers — momentopname uit de DB:
+'   1) aantallen per maat per dag (E3:H5 op het hoofdblad)
+'   2) weglatingen TOT/DON/VRIJ per blok-rij (M/N/O)
+'   3) de OogstBestel-tab (dag-blokken + oogst/bestel-verdeling; bewaart
+'      eerder ingevulde oogst-waarden op groentenaam)
+'   4) besteld-tellers op de Los-tab
+' Zelfde drie-takken-telling als MaakWeekbestand (bestellingen / ritme-
+' abonnees / vooruitbestellers) — wijzigt die query in Module1, pas dan ook
+' dit aan. Het weekbestand blijft de gezaghebbende telling.
+' ---------------------------------------------------------------------------
+Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar As Integer)
+    Dim oSheet As Object
+    Dim oOgb   As Object
+    Dim oStmt  As Object
+    Dim oRS    As Object
+    Dim iMaat  As Integer
+    Dim iDag   As Integer
+    Dim iBlok  As Integer
+    Dim iSlot  As Integer
+    Dim iRij   As Integer
+    Dim sNaam  As String
+    Dim sDag   As String
+    Dim nTel   As Long
+    Dim sParRitmes As String
+    Dim iWeekNum   As Long
+    Dim sMaatCase  As String
+    Dim sTakJoins  As String
+    Dim sSql   As String
+
+    oSheet = oDoc.Sheets.getByName(KLAS_TAB_SAM)
+    oOgb   = SamZorgTab(oDoc, KLAS_TAB_OGB)
+
+    If (iWeek Mod 2) = 0 Then
+        sParRitmes = "'wekelijks','pare-week'"
+    Else
+        sParRitmes = "'wekelijks','onpare-week'"
+    End If
+    iWeekNum = CLng(iJaar) * 100 + iWeek
+
+    sMaatCase = "CASE LOWER(TRIM(REPLACE(%s, ' pakket', ''))) " & _
+                "WHEN 'klein' THEN 'klein' WHEN 'groot' THEN 'groot' " & _
+                "WHEN 'extra groot' THEN 'extra-groot' WHEN 'extra-groot' THEN 'extra-groot' " & _
+                "WHEN 'mini' THEN 'mini' END"
+    ' klant/afhaalpunt-joins voor de dag-bepaling van een bestelling
+    ' (zelfde COALESCE-volgorde als MaakWeekbestand: klant-afhaalpunt wint)
+    sTakJoins = " LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL " & _
+                "     AND k.email1 = b.klant_email)) " & _
+                " LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
+                " LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt "
+
+    ' --- 1. Aantal pakketten per maat per dag ---
+    Dim aAant(3, 1)   As Long    ' (maat, 0=don/1=vrij)
+    Dim aAantTot(3)   As Long
+    For iMaat = 0 To 3
+        aAantTot(iMaat) = 0
+        aAant(iMaat, 0) = 0
+        aAant(iMaat, 1) = 0
+    Next iMaat
+
+    sSql = "WITH vb_week AS (" & _
+           " SELECT klant_id, LOWER(klant_email) AS email_l, " & _
+           Replace(sMaatCase, "%s", "formaat") & " AS sleutel " & _
+           " FROM vooruitbestellingen " & _
+           " WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek & _
+           "   AND formaat IS NOT NULL), " & _
+           "alle AS (" & _
+           " SELECT " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
+           " LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag " & _
+           " FROM bestellingen b " & sTakJoins & _
+           " WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
+           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
+           "   WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
+           "    AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
+           "         AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) " & _
+           " UNION ALL " & _
+           " SELECT COALESCE(vb.sleutel, a.formaat), LOWER(COALESCE(ap.dag_klaarmaken,'')) " & _
+           " FROM abonnementen a JOIN klanten k ON k.id = a.klant_id " & _
+           " LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+           " LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL " & _
+           "      AND vb.email_l = LOWER(k.email1))) " & _
+           " WHERE a.status = 'actief' AND a.ritme IN (" & sParRitmes & ") " & _
+           "  AND (a.eind_jaar IS NULL OR (a.eind_jaar * 100 + a.eind_week) > " & iWeekNum & ") " & _
+           "  AND (a.start_jaar IS NULL OR (a.start_jaar * 100 + a.start_week) <= " & iWeekNum & ") " & _
+           "  AND (a.pauze_vanaf_week IS NULL OR " & _
+           "       (a.pauze_vanaf_jaar * 100 + a.pauze_vanaf_week) > " & iWeekNum & ") " & _
+           "  AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
+           "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
+           "    AND (bx.klant_id = k.id OR (bx.klant_id IS NULL " & _
+           "         AND LOWER(bx.klant_email) = LOWER(k.email1)))) " & _
+           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann2 " & _
+           "   WHERE ann2.jaar = " & iJaar & " AND ann2.week_annulatie = " & iWeek & _
+           "    AND (ann2.klant_id = k.id OR (ann2.klant_id IS NULL " & _
+           "         AND LOWER(ann2.klant_email) = LOWER(k.email1)))) " & _
+           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann3 " & _
+           "   WHERE ann3.jaar = " & iJaar & _
+           "    AND ann3.week_stopzetten_abonnement > 0 " & _
+           "    AND ann3.week_stopzetten_abonnement <= " & iWeek & _
+           "    AND (ann3.klant_id = k.id OR (ann3.klant_id IS NULL " & _
+           "         AND LOWER(ann3.klant_email) = LOWER(k.email1)))) " & _
+           " UNION ALL " & _
+           " SELECT vb.sleutel, LOWER(COALESCE(ap.dag_klaarmaken,'')) " & _
+           " FROM klanten k " & _
+           " LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+           " INNER JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL " & _
+           "      AND vb.email_l = LOWER(k.email1))) " & _
+           " WHERE k.status = 'actief' AND vb.sleutel IS NOT NULL " & _
+           "  AND NOT EXISTS (SELECT 1 FROM abonnementen a3 WHERE a3.klant_id = k.id " & _
+           "   AND a3.status = 'actief' AND a3.ritme IN (" & sParRitmes & ") " & _
+           "   AND (a3.pauze_vanaf_week IS NULL OR " & _
+           "        (a3.pauze_vanaf_jaar * 100 + a3.pauze_vanaf_week) > " & iWeekNum & ") " & _
+           "   AND (a3.eind_jaar IS NULL OR (a3.eind_jaar * 100 + a3.eind_week) > " & iWeekNum & ") " & _
+           "   AND (a3.start_jaar IS NULL OR (a3.start_jaar * 100 + a3.start_week) <= " & iWeekNum & ")) " & _
+           "  AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
+           "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
+           "    AND (bx.klant_id = k.id OR (bx.klant_id IS NULL " & _
+           "         AND LOWER(bx.klant_email) = LOWER(k.email1)))) " & _
+           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann4 " & _
+           "   WHERE ann4.jaar = " & iJaar & " AND ann4.week_annulatie = " & iWeek & _
+           "    AND (ann4.klant_id = k.id OR (ann4.klant_id IS NULL " & _
+           "         AND LOWER(ann4.klant_email) = LOWER(k.email1))))) " & _
+           "SELECT sleutel, dag, COUNT(*) FROM alle WHERE sleutel IS NOT NULL GROUP BY 1, 2"
+
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery(sSql)
+    Do While oRS.next()
+        iMaat = SamMaatIdx(oRS.getString(1))
+        sDag  = oRS.getString(2)
+        nTel  = oRS.getLong(3)
+        If iMaat >= 0 Then
+            aAantTot(iMaat) = aAantTot(iMaat) + nTel
+            If sDag = "donderdag" Then aAant(iMaat, 0) = aAant(iMaat, 0) + nTel
+            If sDag = "vrijdag"   Then aAant(iMaat, 1) = aAant(iMaat, 1) + nTel
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+
+    For iMaat = 0 To 3
+        oSheet.getCellByPosition(4 + iMaat, 2).setValue(aAantTot(iMaat))
+        oSheet.getCellByPosition(4 + iMaat, 3).setValue(aAant(iMaat, 0))
+        oSheet.getCellByPosition(4 + iMaat, 4).setValue(aAant(iMaat, 1))
+    Next iMaat
+
+    ' --- 2. Weglatingen per (groente, maat, dag) ---
+    Dim wgNaam(199) As String
+    Dim wgMaat(199) As Integer
+    Dim wgDon(199)  As Long
+    Dim wgVrij(199) As Long
+    Dim wgOnb(199)  As Long      ' dag onbekend -> telt enkel in TOT mee
+    Dim nWg   As Integer
+    Dim iWg   As Integer
+    Dim iVind As Integer
+    nWg = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT bw.groente_naam, " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
+        "LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag, COUNT(*) " & _
+        "FROM bestelling_weglatingen bw " & _
+        "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & sTakJoins & _
+        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
+        " AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
+        "  WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
+        "   AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
+        "        AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) " & _
+        "GROUP BY 1, 2, 3")
+    Do While oRS.next()
+        iMaat = SamMaatIdx(oRS.getString(2))
+        If iMaat >= 0 And nWg < 200 Then
+            iVind = -1
+            For iWg = 0 To nWg - 1
+                If wgNaam(iWg) = oRS.getString(1) And wgMaat(iWg) = iMaat Then
+                    iVind = iWg
+                    Exit For
+                End If
+            Next iWg
+            If iVind = -1 Then
+                iVind = nWg
+                wgNaam(nWg) = oRS.getString(1)
+                wgMaat(nWg) = iMaat
+                wgDon(nWg) = 0 : wgVrij(nWg) = 0 : wgOnb(nWg) = 0
+                nWg = nWg + 1
+            End If
+            sDag = oRS.getString(3)
+            nTel = oRS.getLong(4)
+            If sDag = "donderdag" Then
+                wgDon(iVind) = wgDon(iVind) + nTel
+            ElseIf sDag = "vrijdag" Then
+                wgVrij(iVind) = wgVrij(iVind) + nTel
+            Else
+                wgOnb(iVind) = wgOnb(iVind) + nTel
+            End If
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+
+    ' M/N/O leegmaken en vullen (match op naam per maat-blok)
+    For iBlok = 0 To 3
+        oSheet.getCellRangeByPosition(12, KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1, _
+            14, KLAS_BLOK0 + iBlok * KLAS_BLOKH + KLAS_SLOTS).clearContents(7)
+        For iSlot = 0 To KLAS_SLOTS - 1
+            iRij = KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1 + iSlot
+            sNaam = oSheet.getCellByPosition(3, iRij).getString()
+            If sNaam <> "" Then
+                For iWg = 0 To nWg - 1
+                    If wgNaam(iWg) = sNaam And wgMaat(iWg) = iBlok Then
+                        oSheet.getCellByPosition(12, iRij).setValue( _
+                            wgDon(iWg) + wgVrij(iWg) + wgOnb(iWg))
+                        oSheet.getCellByPosition(13, iRij).setValue(wgDon(iWg))
+                        oSheet.getCellByPosition(14, iRij).setValue(wgVrij(iWg))
+                        Exit For
+                    End If
+                Next iWg
+            End If
+        Next iSlot
+    Next iBlok
+
+    ' --- 3. OogstBestel-tab ---
+    KlasVulOogstBestel(oDoc, oConn, iWeek, iJaar, aAant(), wgNaam(), wgMaat(), _
+                       wgDon(), wgVrij(), nWg)
+
+    ' --- 4. Besteld-tellers op de Los-tab ---
+    SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
+
+    oOgb.getCellByPosition(4, 0).setString("ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+End Sub
+
+' ---------------------------------------------------------------------------
+' OogstBestel: DONDERDAG/VRIJDAG-blokken per pakketgroente (2 kolommen)
+' + de oogst/bestel-verdeling. Bewaart ingevulde oogst-waarden op naam.
+' ---------------------------------------------------------------------------
+Private Sub KlasVulOogstBestel(oDoc As Object, oConn As Object, _
+                               iWeek As Integer, iJaar As Integer, _
+                               aAant() As Long, wgNaam() As String, wgMaat() As Integer, _
+                               wgDon() As Long, wgVrij() As Long, nWg As Integer)
+    Dim oOgb   As Object
+    Dim oSam   As Object
+    Dim oStmt  As Object
+    Dim oRS    As Object
+    Dim iBlok  As Integer
+    Dim iSlot  As Integer
+    Dim iRij   As Integer
+    Dim iKol   As Integer
+    Dim iMaat  As Integer
+    Dim iDag   As Integer
+    Dim iWg    As Integer
+    Dim iG     As Integer
+    Dim sNaam  As String
+    Dim clBlauw As Long
+    Dim clGrijs As Long
+    Dim aMaatKleur(3) As Long
+    Dim aMaatLabel(3) As String
+
+    clBlauw = RGB(204, 236, 255)
+    clGrijs = RGB(221, 221, 221)
+    aMaatKleur(0) = RGB(204, 255, 153) : aMaatKleur(1) = RGB(153, 204, 255)
+    aMaatKleur(2) = RGB(178, 178, 178) : aMaatKleur(3) = RGB(255, 153, 204)
+    aMaatLabel(0) = "KG" : aMaatLabel(1) = "GG"
+    aMaatLabel(2) = "EGG" : aMaatLabel(3) = "MINI"
+
+    oOgb = SamZorgTab(oDoc, KLAS_TAB_OGB)
+    oSam = oDoc.Sheets.getByName(KLAS_TAB_SAM)
+
+    ' --- Bestaande oogst-invoer bewaren (naam -> waarde) ---
+    Dim bwNaam(199) As String
+    Dim bwOogst(199) As Double
+    Dim nBw As Integer
+    nBw = 0
+    For iRij = OGB_TAB0 To OGB_TAB0 + KLAS_SLOTS + OGB_LOS_MAX
+        sNaam = oOgb.getCellByPosition(0, iRij).getString()
+        If sNaam <> "" And oOgb.getCellByPosition(5, iRij).getString() <> "" Then
+            If nBw < 200 Then
+                bwNaam(nBw)  = sNaam
+                bwOogst(nBw) = oOgb.getCellByPosition(5, iRij).getValue()
+                nBw = nBw + 1
+            End If
+        End If
+    Next iRij
+
+    oOgb.getCellRangeByPosition(0, 0, 11, OGB_TAB0 + KLAS_SLOTS + OGB_LOS_MAX + 2).clearContents(23)
+
+    oOgb.getCellByPosition(0, 0).setString("Oogst / bestellijst — week " & iWeek & "/" & iJaar)
+    oOgb.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+
+    ' --- Unieke pakketgroenten van het hoofdblad (KG-blok eerst) + hoeveelheden ---
+    Dim gNaam(KLAS_SLOTS - 1) As String
+    Dim gHoev(KLAS_SLOTS - 1, 3) As Double
+    Dim gGrooth(KLAS_SLOTS - 1)  As Double
+    Dim nG As Integer
+    nG = 0
+    For iBlok = 0 To 3
+        For iSlot = 0 To KLAS_SLOTS - 1
+            iRij = KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1 + iSlot
+            sNaam = oSam.getCellByPosition(3, iRij).getString()
+            If sNaam <> "" Then
+                iG = -1
+                For iWg = 0 To nG - 1
+                    If gNaam(iWg) = sNaam Then
+                        iG = iWg
+                        Exit For
+                    End If
+                Next iWg
+                If iG = -1 And nG < KLAS_SLOTS Then
+                    iG = nG
+                    gNaam(nG) = sNaam
+                    gGrooth(nG) = oSam.getCellByPosition(4, iRij).getValue()
+                    For iMaat = 0 To 3
+                        gHoev(nG, iMaat) = 0
+                    Next iMaat
+                    nG = nG + 1
+                End If
+                If iG >= 0 Then
+                    gHoev(iG, iBlok) = oSam.getCellByPosition(6, iRij).getValue()
+                    If gGrooth(iG) = 0 Then
+                        gGrooth(iG) = oSam.getCellByPosition(4, iRij).getValue()
+                    End If
+                End If
+            End If
+        Next iSlot
+    Next iBlok
+
+    ' --- Dag-blokken (2 kolommen; maat-volgorde MINI/EGG/GG/KG zoals de Sheet) ---
+    Dim aDagLbl(1)  As String
+    Dim aDag0(1)    As Integer
+    Dim aNodigDag(KLAS_SLOTS - 1, 1) As Double
+    Dim iBasisRij   As Integer
+    Dim iBasisKol   As Integer
+    Dim iMaatVolg   As Integer
+    Dim nAantalDag  As Long
+    Dim nWegDag     As Long
+    Dim dNodig      As Double
+    Dim dSom        As Double
+    aDagLbl(0) = "DONDERDAG" : aDagLbl(1) = "VRIJDAG"
+    aDag0(0) = OGB_DON0 : aDag0(1) = OGB_VRIJ0
+
+    oOgb.getCellByPosition(0, OGB_DON_LBL).setString("DONDERDAG")
+    oOgb.getCellByPosition(0, OGB_DON_LBL).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oOgb.getCellByPosition(0, OGB_VRIJ_LBL).setString("VRIJDAG")
+    oOgb.getCellByPosition(0, OGB_VRIJ_LBL).CharWeight = com.sun.star.awt.FontWeight.BOLD
+
+    For iDag = 0 To 1
+        For iG = 0 To nG - 1
+            iBasisRij = aDag0(iDag) + (iG \ 2) * OGB_BLOKH
+            iBasisKol = (iG Mod 2) * 6            ' links A.., rechts G..
+            oOgb.getCellByPosition(iBasisKol, iBasisRij).setString(gNaam(iG))
+            oOgb.getCellByPosition(iBasisKol, iBasisRij).CharWeight = _
+                com.sun.star.awt.FontWeight.BOLD
+            dSom = 0
+            For iMaatVolg = 0 To 3
+                iMaat = 3 - iMaatVolg              ' MINI, EGG, GG, KG
+                iRij = iBasisRij + 1 + iMaatVolg
+                nWegDag = 0
+                For iWg = 0 To nWg - 1
+                    If wgNaam(iWg) = gNaam(iG) And wgMaat(iWg) = iMaat Then
+                        If iDag = 0 Then nWegDag = wgDon(iWg) Else nWegDag = wgVrij(iWg)
+                        Exit For
+                    End If
+                Next iWg
+                nAantalDag = aAant(iMaat, iDag) - nWegDag
+                If nAantalDag < 0 Then nAantalDag = 0
+                dNodig = 0
+                If gHoev(iG, iMaat) > 0 Then
+                    dNodig = Int(nAantalDag * gHoev(iG, iMaat) * 100 + 0.5) / 100
+                End If
+                oOgb.getCellByPosition(iBasisKol, iRij).setString(aMaatLabel(iMaat))
+                oOgb.getCellByPosition(iBasisKol, iRij).CellBackColor = aMaatKleur(iMaat)
+                oOgb.getCellByPosition(iBasisKol + 1, iRij).setValue(nAantalDag)
+                If gHoev(iG, iMaat) > 0 Then
+                    oOgb.getCellByPosition(iBasisKol + 2, iRij).setString( _
+                        "x " & Format(gHoev(iG, iMaat), "0,00"))
+                End If
+                oOgb.getCellByPosition(iBasisKol + 3, iRij).setValue(dNodig)
+                If nWegDag > 0 Then
+                    oOgb.getCellByPosition(iBasisKol + 4, iRij).setString(nWegDag & " niet!")
+                Else
+                    oOgb.getCellByPosition(iBasisKol + 4, iRij).setString("alle")
+                End If
+                dSom = dSom + dNodig
+            Next iMaatVolg
+            iRij = iBasisRij + 5
+            oOgb.getCellByPosition(iBasisKol, iRij).setString(LCase(aDagLbl(iDag)) & " nodig:")
+            oOgb.getCellByPosition(iBasisKol + 3, iRij).setValue(Int(dSom * 100 + 0.5) / 100)
+            oOgb.getCellByPosition(iBasisKol + 3, iRij).CharWeight = _
+                com.sun.star.awt.FontWeight.BOLD
+            aNodigDag(iG, iDag) = Int(dSom * 100 + 0.5) / 100
+        Next iG
+    Next iDag
+
+    ' --- Oogst/bestel-verdeling ---
+    oOgb.getCellByPosition(0, OGB_TAB_LBL).setString("OOGST / BESTELLEN GROOTHANDEL")
+    oOgb.getCellByPosition(0, OGB_TAB_LBL).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oOgb.getCellByPosition(0, OGB_TAB_KOP).setString("Groente")
+    oOgb.getCellByPosition(1, OGB_TAB_KOP).setString("Nodig do")
+    oOgb.getCellByPosition(2, OGB_TAB_KOP).setString("Nodig vrij")
+    oOgb.getCellByPosition(3, OGB_TAB_KOP).setString("Bijbesteld (los)")
+    oOgb.getCellByPosition(4, OGB_TAB_KOP).setString("Totaal")
+    oOgb.getCellByPosition(5, OGB_TAB_KOP).setString("Oogst eigen teelt")
+    oOgb.getCellByPosition(6, OGB_TAB_KOP).setString("Bestellen")
+    oOgb.getCellByPosition(7, OGB_TAB_KOP).setString("Grooth.EUR")
+    oOgb.getCellByPosition(8, OGB_TAB_KOP).setString("Kost bestelling")
+    oOgb.getCellRangeByPosition(0, OGB_TAB_KOP, 8, OGB_TAB_KOP).CellBackColor = clGrijs
+    oOgb.getCellRangeByPosition(0, OGB_TAB_KOP, 8, OGB_TAB_KOP).CharWeight = _
+        com.sun.star.awt.FontWeight.BOLD
+
+    ' losse groenten (besteld-teller + grooth) uit de DB
+    Dim losNaam(OGB_LOS_MAX - 1)   As String
+    Dim losBesteld(OGB_LOS_MAX - 1) As Double
+    Dim losGrooth(OGB_LOS_MAX - 1) As Double
+    Dim losEenh(OGB_LOS_MAX - 1)   As String
+    Dim nLos As Integer
+    nLos = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT naam, besteld, COALESCE(groothandel_prijs, 0), eenheid FROM groenten " & _
+        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & " ORDER BY volgorde, naam")
+    Do While oRS.next()
+        If nLos < OGB_LOS_MAX Then
+            losNaam(nLos)    = oRS.getString(1)
+            losBesteld(nLos) = oRS.getDouble(2)
+            losGrooth(nLos)  = oRS.getDouble(3)
+            losEenh(nLos)    = oRS.getString(4)
+            nLos = nLos + 1
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+
+    Dim iUit As Integer
+    Dim sRijNr As String
+    iUit = 0
+    ' pakketgroenten eerst (bijbesteld-kolom = besteld-teller van dezelfde naam)
+    For iG = 0 To nG - 1
+        iRij = OGB_TAB0 + iUit
+        sRijNr = CStr(iRij + 1)
+        oOgb.getCellByPosition(0, iRij).setString(gNaam(iG))
+        oOgb.getCellByPosition(1, iRij).setValue(aNodigDag(iG, 0))
+        oOgb.getCellByPosition(2, iRij).setValue(aNodigDag(iG, 1))
+        For iSlot = 0 To nLos - 1
+            If losNaam(iSlot) = gNaam(iG) Then
+                oOgb.getCellByPosition(3, iRij).setValue(losBesteld(iSlot))
+                Exit For
+            End If
+        Next iSlot
+        oOgb.getCellByPosition(4, iRij).setFormula( _
+            "=ROUND(SUM(B" & sRijNr & ":D" & sRijNr & ");2)")
+        oOgb.getCellByPosition(6, iRij).setFormula( _
+            "=IF(E" & sRijNr & "="""";"""";ROUND(MAX(E" & sRijNr & "-F" & sRijNr & ";0);2))")
+        oOgb.getCellByPosition(7, iRij).setValue(gGrooth(iG))
+        oOgb.getCellByPosition(8, iRij).setFormula( _
+            "=IF(OR(G" & sRijNr & "="""";H" & sRijNr & "="""");"""";ROUND(G" & sRijNr & "*H" & sRijNr & ";2))")
+        oOgb.getCellByPosition(5, iRij).CellBackColor = clBlauw
+        iUit = iUit + 1
+    Next iG
+    ' losse groenten die geen pakketgroente zijn
+    For iSlot = 0 To nLos - 1
+        iG = -1
+        For iWg = 0 To nG - 1
+            If gNaam(iWg) = losNaam(iSlot) Then
+                iG = iWg
+                Exit For
+            End If
+        Next iWg
+        If iG = -1 Then
+            iRij = OGB_TAB0 + iUit
+            sRijNr = CStr(iRij + 1)
+            oOgb.getCellByPosition(0, iRij).setString(losNaam(iSlot))
+            oOgb.getCellByPosition(3, iRij).setValue(losBesteld(iSlot))
+            oOgb.getCellByPosition(4, iRij).setFormula( _
+                "=ROUND(SUM(B" & sRijNr & ":D" & sRijNr & ");2)")
+            oOgb.getCellByPosition(6, iRij).setFormula( _
+                "=IF(E" & sRijNr & "="""";"""";ROUND(MAX(E" & sRijNr & "-F" & sRijNr & ";0);2))")
+            If losGrooth(iSlot) > 0 Then
+                oOgb.getCellByPosition(7, iRij).setValue(losGrooth(iSlot))
+            End If
+            oOgb.getCellByPosition(8, iRij).setFormula( _
+                "=IF(OR(G" & sRijNr & "="""";H" & sRijNr & "="""");"""";ROUND(G" & sRijNr & "*H" & sRijNr & ";2))")
+            oOgb.getCellByPosition(5, iRij).CellBackColor = clBlauw
+            oOgb.getCellByPosition(9, iRij).setString(losEenh(iSlot))
+            iUit = iUit + 1
+        End If
+    Next iSlot
+
+    ' bewaarde oogst-waarden terugzetten (op naam)
+    For iRij = OGB_TAB0 To OGB_TAB0 + iUit - 1
+        sNaam = oOgb.getCellByPosition(0, iRij).getString()
+        For iWg = 0 To nBw - 1
+            If bwNaam(iWg) = sNaam Then
+                oOgb.getCellByPosition(5, iRij).setValue(bwOogst(iWg))
+                Exit For
+            End If
+        Next iWg
+    Next iRij
+
+    ' Kolombreedtes
+    oOgb.Columns.getByIndex(0).Width = 4200
+    For iKol = 1 To 5
+        oOgb.Columns.getByIndex(iKol).Width = 2100
+    Next iKol
+    oOgb.Columns.getByIndex(6).Width = 4200
+    For iKol = 7 To 10
+        oOgb.Columns.getByIndex(iKol).Width = 2100
+    Next iKol
+End Sub
+
+' ---------------------------------------------------------------------------
+' KlasLeesPakketgroentenJson — pakketgroenten-deel van de week_opslaan-payload
+' uit een klassiek document: verzamelt per unieke groente (volgorde = eerste
+' voorkomen, KG-blok eerst) de groothandelsprijs, groente_id en de
+' hoeveelheden per pakket_id (id's staan op de totaalrij van elk blok).
+' ---------------------------------------------------------------------------
+Function KlasLeesPakketgroentenJson(oDoc As Object, ByRef nPG As Integer) As String
+    Dim oSam   As Object
+    Dim iBlok  As Integer
+    Dim iSlot  As Integer
+    Dim iRij   As Integer
+    Dim iG     As Integer
+    Dim iZoek  As Integer
+    Dim sNaam  As String
+    Dim sJson  As String
+    Dim sHoev  As String
+    Dim gNaam(KLAS_SLOTS - 1)   As String
+    Dim gGrooth(KLAS_SLOTS - 1) As Double
+    Dim gGid(KLAS_SLOTS - 1)    As String
+    Dim gHoev(KLAS_SLOTS - 1, 3) As Double
+    Dim aBlokId(3) As Long
+    Dim nG As Integer
+
+    oSam = oDoc.Sheets.getByName(KLAS_TAB_SAM)
+    For iBlok = 0 To 3
+        aBlokId(iBlok) = CLng(oSam.getCellByPosition(15, _
+            KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1 + KLAS_SLOTS).getValue())
+    Next iBlok
+
+    nG = 0
+    For iBlok = 0 To 3
+        For iSlot = 0 To KLAS_SLOTS - 1
+            iRij = KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1 + iSlot
+            sNaam = Trim(oSam.getCellByPosition(3, iRij).getString())
+            If sNaam <> "" Then
+                iG = -1
+                For iZoek = 0 To nG - 1
+                    If gNaam(iZoek) = sNaam Then
+                        iG = iZoek
+                        Exit For
+                    End If
+                Next iZoek
+                If iG = -1 And nG < KLAS_SLOTS Then
+                    iG = nG
+                    gNaam(nG)   = sNaam
+                    gGrooth(nG) = oSam.getCellByPosition(4, iRij).getValue()
+                    gGid(nG)    = Trim(oSam.getCellByPosition(15, iRij).getString())
+                    For iZoek = 0 To 3
+                        gHoev(nG, iZoek) = 0
+                    Next iZoek
+                    nG = nG + 1
+                End If
+                If iG >= 0 Then
+                    gHoev(iG, iBlok) = oSam.getCellByPosition(6, iRij).getValue()
+                    If gGrooth(iG) = 0 Then
+                        gGrooth(iG) = oSam.getCellByPosition(4, iRij).getValue()
+                    End If
+                End If
+            End If
+        Next iSlot
+    Next iBlok
+
+    sJson = ""
+    For iG = 0 To nG - 1
+        sHoev = ""
+        For iBlok = 0 To 3
+            If gHoev(iG, iBlok) > 0 And aBlokId(iBlok) > 0 Then
+                If sHoev <> "" Then sHoev = sHoev & ","
+                sHoev = sHoev & """" & aBlokId(iBlok) & """:" & SamJsNum(gHoev(iG, iBlok))
+            End If
+        Next iBlok
+        If sJson <> "" Then sJson = sJson & ","
+        sJson = sJson & "{""groente_naam"":""" & SamJsonTekst(gNaam(iG)) & """," & _
+                """groothandel_prijs"":" & SamJsNum(gGrooth(iG)) & "," & _
+                """volgorde"":" & (iG + 1)
+        If gGid(iG) <> "" And IsNumeric(gGid(iG)) Then
+            sJson = sJson & ",""groente_id"":" & CLng(gGid(iG))
+        End If
+        sJson = sJson & ",""hoeveelheden"":{" & sHoev & "}}"
+    Next iG
+
+    nPG = nG
+    KlasLeesPakketgroentenJson = sJson
+End Function
