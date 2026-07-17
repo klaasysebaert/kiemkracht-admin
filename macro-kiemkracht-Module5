@@ -381,6 +381,7 @@ Sub SchrijfSamenstelling()
             nPG = nPG + 1
         End If
     Next iSlot
+    End If   ' Not bKlassiek
 
     If nPG > 12 Then
         iAntw = MsgBox("Er staan " & nPG & " pakketgroenten in het document; het maximum " & _
