@@ -1126,7 +1126,6 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     Do While oRS.next()
         sNaam = oRS.getString(1)
         iMaat = SamMaatIdx(oRS.getString(2))
-        Dim iVind As Integer
         iVind = -1
         For iSlot = 0 To SAM_SLOTS - 1
             If oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString() = sNaam Then
