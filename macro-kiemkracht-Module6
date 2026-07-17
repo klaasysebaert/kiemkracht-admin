@@ -661,9 +661,8 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
         Next iSlot
     Next iBlok
 
-    ' --- 3. OogstBestel-tab ---
-    KlasVulOogstBestel(oDoc, oConn, iWeek, iJaar, aAant(), wgNaam(), wgMaat(), _
-                       wgDon(), wgVrij(), nWg)
+    ' --- 3. OogstBestel-tab (leest mOgbAant/mWg* op moduleniveau) ---
+    KlasVulOogstBestel(oDoc, oConn, iWeek, iJaar)
 
     ' --- 4. Besteld-tellers op de Los-tab ---
     SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
