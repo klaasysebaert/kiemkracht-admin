@@ -675,9 +675,7 @@ End Sub
 ' + de oogst/bestel-verdeling. Bewaart ingevulde oogst-waarden op naam.
 ' ---------------------------------------------------------------------------
 Private Sub KlasVulOogstBestel(oDoc As Object, oConn As Object, _
-                               iWeek As Integer, iJaar As Integer, _
-                               aAant() As Long, wgNaam() As String, wgMaat() As Integer, _
-                               wgDon() As Long, wgVrij() As Long, nWg As Integer)
+                               iWeek As Integer, iJaar As Integer)
     Dim oOgb   As Object
     Dim oSam   As Object
     Dim oStmt  As Object
