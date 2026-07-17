@@ -8,7 +8,8 @@ PATHS = [BASE + r"\macro-kiemkracht-Module1",
          BASE + r"\macro-kiemkracht-Module2",
          BASE + r"\macro-kiemkracht-Module3",
          BASE + r"\macro-kiemkracht-Module4",
-         BASE + r"\macro-kiemkracht-Module5"]
+         BASE + r"\macro-kiemkracht-Module5",
+         BASE + r"\macro-kiemkracht-Module6"]
 
 def boot(profile):
     args = [SOFFICE, "--headless", "--norestore", "--invisible", "--nologo",
