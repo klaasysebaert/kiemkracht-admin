@@ -1160,6 +1160,34 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     End If
 End Sub
 
+' ---------------------------------------------------------------------------
+' Besteld-tellers op de Los-tab verversen (kolom I, match op naam).
+' Gedeeld door de tab-layout (Module5) en de klassieke layout (Module6).
+' ---------------------------------------------------------------------------
+Sub SamVerversLosBesteld(oDoc As Object, oConn As Object, _
+                         iWeek As Integer, iJaar As Integer)
+    Dim oLos  As Object
+    Dim oStmt As Object
+    Dim oRS   As Object
+    Dim iSlot As Integer
+    Dim sNaam As String
+    oLos = oDoc.Sheets.getByName(TAB_LOS)
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT naam, besteld FROM groenten " & _
+        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek)
+    Do While oRS.next()
+        sNaam = oRS.getString(1)
+        For iSlot = 0 To LOS_SLOTS - 1
+            If oLos.getCellByPosition(0, LOS_RIJ0 + iSlot).getString() = sNaam Then
+                oLos.getCellByPosition(8, LOS_RIJ0 + iSlot).setValue(oRS.getDouble(2))
+                Exit For
+            End If
+        Next iSlot
+    Loop
+    oRS.close() : oStmt.close()
+End Sub
+
 ' ===========================================================================
 ' Helpers
 ' ===========================================================================
