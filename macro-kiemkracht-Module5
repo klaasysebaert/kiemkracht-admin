@@ -342,10 +342,19 @@ Sub SchrijfSamenstelling()
         If iAntw <> 6 Then Exit Sub
     End If
 
-    ' --- Pakketgroenten uit de Samenstelling-tab ---
+    ' --- Pakketgroenten (tab-layout: vaste slots; klassiek: vier maat-blokken) ---
     sPGJson = ""
     nPG = 0
     iVolg = 0
+    If bKlassiek Then
+        sPGJson = KlasLeesPakketgroentenJson(oDoc, nPG)
+        If nPG < 0 Then
+            MsgBox "pakket_id's ontbreken op de blok-totaalrijen — document eerst " & _
+                   "(her)laden.", 16, "Samenstelling"
+            Exit Sub
+        End If
+    End If
+    If Not bKlassiek Then
     For iSlot = 0 To SAM_SLOTS - 1
         iRij = SAM_RIJ0 + iSlot
         sNaam = Trim(oSam.getCellByPosition(0, iRij).getString())
