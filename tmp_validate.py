@@ -54,6 +54,7 @@ def run(label, m1code, probe_mod, probe_fn, probe_args):
         with open(PATHS[1], encoding="utf-8") as f: codes["Module2"] = f.read()
         with open(PATHS[2], encoding="utf-8") as f: codes["Module3"] = f.read()
         with open(PATHS[3], encoding="utf-8") as f: codes["Module4"] = f.read()
+        with open(PATHS[4], encoding="utf-8") as f: codes["Module5"] = f.read()
         for n, c in codes.items(): lib.insertByName(n, c)
         sp = doc.getScriptProvider()
         url = "vnd.sun.star.script:CT.%s.%s?language=Basic&location=document" % (probe_mod, probe_fn)
