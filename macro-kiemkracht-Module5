@@ -102,6 +102,7 @@ Sub MaakSamenstellingDoc()
     Dim oConn       As Object
     Dim oComp       As Object
     Dim oEnum       As Object
+    Dim oTabTmp     As Object
     Dim aLaadProps()
 
     sOmg = BepaalOmgeving()
