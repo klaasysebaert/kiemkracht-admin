@@ -612,29 +612,29 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
         "GROUP BY 1, 2, 3")
     Do While oRS.next()
         iMaat = SamMaatIdx(oRS.getString(2))
-        If iMaat >= 0 And nWg < 200 Then
+        If iMaat >= 0 And mNWg < 200 Then
             iVind = -1
-            For iWg = 0 To nWg - 1
-                If wgNaam(iWg) = oRS.getString(1) And wgMaat(iWg) = iMaat Then
+            For iWg = 0 To mNWg - 1
+                If mWgNaam(iWg) = oRS.getString(1) And mWgMaat(iWg) = iMaat Then
                     iVind = iWg
                     Exit For
                 End If
             Next iWg
             If iVind = -1 Then
-                iVind = nWg
-                wgNaam(nWg) = oRS.getString(1)
-                wgMaat(nWg) = iMaat
-                wgDon(nWg) = 0 : wgVrij(nWg) = 0 : wgOnb(nWg) = 0
-                nWg = nWg + 1
+                iVind = mNWg
+                mWgNaam(mNWg) = oRS.getString(1)
+                mWgMaat(mNWg) = iMaat
+                mWgDon(mNWg) = 0 : mWgVrij(mNWg) = 0 : mWgOnb(mNWg) = 0
+                mNWg = mNWg + 1
             End If
             sDag = oRS.getString(3)
             nTel = oRS.getLong(4)
             If sDag = "donderdag" Then
-                wgDon(iVind) = wgDon(iVind) + nTel
+                mWgDon(iVind) = mWgDon(iVind) + nTel
             ElseIf sDag = "vrijdag" Then
-                wgVrij(iVind) = wgVrij(iVind) + nTel
+                mWgVrij(iVind) = mWgVrij(iVind) + nTel
             Else
-                wgOnb(iVind) = wgOnb(iVind) + nTel
+                mWgOnb(iVind) = mWgOnb(iVind) + nTel
             End If
         End If
     Loop
