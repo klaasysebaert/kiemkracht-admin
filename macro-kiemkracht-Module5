@@ -1176,7 +1176,8 @@ End Sub
 ' ===========================================================================
 
 ' Tabblad ophalen; aanmaken (achteraan) als het nog niet bestaat.
-Private Function SamZorgTab(oDoc As Object, sTabNaam As String) As Object
+' (publiek: ook gebruikt door de klassieke layout in Module6)
+Function SamZorgTab(oDoc As Object, sTabNaam As String) As Object
     If Not oDoc.Sheets.hasByName(sTabNaam) Then
         oDoc.Sheets.insertNewByName(sTabNaam, oDoc.Sheets.Count)
     End If
