@@ -169,3 +169,23 @@ Sub StartMailSelectie()
     ReloadKiemkracht()
     MailSelectie()
 End Sub
+
+Sub StartMaakSamenstellingDoc()
+    ReloadKiemkracht()
+    MaakSamenstellingDoc()
+End Sub
+
+Sub StartHerlaadSamenstelling()
+    ReloadKiemkracht()
+    HerlaadSamenstelling()
+End Sub
+
+Sub StartSchrijfSamenstelling()
+    ReloadKiemkracht()
+    SchrijfSamenstelling()
+End Sub
+
+Sub StartVerversBestellijst()
+    ReloadKiemkracht()
+    VerversBestellijst()
+End Sub
