@@ -504,12 +504,11 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
                 " LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt "
 
     ' --- 1. Aantal pakketten per maat per dag ---
-    Dim aAant(3, 1)   As Long    ' (maat, 0=don/1=vrij)
     Dim aAantTot(3)   As Long
     For iMaat = 0 To 3
         aAantTot(iMaat) = 0
-        aAant(iMaat, 0) = 0
-        aAant(iMaat, 1) = 0
+        mOgbAant(iMaat, 0) = 0
+        mOgbAant(iMaat, 1) = 0
     Next iMaat
 
     sSql = "WITH vb_week AS (" & _
