@@ -1278,9 +1278,19 @@ Function SamJsonTekst(sTekst As String) As String
     SamJsonTekst = sUit
 End Function
 
-' Getal → JSON (Str gebruikt altijd punt-decimaal, ongeacht de locale)
+' Getal → JSON (Str gebruikt altijd punt-decimaal, ongeacht de locale).
+' LET OP: Str(0.9) geeft ".9" — JSON eist een voorloopnul, anders faalt
+' json_decode server-side op de hele body (getest: API antwoordt dan
+' "Ongeldige jaar/week" en er wordt niets opgeslagen).
 Function SamJsNum(dWaarde As Double) As String
-    SamJsNum = Trim(Str(dWaarde))
+    Dim sUit As String
+    sUit = Trim(Str(dWaarde))
+    If Left(sUit, 1) = "." Then
+        sUit = "0" & sUit
+    ElseIf Left(sUit, 2) = "-." Then
+        sUit = "-0." & Mid(sUit, 3)
+    End If
+    SamJsNum = sUit
 End Function
 
 Function SamJsBool(bWaarde As Boolean) As String
