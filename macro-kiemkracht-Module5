@@ -886,7 +886,7 @@ Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
 
     oSheet.getCellByPosition(0, NOT_RIJ_BEGLABEL).setString("Begeleidende tekst (aanbod-mail):")
     oSheet.getCellByPosition(0, NOT_RIJ_BEGLABEL).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oSheet.getCellByPosition(0, NOT_RIJ_BEG).setString(mSamBegTekst)
+    oSheet.getCellByPosition(0, NOT_RIJ_BEG).setString(sBegTekst)
     oSheet.getCellByPosition(0, NOT_RIJ_BEG).IsTextWrapped = True
     oSheet.getCellByPosition(0, NOT_RIJ_BEG).CellBackColor = clInput
 End Sub
