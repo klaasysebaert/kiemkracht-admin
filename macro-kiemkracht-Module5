@@ -275,9 +275,11 @@ Sub SchrijfSamenstelling()
     Dim iAntw    As Integer
     Dim iRij     As Integer
     Dim oHttp    As Object
+    Dim bKlassiek As Boolean
 
     oDoc = ThisComponent
-    If Not SamIsSamenstellingDoc(oDoc) Then
+    bKlassiek = SamIsKlassiekDoc(oDoc)
+    If Not (bKlassiek Or SamIsSamenstellingDoc(oDoc)) Then
         MsgBox "Het actieve document is geen samenstelling-bestand.", 48, "Samenstelling"
         Exit Sub
     End If
@@ -288,9 +290,15 @@ Sub SchrijfSamenstelling()
     oLos = oDoc.Sheets.getByName(TAB_LOS)
     oNot = oDoc.Sheets.getByName(TAB_NOT)
 
-    iWeek  = CInt(oSam.getCellByPosition(3, 0).getValue())
-    iJaar  = CInt(oSam.getCellByPosition(5, 0).getValue())
-    dMarge = oSam.getCellByPosition(1, 1).getValue()
+    If bKlassiek Then
+        iWeek  = CInt(oSam.getCellByPosition(9, 0).getValue())
+        iJaar  = CInt(oSam.getCellByPosition(11, 0).getValue())
+        dMarge = oSam.getCellByPosition(13, 0).getValue()
+    Else
+        iWeek  = CInt(oSam.getCellByPosition(3, 0).getValue())
+        iJaar  = CInt(oSam.getCellByPosition(5, 0).getValue())
+        dMarge = oSam.getCellByPosition(1, 1).getValue()
+    End If
     If iWeek < 1 Or iWeek > 53 Or iJaar < 2020 Then
         MsgBox "Week/jaar niet leesbaar uit D1/F1.", 16, "Samenstelling"
         Exit Sub
