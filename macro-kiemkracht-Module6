@@ -49,6 +49,16 @@ Private mKlasStatus      As String
 Private mKlasMarge       As Double
 Private mKlasBegTekst    As String
 
+' Weekcijfers-momentopname (gezet door KlasVulWeekcijfers; op moduleniveau
+' omdat StarBasic arrays niet betrouwbaar als Sub-parameter doorgeeft)
+Private mOgbAant(3, 1)   As Long     ' (maat, 0=don/1=vrij)
+Private mWgNaam(199)     As String   ' weglatingen per (groente, maat)
+Private mWgMaat(199)     As Integer
+Private mWgDon(199)      As Long
+Private mWgVrij(199)     As Long
+Private mWgOnb(199)      As Long     ' dag onbekend -> telt enkel in TOT mee
+Private mNWg             As Integer
+
 ' ===========================================================================
 ' MaakSamenstellingKlassiek — nieuw klassiek samenstelling-bestand
 ' ===========================================================================
