@@ -793,13 +793,13 @@ Private Sub KlasVulOogstBestel(oDoc As Object, oConn As Object, _
                 iMaat = 3 - iMaatVolg              ' MINI, EGG, GG, KG
                 iRij = iBasisRij + 1 + iMaatVolg
                 nWegDag = 0
-                For iWg = 0 To nWg - 1
-                    If wgNaam(iWg) = gNaam(iG) And wgMaat(iWg) = iMaat Then
-                        If iDag = 0 Then nWegDag = wgDon(iWg) Else nWegDag = wgVrij(iWg)
+                For iWg = 0 To mNWg - 1
+                    If mWgNaam(iWg) = gNaam(iG) And mWgMaat(iWg) = iMaat Then
+                        If iDag = 0 Then nWegDag = mWgDon(iWg) Else nWegDag = mWgVrij(iWg)
                         Exit For
                     End If
                 Next iWg
-                nAantalDag = aAant(iMaat, iDag) - nWegDag
+                nAantalDag = mOgbAant(iMaat, iDag) - nWegDag
                 If nAantalDag < 0 Then nAantalDag = 0
                 dNodig = 0
                 If gHoev(iG, iMaat) > 0 Then
