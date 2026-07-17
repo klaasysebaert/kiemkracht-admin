@@ -521,25 +521,36 @@ Sub VerversBestellijst()
     Dim oConn As Object
     Dim iWeek As Integer
     Dim iJaar As Integer
+    Dim bKlassiek As Boolean
 
     oDoc = ThisComponent
-    If Not SamIsSamenstellingDoc(oDoc) Then
+    bKlassiek = SamIsKlassiekDoc(oDoc)
+    If Not (bKlassiek Or SamIsSamenstellingDoc(oDoc)) Then
         MsgBox "Het actieve document is geen samenstelling-bestand.", 48, "Bestellijst"
         Exit Sub
     End If
     If Not SamOmgevingOk(oDoc) Then Exit Sub
 
-    iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(3, 0).getValue())
-    iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(5, 0).getValue())
+    If bKlassiek Then
+        iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(9, 0).getValue())
+        iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(11, 0).getValue())
+    Else
+        iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(3, 0).getValue())
+        iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(5, 0).getValue())
+    End If
 
     On Error GoTo SamVervFout
     oConn = MaakDBVerbinding()
-    SamVulBestellijst(oDoc, oConn, iWeek, iJaar)
+    If bKlassiek Then
+        KlasVulWeekcijfers(oDoc, oConn, iWeek, iJaar)
+    Else
+        SamVulBestellijst(oDoc, oConn, iWeek, iJaar)
+    End If
     oConn.close()
     On Error GoTo 0
     SluitSSHTunnels()
     oDoc.calculateAll()
-    MsgBox "Bestellijst ververst voor week " & iWeek & "/" & iJaar & ".", 64, "Klaar"
+    MsgBox "Aantallen/oogst-bestellijst ververst voor week " & iWeek & "/" & iJaar & ".", 64, "Klaar"
     Exit Sub
 
 SamVervFout:
