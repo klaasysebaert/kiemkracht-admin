@@ -1146,20 +1146,7 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     oRS.close() : oStmt.close()
 
     ' --- 3. Besteld-tellers verversen op de Los-tab (kolom I) ---
-    oStmt = oConn.createStatement()
-    oRS = oStmt.executeQuery( _
-        "SELECT naam, besteld FROM groenten " & _
-        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek)
-    Do While oRS.next()
-        sNaam = oRS.getString(1)
-        For iSlot = 0 To LOS_SLOTS - 1
-            If oLos.getCellByPosition(0, LOS_RIJ0 + iSlot).getString() = sNaam Then
-                oLos.getCellByPosition(8, LOS_RIJ0 + iSlot).setValue(oRS.getDouble(2))
-                Exit For
-            End If
-        Next iSlot
-    Loop
-    oRS.close() : oStmt.close()
+    SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
 
     ' Tijdstempel + eventuele niet-gematchte weglating-groenten
     oBst.getCellByPosition(6, BST_RIJ_AANT).setString( _
