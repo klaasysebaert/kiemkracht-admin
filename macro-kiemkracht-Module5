@@ -308,15 +308,18 @@ Sub SchrijfSamenstelling()
         Exit Sub
     End If
 
-    ' pakket_id's uit rij 3 (naast de maat-labels)
+    ' pakket_id's uit rij 3 (tab-layout; de klassieke layout leest ze zelf
+    ' van de blok-totaalrijen in KlasLeesPakketgroentenJson)
     Dim aMaatId(3) As Long
-    For iMaat = 0 To 3
-        aMaatId(iMaat) = CLng(oSam.getCellByPosition(4 + iMaat * 2, SAM_RIJ_MAAT).getValue())
-        If aMaatId(iMaat) = 0 Then
-            MsgBox "pakket_id ontbreekt in rij 3 — document eerst (her)laden.", 16, "Samenstelling"
-            Exit Sub
-        End If
-    Next iMaat
+    If Not bKlassiek Then
+        For iMaat = 0 To 3
+            aMaatId(iMaat) = CLng(oSam.getCellByPosition(4 + iMaat * 2, SAM_RIJ_MAAT).getValue())
+            If aMaatId(iMaat) = 0 Then
+                MsgBox "pakket_id ontbreekt in rij 3 — document eerst (her)laden.", 16, "Samenstelling"
+                Exit Sub
+            End If
+        Next iMaat
+    End If
 
     ' --- Statuscheck in de DB (en meteen de omgevings-/tabelcontrole) ---
     On Error GoTo SamSchrijfDbFout
