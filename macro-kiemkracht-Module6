@@ -590,8 +590,8 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
 
     For iMaat = 0 To 3
         oSheet.getCellByPosition(4 + iMaat, 2).setValue(aAantTot(iMaat))
-        oSheet.getCellByPosition(4 + iMaat, 3).setValue(aAant(iMaat, 0))
-        oSheet.getCellByPosition(4 + iMaat, 4).setValue(aAant(iMaat, 1))
+        oSheet.getCellByPosition(4 + iMaat, 3).setValue(mOgbAant(iMaat, 0))
+        oSheet.getCellByPosition(4 + iMaat, 4).setValue(mOgbAant(iMaat, 1))
     Next iMaat
 
     ' --- 2. Weglatingen per (groente, maat, dag) ---

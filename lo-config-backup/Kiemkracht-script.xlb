@@ -6,4 +6,5 @@
  <library:element library:name="Module3"/>
  <library:element library:name="Module4"/>
  <library:element library:name="Module5"/>
+ <library:element library:name="Module6"/>
 </library:library>

@@ -30,7 +30,7 @@ Sub ReloadKiemkracht()
         GlobalScope.BasicLibraries.loadLibrary("Kiemkracht")
     End If
     oLib = GlobalScope.BasicLibraries.getByName("Kiemkracht")
-    For Each sModule In Array("Module1", "Module2", "Module3", "Module4", "Module5")
+    For Each sModule In Array("Module1", "Module2", "Module3", "Module4", "Module5", "Module6")
         sPath = Environ("APPDATA") &amp; "\LibreOffice\4\user\basic\Kiemkracht\" &amp; sModule &amp; ".bas"
         If Not FileExists(sPath) Then
             MsgBox "Bestand niet gevonden: " &amp; sPath, 16, "Fout"
@@ -175,6 +175,11 @@ End Sub
 Sub StartMaakSamenstellingDoc()
     ReloadKiemkracht()
     MaakSamenstellingDoc()
+End Sub
+
+Sub StartMaakSamenstellingKlassiek()
+    ReloadKiemkracht()
+    MaakSamenstellingKlassiek()
 End Sub
 
 Sub StartHerlaadSamenstelling()
