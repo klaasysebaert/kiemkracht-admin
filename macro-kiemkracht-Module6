@@ -82,11 +82,6 @@ Sub MaakSamenstellingKlassiek()
     Dim aLaadProps()
 
     sOmg = BepaalOmgeving()
-    If sOmg = "prod" Then
-        MsgBox "De weekcockpit is nog niet op prod uitgerold. Werk met " & _
-               "kiemkracht-data-dev.ods of wacht op de prod-rollout.", 48, "Samenstelling"
-        Exit Sub
-    End If
 
     iVoorstel = DatePart("ww", Now() + 7, 2, 2)
     sWeekIn = InputBox("Weeknummer voor de samenstelling (ENTER = " & iVoorstel & "):", _
