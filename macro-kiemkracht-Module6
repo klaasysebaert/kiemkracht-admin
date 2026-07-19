@@ -850,7 +850,7 @@ Private Sub KlasVulOogstBestel(oDoc As Object, oConn As Object, _
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT naam, besteld, COALESCE(groothandel_prijs, 0), eenheid FROM groenten " & _
-        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & " ORDER BY volgorde, naam")
+        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & " ORDER BY volgorde, id")
     Do While oRS.next()
         If nLos < OGB_LOS_MAX Then
             losNaam(nLos)    = oRS.getString(1)
