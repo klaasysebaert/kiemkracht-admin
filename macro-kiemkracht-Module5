@@ -106,13 +106,6 @@ Sub MaakSamenstellingDoc()
     Dim aLaadProps()
 
     sOmg = BepaalOmgeving()
-    If sOmg = "prod" Then
-        MsgBox "De weekcockpit is nog niet op prod uitgerold (migraties + " & _
-               "cockpit-api ontbreken daar)." & Chr(10) & _
-               "Sluit kiemkracht-data.ods en werk met kiemkracht-data-dev.ods, " & _
-               "of wacht op de cockpit-prod-rollout.", 48, "Samenstelling"
-        Exit Sub
-    End If
 
     ' Week vragen; voorstel = de komende week (samenstelling wordt vooraf gemaakt)
     iVoorstel = DatePart("ww", Now() + 7, 2, 2)
