@@ -833,7 +833,7 @@ Sub SamBouwTabLos(oDoc As Object, oConn As Object, _
         "SELECT naam, prijs, groothandel_prijs, eenheid, x_notatie, stap, " & _
         "aantal_beschikbaar, max_per_klant, besteld " & _
         "FROM groenten WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & _
-        " ORDER BY volgorde, naam")
+        " ORDER BY volgorde, id")   ' id = invoegvolgorde; Sheet-weken hebben volgorde=0
     Do While oRS.next()
         If nLos < LOS_SLOTS Then
             iRij = LOS_RIJ0 + nLos
