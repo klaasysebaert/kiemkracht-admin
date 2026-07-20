@@ -4257,7 +4257,7 @@ Sub VerwerkAfhaalpuntVerlof()
     Dim nRij As Integer : nRij = 0
 
     Dim r As Integer
-    For r = DATA_RIJ0 To DATA_RIJ0 + MAX_RIJ - 1
+    For r = iDataRij0 To iDataRij0 + MAX_RIJ - 1
         Dim sAp     As String : sAp     = Trim(oSheet.getCellByPosition(iApCol,     r).getString())
         Dim sVj     As String : sVj     = Trim(oSheet.getCellByPosition(iVanafJCol, r).getString())
         Dim sVw     As String : sVw     = Trim(oSheet.getCellByPosition(iVanafWCol, r).getString())
@@ -4269,12 +4269,13 @@ Sub VerwerkAfhaalpuntVerlof()
 
         If sAp <> "" Or sVj <> "" Or sVw <> "" Or sTj <> "" Or sTw <> "" Or sAltRaw <> "" Then
             If sAp = "" Or sVj = "" Or sVw = "" Or sTj = "" Or sTw = "" Or sAltRaw = "" Then
-                MsgBox "Rij " & (r + 1) & ": afhaalpunt, vanaf-jaar, vanaf-week, tot-jaar, " & _
-                       "tot-week en alternatieven moeten allemaal ingevuld zijn.", 16, "Fout"
+                MsgBox "Rij " & (r + 1) & ": afhaalpunt, gesloten-vanaf-jaar, gesloten-vanaf-week, " & _
+                       "open-vanaf-jaar, open-vanaf-week en alternatieven moeten allemaal ingevuld zijn.", 16, "Fout"
                 Exit Sub
             End If
             If Not IsNumeric(sVj) Or Not IsNumeric(sVw) Or Not IsNumeric(sTj) Or Not IsNumeric(sTw) Then
-                MsgBox "Rij " & (r + 1) & ": vanaf-jaar/vanaf-week/tot-jaar/tot-week moeten getallen zijn.", 16, "Fout"
+                MsgBox "Rij " & (r + 1) & ": gesloten-vanaf-jaar/gesloten-vanaf-week/open-vanaf-jaar/" & _
+                       "open-vanaf-week moeten getallen zijn.", 16, "Fout"
                 Exit Sub
             End If
             Dim iVj As Integer : iVj = CInt(sVj)
@@ -4282,11 +4283,12 @@ Sub VerwerkAfhaalpuntVerlof()
             Dim iTj As Integer : iTj = CInt(sTj)
             Dim iTw As Integer : iTw = CInt(sTw)
             If iVw < 1 Or iVw > 53 Or iTw < 1 Or iTw > 53 Then
-                MsgBox "Rij " & (r + 1) & ": vanaf-week/tot-week moet tussen 1 en 53 liggen.", 16, "Fout"
+                MsgBox "Rij " & (r + 1) & ": gesloten-vanaf-week/open-vanaf-week moet tussen 1 en 53 liggen.", 16, "Fout"
                 Exit Sub
             End If
             If (iTj * 100 + iTw) <= (iVj * 100 + iVw) Then
-                MsgBox "Rij " & (r + 1) & ": tot-jaar/tot-week moet ná vanaf-jaar/vanaf-week liggen.", 16, "Fout"
+                MsgBox "Rij " & (r + 1) & ": open-vanaf-jaar/open-vanaf-week moet ná " & _
+                       "gesloten-vanaf-jaar/gesloten-vanaf-week liggen.", 16, "Fout"
                 Exit Sub
             End If
 
