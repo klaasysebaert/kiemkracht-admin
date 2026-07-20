@@ -1429,6 +1429,25 @@ Sub MaakWeekbestand()
             oSheet.getCellByPosition(cAnder, r).setString(bOpm(b))
         End If
 
+        ' Afhaalpunt-wissel deze week (backlog #27): markeren in vragen_opmerkingen,
+        ' zodat het blijvend in het weekbestand staat (niet enkel in de popup).
+        If Trim(bKlantId(b)) <> "" Then
+            Dim lRijKId As Long : lRijKId = CLng(Val(bKlantId(b)))
+            Dim iWm As Integer
+            For iWm = 0 To nWissel - 1
+                If wisselKId(iWm) = lRijKId Then
+                    Dim sWisselMark As String
+                    sWisselMark = "tijdelijk hier — thuis: " & wisselThuis(iWm)
+                    If Trim(bOpm(b)) <> "" Then
+                        oSheet.getCellByPosition(cOpm, r).setString(bOpm(b) & " / " & sWisselMark)
+                    Else
+                        oSheet.getCellByPosition(cOpm, r).setString(sWisselMark)
+                    End If
+                    Exit For
+                End If
+            Next iWm
+        End If
+
         ' klant_id (kolom P) — vaste kolom net voor de centrale datumkolom
         If Trim(bKlantId(b)) <> "" Then
             oSheet.getCellByPosition(cWBest, r).setValue(Val(bKlantId(b)))
