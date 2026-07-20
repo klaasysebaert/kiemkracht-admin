@@ -425,7 +425,7 @@ End Sub
 ' ---------------------------------------------------------------------------
 Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Dim oKB As Object, oStmt As Object, oRS As Object, oRngA As Object, oRngB As Object
-    Dim kbKol(19) As String
+    Dim kbKol(20) As String
     Dim j As Integer
     Dim nRows As Long, r As Long
     Dim sVal As String
@@ -441,6 +441,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     kbKol(14) = "opmerking_status" : kbKol(15) = "nooit_groenten"
     kbKol(16) = "email_afrekening"       : kbKol(17) = "voornaam_afrekening"
     kbKol(18) = "familienaam_afrekening" : kbKol(19) = "nooit_afrekening"
+    kbKol(20) = "afhaalpunt_alternatieven"   ' backlog #27, CSV van afhaalpunt-namen
 
     If oSheets.hasByName("klanten_beheer") Then
         oKB = oSheets.getByName("klanten_beheer")
@@ -449,9 +450,9 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         oKB = oSheets.getByName("klanten_beheer")
     End If
 
-    ' F-J (5-9) en L-Z (11-25) wissen; K (10) bevat gebruikersformules
+    ' F-J (5-9) en L-AA (11-26) wissen; K (10) bevat gebruikersformules
     oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
-    oKB.getCellRangeByPosition(11, 0, 25, 10000).clearContents(7)
+    oKB.getCellRangeByPosition(11, 0, 26, 10000).clearContents(7)
 
     ' Aantal rijen vooraf, om de sjablonen op maat te maken
     mStap = "klanten_beheer — rijen tellen"
