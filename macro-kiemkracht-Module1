@@ -526,6 +526,25 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     mStap = "klanten_beheer — wegschrijven"
     oRngA.setDataArray(aOutA)
     oRngB.setDataArray(aOutB)
+
+    ' Kolom AB (27) = verborgen "vorige waarde"-snapshot van de alternatieven
+    ' (kolom AA, laatste veld in aOutB). SchrijfWijzigingenTerug vergelijkt
+    ' AA tegen AB om een bewerking te detecteren — afhaalpunt_alternatieven
+    ' is géén kolom op klanten, dus het klanten-tabblad kan hier niet als
+    ' vergelijkingsbasis dienen zoals bij de andere velden.
+    mStap = "klanten_beheer — alternatieven-snapshot"
+    Dim oRngC As Object : oRngC = oKB.getCellRangeByPosition(27, 0, 27, nRows)
+    Dim aOutC As Variant : aOutC = oRngC.getDataArray()
+    Dim aRijC As Variant
+    aRijC = aOutC(0) : aRijC(0) = "afhaalpunt_alternatieven_vorig (NIET AANPASSEN)" : aOutC(0) = aRijC
+    Dim rC As Long
+    For rC = 1 To UBound(aOutC)
+        aRijB = aOutB(rC)
+        aRijC = aOutC(rC)
+        aRijC(0) = aRijB(15)
+        aOutC(rC) = aRijC
+    Next rC
+    oRngC.setDataArray(aOutC)
 End Sub
 
 
