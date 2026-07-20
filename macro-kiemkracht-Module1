@@ -857,8 +857,8 @@ Sub MaakWeekbestand()
         "COALESCE(NULLIF(k.voornaam,''), b.voornaam) AS voornaam, " & _
         "COALESCE(NULLIF(k.familienaam,''), b.familienaam) AS familienaam, " & _
         "b.klant_email, " & _
-        "COALESCE(kap.naam, b.afhaalpunt) AS afhaalpunt, " & _
-        "COALESCE(kap.dag_klaarmaken, b.leverdag) AS leverdag, " & _
+        "COALESCE(kwap.naam, kap.naam, b.afhaalpunt) AS afhaalpunt, " & _
+        "COALESCE(kwap.dag_klaarmaken, kap.dag_klaarmaken, b.leverdag) AS leverdag, " & _
         "b.pakket, b.pakket_inhoud, " & _
         "b.abonnement_wijziging, b.vragen_opmerkingen, " & _
         "COALESCE(k.klant_type,'') AS klant_type, " & _
@@ -866,14 +866,16 @@ Sub MaakWeekbestand()
         "COALESCE(k.telefoon,'') AS telefoon, " & _
         "COALESCE(k.id::text,'') AS klant_id, " & _
         "COALESCE(k.type,'') AS type, " & _
-        "COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
-        "COALESCE(kap.dag_afhaling, bap.dag_afhaling,'') AS dag_afhaling, " & _
-        "COALESCE(kap.id_intern, bap.id_intern, 9999) AS id_intern_sort, " & _
+        "COALESCE(kwap.dag_klaarmaken, kap.dag_klaarmaken, bap.dag_klaarmaken,'') AS dag_klaarmaken, " & _
+        "COALESCE(kwap.dag_afhaling, kap.dag_afhaling, bap.dag_afhaling,'') AS dag_afhaling, " & _
+        "COALESCE(kwap.id_intern, kap.id_intern, bap.id_intern, 9999) AS id_intern_sort, " & _
         "COALESCE(k.id, 999999) AS klant_id_sort " & _
         "FROM bestellingen b " & _
         "LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL AND k.email1 = b.klant_email)) " & _
         "LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
         "LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt " & _
+        "LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & " " & _
+        "LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id " & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
         " AND NOT EXISTS (SELECT 1 FROM annulaties a " & _
         "   WHERE a.jaar = " & iJaar & " AND a.week_annulatie = " & iWeek & _
