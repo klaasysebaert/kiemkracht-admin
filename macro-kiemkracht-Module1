@@ -4181,11 +4181,13 @@ End Sub
 
 ' ---------------------------------------------------------------------------
 ' VerwerkAfhaalpuntVerlof — backlog #27. Leest het tabblad 'afhaalpunt_verlof'
-' (kolommen via kophoek gedetecteerd: afhaalpunt / vanaf-jaar / vanaf-week /
-' tot-jaar / tot-week / alternatieven / opmerking) en schrijft elke rij als
-' een sluiting weg naar afhaalpunt_sluitingen. Eén rij zet meteen de hele
-' groep klanten van dat afhaalpunt om — zij krijgen dan in het bestelformulier
-' de keuze uit de opgegeven alternatieven, zolang [vanaf, tot) loopt.
+' (kolommen via kophoek gedetecteerd: afhaalpunt / gesloten-vanaf-jaar /
+' gesloten-vanaf-week / open-vanaf-jaar / open-vanaf-week / alternatieven /
+' opmerking) en schrijft elke rij als een sluiting weg naar afhaalpunt_sluitingen.
+' Eén rij zet meteen de hele groep klanten van dat afhaalpunt om — zij krijgen
+' dan in het bestelformulier de keuze uit de opgegeven alternatieven, vanaf de
+' gesloten-week tot (niet: tot-en-met) de open-week — "vanaf" i.p.v. "tot" om
+' de Nederlandse tot/tot-en-met-verwarring te vermijden.
 ' Gebouwd naar het skelet van VerwerkStopStart (validatie zonder DB, dan
 ' verbinden, dedup tegen bestaande rijen, bevestigen, uitvoeren, invoer wissen).
 ' ---------------------------------------------------------------------------
