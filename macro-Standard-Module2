@@ -119,6 +119,11 @@ Sub StartVerwerkStopStart()
     VerwerkStopStart()
 End Sub
 
+Sub StartVerwerkAfhaalpuntVerlof()
+    ReloadKiemkracht()
+    VerwerkAfhaalpuntVerlof()
+End Sub
+
 Sub StartToonOpvolgingen()
     ReloadKiemkracht()
     ToonOpvolgingen()
