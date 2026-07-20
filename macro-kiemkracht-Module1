@@ -5053,8 +5053,6 @@ Sub KoffieWeekbestand()
             "       COALESCE(ap.dag_klaarmaken, ap.dag_afhaling, '') " & _
             "FROM klanten k " & _
             "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
-        "LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & " " & _
-        "LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id " & _
             "WHERE k.id IN (" & sIds & ")")
         Do While oRS.next()
             sId  = oRS.getString(1)
