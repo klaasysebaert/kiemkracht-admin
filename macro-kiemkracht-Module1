@@ -539,9 +539,9 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     aRijC = aOutC(0) : aRijC(0) = "afhaalpunt_alternatieven_vorig (NIET AANPASSEN)" : aOutC(0) = aRijC
     Dim rC As Long
     For rC = 1 To UBound(aOutC)
-        aRijB = aOutB(rC)
+        aRij = aOutB(rC)
         aRijC = aOutC(rC)
-        aRijC(0) = aRijB(15)
+        aRijC(0) = aRij(15)
         aOutC(rC) = aRijC
     Next rC
     oRngC.setDataArray(aOutC)
