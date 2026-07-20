@@ -4342,12 +4342,21 @@ Sub VerwerkAfhaalpuntVerlof()
     For i = 0 To nRij - 1
         Dim jAp As Integer
         Dim lApId As Long : lApId = -1
-        Dim sApZoek As String : sApZoek = LCase(riApNaam(i))
-        For jAp = 0 To nAp - 1
-            If apNaam(jAp) = sApZoek Then lApId = apId(jAp) : Exit For
-        Next jAp
+        Dim sApRaw As String : sApRaw = Trim(riApNaam(i))
+        If IsNumeric(sApRaw) Then
+            ' Rechtstreeks een afhaalpunt_id — moet wél bestaan.
+            Dim lApIdKand As Long : lApIdKand = CLng(sApRaw)
+            For jAp = 0 To nAp - 1
+                If apId(jAp) = lApIdKand Then lApId = lApIdKand : Exit For
+            Next jAp
+        Else
+            Dim sApZoek As String : sApZoek = LCase(sApRaw)
+            For jAp = 0 To nAp - 1
+                If apNaam(jAp) = sApZoek Then lApId = apId(jAp) : Exit For
+            Next jAp
+        End If
         If lApId = -1 Then
-            sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & ": onbekend afhaalpunt '" & riApNaam(i) & "'"
+            sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & ": onbekend afhaalpunt '" & sApRaw & "'"
             nFoutAV = nFoutAV + 1
         Else
             riApId(i) = lApId
@@ -4356,26 +4365,32 @@ Sub VerwerkAfhaalpuntVerlof()
         Dim aAltNamen() As String : aAltNamen = Split(riAltCsv(i), ",")
         Dim iAlt As Integer, sIds As String : sIds = ""
         For iAlt = 0 To UBound(aAltNamen)
-            Dim sNaamAlt As String : sNaamAlt = LCase(Trim(aAltNamen(iAlt)))
-            If sNaamAlt <> "" Then
-                If sNaamAlt = sApZoek Then
-                    sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & _
-                              ": alternatief '" & Trim(aAltNamen(iAlt)) & "' is hetzelfde als het afhaalpunt zelf"
-                    nFoutAV = nFoutAV + 1
+            Dim sAltRawItem As String : sAltRawItem = Trim(aAltNamen(iAlt))
+            If sAltRawItem <> "" Then
+                Dim lAltId As Long : lAltId = -1
+                Dim jAlt As Integer
+                If IsNumeric(sAltRawItem) Then
+                    Dim lAltIdKand As Long : lAltIdKand = CLng(sAltRawItem)
+                    For jAlt = 0 To nAp - 1
+                        If apId(jAlt) = lAltIdKand Then lAltId = lAltIdKand : Exit For
+                    Next jAlt
                 Else
-                    Dim lAltId As Long : lAltId = -1
-                    Dim jAlt As Integer
+                    Dim sNaamAlt As String : sNaamAlt = LCase(sAltRawItem)
                     For jAlt = 0 To nAp - 1
                         If apNaam(jAlt) = sNaamAlt Then lAltId = apId(jAlt) : Exit For
                     Next jAlt
-                    If lAltId = -1 Then
-                        sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & _
-                                  ": onbekend alternatief '" & Trim(aAltNamen(iAlt)) & "'"
-                        nFoutAV = nFoutAV + 1
-                    Else
-                        If sIds <> "" Then sIds = sIds & ","
-                        sIds = sIds & CStr(lAltId)
-                    End If
+                End If
+                If lAltId = -1 Then
+                    sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & _
+                              ": onbekend alternatief '" & sAltRawItem & "'"
+                    nFoutAV = nFoutAV + 1
+                ElseIf lApId <> -1 And lAltId = lApId Then
+                    sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & _
+                              ": alternatief '" & sAltRawItem & "' is hetzelfde als het afhaalpunt zelf"
+                    nFoutAV = nFoutAV + 1
+                Else
+                    If sIds <> "" Then sIds = sIds & ","
+                    sIds = sIds & CStr(lAltId)
                 End If
             End If
         Next iAlt
@@ -4384,8 +4399,9 @@ Sub VerwerkAfhaalpuntVerlof()
 
     If nFoutAV > 0 Then
         MsgBox nFoutAV & " fout(en) in tabblad 'afhaalpunt_verlof':" & Chr(10) & sFoutAV & Chr(10) & Chr(10) & _
-               "Naam moet exact overeenkomen met afhaalpunten.naam of naam_publiek. " & _
-               "Corrigeer en start de macro opnieuw. Er is nog niets weggeschreven.", 16, "Validatiefout"
+               "Gebruik het afhaalpunt_id (een getal) of een naam die exact overeenkomt met " & _
+               "afhaalpunten.naam of naam_publiek. Corrigeer en start de macro opnieuw. " & _
+               "Er is nog niets weggeschreven.", 16, "Validatiefout"
         oStmt.close()
         oConn.close()
         Exit Sub
