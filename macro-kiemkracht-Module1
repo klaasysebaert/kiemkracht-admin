@@ -1046,13 +1046,18 @@ Sub MaakWeekbestand()
     ' klant_afhaalpunt_keuze bevat elke live wissel via het bestelformulier voor
     ' deze (jaar,week). Enkel tonen als de keuze écht afwijkt van het
     ' thuisafhaalpunt — dat is wie de praktische info (adres/uren) nodig heeft.
+    ' Naast de popup-tekst bouwen we een lookup klant_id -> thuisafhaalpunt-naam,
+    ' zodat de rij-schrijflus verderop de wissel per klant in vragen_opmerkingen
+    ' kan markeren (blijvend in het weekbestand, i.t.t. de vluchtige popup).
     Dim sWisselRapport As String : sWisselRapport = ""
     Dim nWissel As Integer : nWissel = 0
+    Dim wisselKId(500)   As Long
+    Dim wisselThuis(500) As String
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT k.voornaam, k.familienaam, " & _
         "COALESCE(hap.naam_publiek, hap.naam, '(geen thuisafhaalpunt)'), " & _
-        "COALESCE(gap.naam_publiek, gap.naam) " & _
+        "COALESCE(gap.naam_publiek, gap.naam), kw.klant_id " & _
         "FROM klant_afhaalpunt_keuze kw " & _
         "JOIN klanten k ON k.id = kw.klant_id " & _
         "JOIN afhaalpunten gap ON gap.id = kw.afhaalpunt_id " & _
@@ -1063,6 +1068,10 @@ Sub MaakWeekbestand()
     Do While oRS.next()
         sWisselRapport = sWisselRapport & "• " & Trim(oRS.getString(1) & " " & oRS.getString(2)) & _
                          ": " & oRS.getString(3) & " -> " & oRS.getString(4) & Chr(10)
+        If nWissel <= 500 Then
+            wisselKId(nWissel)   = oRS.getLong(5)
+            wisselThuis(nWissel) = oRS.getString(3)
+        End If
         nWissel = nWissel + 1
     Loop
     oRS.close() : oStmt.close()
