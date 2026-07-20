@@ -4207,6 +4207,9 @@ Sub VerwerkAfhaalpuntVerlof()
     Dim oSheet As Object : oSheet = oDoc.Sheets.getByName("afhaalpunt_verlof")
 
     ' --- Kolommen zoeken via de kophoek (rij 1-2, kolom A-P) ---
+    ' "gesloten-vanaf" / "open-vanaf" i.p.v. "vanaf"/"tot": "vanaf" is in het
+    ' Nederlands ondubbelzinnig (inclusief startpunt), "tot" wordt vaak verward
+    ' met "tot en met" — zie backlog #27. Venster is [gesloten-vanaf, open-vanaf).
     Dim iApCol As Integer : iApCol = -1
     Dim iVanafJCol As Integer : iVanafJCol = -1
     Dim iVanafWCol As Integer : iVanafWCol = -1
@@ -4214,29 +4217,33 @@ Sub VerwerkAfhaalpuntVerlof()
     Dim iTotWCol As Integer : iTotWCol = -1
     Dim iAltCol As Integer : iAltCol = -1
     Dim iOpmCol As Integer : iOpmCol = -1
+    Dim iLaatsteHeaderRij As Integer : iLaatsteHeaderRij = 0
     Dim hr As Integer, hc As Integer, sHdr As String
     For hr = 0 To 1
         For hc = 0 To 15
             sHdr = LCase(Trim(oSheet.getCellByPosition(hc, hr).getString()))
             Select Case sHdr
-                Case "afhaalpunt"    : iApCol = hc
-                Case "vanaf-jaar"    : iVanafJCol = hc
-                Case "vanaf-week"    : iVanafWCol = hc
-                Case "tot-jaar"      : iTotJCol = hc
-                Case "tot-week"      : iTotWCol = hc
-                Case "alternatieven" : iAltCol = hc
-                Case "opmerking"     : iOpmCol = hc
+                Case "afhaalpunt"          : iApCol = hc         : iLaatsteHeaderRij = hr
+                Case "gesloten-vanaf-jaar" : iVanafJCol = hc      : iLaatsteHeaderRij = hr
+                Case "gesloten-vanaf-week" : iVanafWCol = hc      : iLaatsteHeaderRij = hr
+                Case "open-vanaf-jaar"     : iTotJCol = hc        : iLaatsteHeaderRij = hr
+                Case "open-vanaf-week"     : iTotWCol = hc        : iLaatsteHeaderRij = hr
+                Case "alternatieven"       : iAltCol = hc         : iLaatsteHeaderRij = hr
+                Case "opmerking"           : iOpmCol = hc         : iLaatsteHeaderRij = hr
             End Select
         Next hc
     Next hr
     If iApCol = -1 Or iVanafJCol = -1 Or iVanafWCol = -1 Or iTotJCol = -1 Or _
        iTotWCol = -1 Or iAltCol = -1 Then
-        MsgBox "Niet alle verplichte kolomkoppen gevonden (afhaalpunt / vanaf-jaar / " & _
-               "vanaf-week / tot-jaar / tot-week / alternatieven) in rij 1-2, kolom A-P.", 16, "Fout"
+        MsgBox "Niet alle verplichte kolomkoppen gevonden (afhaalpunt / gesloten-vanaf-jaar / " & _
+               "gesloten-vanaf-week / open-vanaf-jaar / open-vanaf-week / alternatieven) " & _
+               "in rij 1-2, kolom A-P.", 16, "Fout"
         Exit Sub
     End If
 
-    Const DATA_RIJ0 = 2   ' rij 3 = eerste datarij (rij 1-2 = header)
+    ' Eerste datarij = meteen na de laatst gevonden kolomkop (werkt met 1 of 2
+    ' headerrijen; bij dit tabblad meestal gewoon rij 1 header, rij 2 data).
+    Dim iDataRij0 As Integer : iDataRij0 = iLaatsteHeaderRij + 1
 
     ' === Fase 1: invoerrijen verzamelen + basisvalidatie (geen DB nodig) ===
     Dim riRij(MAX_RIJ)    As Integer
