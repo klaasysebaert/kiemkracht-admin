@@ -2680,6 +2680,13 @@ Sub SchrijfWijzigingenTerug()
                 End If
             Next vi
         End If
+        ' afhaalpunt_alternatieven (kolom AA=26) is géén klanten-kolom en dus niet
+        ' in kVals — vergelijken tegen de eigen snapshot in kolom AB=27 (backlog #27).
+        If Not bWijz Then
+            If Trim(oKB.getCellByPosition(26, r).getString()) <> Trim(oKB.getCellByPosition(27, r).getString()) Then
+                bWijz = True
+            End If
+        End If
 
         bGewijzigd(r) = bWijz
         aKIdx(r)      = kIdx
