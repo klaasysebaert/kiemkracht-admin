@@ -893,7 +893,7 @@ Sub MaakWeekbestand()
         "COALESCE(k.type,''), " & _
         "COALESCE(kwap.dag_klaarmaken, ap.dag_klaarmaken,''), " & _
         "COALESCE(kwap.dag_afhaling, ap.dag_afhaling,''), " & _
-        "COALESCE(ap.id_intern, 9999), " & _
+        "COALESCE(kwap.id_intern, ap.id_intern, 9999), " & _
         "COALESCE(k.id, 999999) " & _
         "FROM abonnementen a JOIN klanten k ON k.id = a.klant_id " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
@@ -927,7 +927,7 @@ Sub MaakWeekbestand()
         "COALESCE(k.type,''), " & _
         "COALESCE(kwap.dag_klaarmaken, ap.dag_klaarmaken,''), " & _
         "COALESCE(kwap.dag_afhaling, ap.dag_afhaling,''), " & _
-        "COALESCE(ap.id_intern, 9999), " & _
+        "COALESCE(kwap.id_intern, ap.id_intern, 9999), " & _
         "COALESCE(k.id, 999999) " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
