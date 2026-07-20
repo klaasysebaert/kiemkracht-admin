@@ -999,28 +999,28 @@ Sub MaakWeekbestand()
     ' dan is de database leidend: het weekbestand hierboven volgt nu kap.* (DB)
     ' i.p.v. b.* (URL). Deze lijst toont wat daardoor afwijkt van wat de klant
     ' oorspronkelijk doorgaf, zodat het zichtbaar is in de eindpopup.
-    ' Keuze-bewust: het weekbestand volgt eerst een tijdelijke weekkeuze
-    ' (klant_afhaalpunt_keuze, kwap) en pas dan het thuisafhaalpunt (kap).
-    ' Vergelijk de bestelling dus met het EFFECTIEVE afhaalpunt (COALESCE kwap,kap)
-    ' — anders wordt een klant die via het formulier legitiem wisselde hier
-    ' onterecht als "correctie" gemeld (die staat al in het wisselrapport, 3c).
+    ' Vergelijkt met het THUISafhaalpunt (kap). Klanten die deze week een
+    ' tijdelijke weekkeuze hebben (klant_afhaalpunt_keuze) worden hier volledig
+    ' uitgesloten — hun afhaalpunt-verschil is bedoeld en staat in het
+    ' wisselrapport (3c). Zo blijven de DB-correcties enkel échte admin-
+    ' wijzigingen (naam/thuisafhaalpunt) tonen, zonder dubbele vermelding.
     Dim sDbCorr As String : sDbCorr = ""
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT b.voornaam, b.familienaam, " & _
-        "b.afhaalpunt, COALESCE(kwap.naam, kap.naam,''), " & _
-        "b.leverdag, COALESCE(kwap.dag_afhaling, kap.dag_afhaling,''), " & _
+        "b.afhaalpunt, COALESCE(kap.naam,''), " & _
+        "b.leverdag, COALESCE(kap.dag_afhaling,''), " & _
         "k.voornaam, k.familienaam " & _
         "FROM bestellingen b " & _
         "JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL AND k.email1 = b.klant_email)) " & _
         "LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
-        "LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & " " & _
-        "LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id " & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
         " AND b.klant_email NOT IN (" & _
         "SELECT klant_email FROM annulaties WHERE jaar = " & iJaar & " AND week_annulatie = " & iWeek & ") " & _
-        " AND ( (COALESCE(kwap.naam, kap.naam) IS NOT NULL AND COALESCE(kwap.naam, kap.naam) <> b.afhaalpunt) " & _
-        "    OR (COALESCE(kwap.dag_afhaling, kap.dag_afhaling) IS NOT NULL AND COALESCE(kwap.dag_afhaling, kap.dag_afhaling) <> b.leverdag) " & _
+        " AND NOT EXISTS (SELECT 1 FROM klant_afhaalpunt_keuze kw " & _
+        "   WHERE kw.klant_id = k.id AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & ") " & _
+        " AND ( (kap.naam IS NOT NULL AND kap.naam <> b.afhaalpunt) " & _
+        "    OR (kap.dag_afhaling IS NOT NULL AND kap.dag_afhaling <> b.leverdag) " & _
         "    OR (COALESCE(k.voornaam,'')    <> COALESCE(b.voornaam,'')) " & _
         "    OR (COALESCE(k.familienaam,'') <> COALESCE(b.familienaam,'')) ) " & _
         "ORDER BY k.familienaam, k.voornaam")
