@@ -4173,6 +4173,289 @@ VerbindingsFoutSS:
 
 End Sub
 
+' ---------------------------------------------------------------------------
+' VerwerkAfhaalpuntVerlof — backlog #27. Leest het tabblad 'afhaalpunt_verlof'
+' (kolommen via kophoek gedetecteerd: afhaalpunt / vanaf-jaar / vanaf-week /
+' tot-jaar / tot-week / alternatieven / opmerking) en schrijft elke rij als
+' een sluiting weg naar afhaalpunt_sluitingen. Eén rij zet meteen de hele
+' groep klanten van dat afhaalpunt om — zij krijgen dan in het bestelformulier
+' de keuze uit de opgegeven alternatieven, zolang [vanaf, tot) loopt.
+' Gebouwd naar het skelet van VerwerkStopStart (validatie zonder DB, dan
+' verbinden, dedup tegen bestaande rijen, bevestigen, uitvoeren, invoer wissen).
+' ---------------------------------------------------------------------------
+Sub VerwerkAfhaalpuntVerlof()
+
+    Const MAX_RIJ = 500
+
+    Dim oDoc As Object
+    oDoc = HuidigDataDocument()
+    If IsNull(oDoc) Then
+        MsgBox "Geen kiemkracht-data-bestand actief. Open kiemkracht-data.ods " & _
+               "of kiemkracht-data-dev.ods en start de macro vanuit dat venster.", 16, "Fout"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName("afhaalpunt_verlof") Then
+        MsgBox "Tabblad 'afhaalpunt_verlof' niet gevonden.", 16, "Fout"
+        Exit Sub
+    End If
+    Dim oSheet As Object : oSheet = oDoc.Sheets.getByName("afhaalpunt_verlof")
+
+    ' --- Kolommen zoeken via de kophoek (rij 1-2, kolom A-P) ---
+    Dim iApCol As Integer : iApCol = -1
+    Dim iVanafJCol As Integer : iVanafJCol = -1
+    Dim iVanafWCol As Integer : iVanafWCol = -1
+    Dim iTotJCol As Integer : iTotJCol = -1
+    Dim iTotWCol As Integer : iTotWCol = -1
+    Dim iAltCol As Integer : iAltCol = -1
+    Dim iOpmCol As Integer : iOpmCol = -1
+    Dim hr As Integer, hc As Integer, sHdr As String
+    For hr = 0 To 1
+        For hc = 0 To 15
+            sHdr = LCase(Trim(oSheet.getCellByPosition(hc, hr).getString()))
+            Select Case sHdr
+                Case "afhaalpunt"    : iApCol = hc
+                Case "vanaf-jaar"    : iVanafJCol = hc
+                Case "vanaf-week"    : iVanafWCol = hc
+                Case "tot-jaar"      : iTotJCol = hc
+                Case "tot-week"      : iTotWCol = hc
+                Case "alternatieven" : iAltCol = hc
+                Case "opmerking"     : iOpmCol = hc
+            End Select
+        Next hc
+    Next hr
+    If iApCol = -1 Or iVanafJCol = -1 Or iVanafWCol = -1 Or iTotJCol = -1 Or _
+       iTotWCol = -1 Or iAltCol = -1 Then
+        MsgBox "Niet alle verplichte kolomkoppen gevonden (afhaalpunt / vanaf-jaar / " & _
+               "vanaf-week / tot-jaar / tot-week / alternatieven) in rij 1-2, kolom A-P.", 16, "Fout"
+        Exit Sub
+    End If
+
+    Const DATA_RIJ0 = 2   ' rij 3 = eerste datarij (rij 1-2 = header)
+
+    ' === Fase 1: invoerrijen verzamelen + basisvalidatie (geen DB nodig) ===
+    Dim riRij(MAX_RIJ)    As Integer
+    Dim riApNaam(MAX_RIJ) As String
+    Dim riVanafJ(MAX_RIJ) As Integer
+    Dim riVanafW(MAX_RIJ) As Integer
+    Dim riTotJ(MAX_RIJ)   As Integer
+    Dim riTotW(MAX_RIJ)   As Integer
+    Dim riAltCsv(MAX_RIJ) As String
+    Dim riOpm(MAX_RIJ)    As String
+    Dim nRij As Integer : nRij = 0
+
+    Dim r As Integer
+    For r = DATA_RIJ0 To DATA_RIJ0 + MAX_RIJ - 1
+        Dim sAp     As String : sAp     = Trim(oSheet.getCellByPosition(iApCol,     r).getString())
+        Dim sVj     As String : sVj     = Trim(oSheet.getCellByPosition(iVanafJCol, r).getString())
+        Dim sVw     As String : sVw     = Trim(oSheet.getCellByPosition(iVanafWCol, r).getString())
+        Dim sTj     As String : sTj     = Trim(oSheet.getCellByPosition(iTotJCol,   r).getString())
+        Dim sTw     As String : sTw     = Trim(oSheet.getCellByPosition(iTotWCol,   r).getString())
+        Dim sAltRaw As String : sAltRaw = Trim(oSheet.getCellByPosition(iAltCol,    r).getString())
+        Dim sOpmRaw As String : sOpmRaw = ""
+        If iOpmCol >= 0 Then sOpmRaw = Trim(oSheet.getCellByPosition(iOpmCol, r).getString())
+
+        If sAp <> "" Or sVj <> "" Or sVw <> "" Or sTj <> "" Or sTw <> "" Or sAltRaw <> "" Then
+            If sAp = "" Or sVj = "" Or sVw = "" Or sTj = "" Or sTw = "" Or sAltRaw = "" Then
+                MsgBox "Rij " & (r + 1) & ": afhaalpunt, vanaf-jaar, vanaf-week, tot-jaar, " & _
+                       "tot-week en alternatieven moeten allemaal ingevuld zijn.", 16, "Fout"
+                Exit Sub
+            End If
+            If Not IsNumeric(sVj) Or Not IsNumeric(sVw) Or Not IsNumeric(sTj) Or Not IsNumeric(sTw) Then
+                MsgBox "Rij " & (r + 1) & ": vanaf-jaar/vanaf-week/tot-jaar/tot-week moeten getallen zijn.", 16, "Fout"
+                Exit Sub
+            End If
+            Dim iVj As Integer : iVj = CInt(sVj)
+            Dim iVw As Integer : iVw = CInt(sVw)
+            Dim iTj As Integer : iTj = CInt(sTj)
+            Dim iTw As Integer : iTw = CInt(sTw)
+            If iVw < 1 Or iVw > 53 Or iTw < 1 Or iTw > 53 Then
+                MsgBox "Rij " & (r + 1) & ": vanaf-week/tot-week moet tussen 1 en 53 liggen.", 16, "Fout"
+                Exit Sub
+            End If
+            If (iTj * 100 + iTw) <= (iVj * 100 + iVw) Then
+                MsgBox "Rij " & (r + 1) & ": tot-jaar/tot-week moet ná vanaf-jaar/vanaf-week liggen.", 16, "Fout"
+                Exit Sub
+            End If
+
+            riRij(nRij)    = r
+            riApNaam(nRij) = sAp
+            riVanafJ(nRij) = iVj
+            riVanafW(nRij) = iVw
+            riTotJ(nRij)   = iTj
+            riTotW(nRij)   = iTw
+            riAltCsv(nRij) = sAltRaw
+            riOpm(nRij)    = sOpmRaw
+            nRij = nRij + 1
+        End If
+    Next r
+
+    If nRij = 0 Then
+        MsgBox "Geen invoer gevonden in tabblad 'afhaalpunt_verlof'.", 64, "VerwerkAfhaalpuntVerlof"
+        Exit Sub
+    End If
+
+    ' === Fase 2: verbinden, namen opzoeken + valideren tegen afhaalpunten ===
+    On Error GoTo VerbindingsFoutAV
+    Dim oConn As Object
+    oConn = MaakDBVerbinding()
+    On Error GoTo 0
+
+    Dim oStmt As Object : oStmt = oConn.createStatement()
+
+    Dim apNaam(200) As String, apId(200) As Long, nAp As Integer : nAp = 0
+    Dim oApRS As Object : oApRS = oStmt.executeQuery("SELECT id, naam, naam_publiek FROM afhaalpunten")
+    Do While oApRS.next()
+        apId(nAp)   = oApRS.getLong(1)
+        apNaam(nAp) = LCase(Trim(oApRS.getString(2)))
+        nAp = nAp + 1
+        Dim sNP As String : sNP = LCase(Trim(oApRS.getString(3)))
+        If sNP <> "" And sNP <> apNaam(nAp - 1) Then
+            apId(nAp)   = apId(nAp - 1)
+            apNaam(nAp) = sNP
+            nAp = nAp + 1
+        End If
+    Loop
+    oApRS.close()
+
+    Dim riApId(MAX_RIJ)     As Long
+    Dim riAltIdsCsv(MAX_RIJ) As String
+    Dim sFoutAV As String : sFoutAV = ""
+    Dim nFoutAV As Integer : nFoutAV = 0
+    Dim i As Integer
+    For i = 0 To nRij - 1
+        Dim jAp As Integer
+        Dim lApId As Long : lApId = -1
+        Dim sApZoek As String : sApZoek = LCase(riApNaam(i))
+        For jAp = 0 To nAp - 1
+            If apNaam(jAp) = sApZoek Then lApId = apId(jAp) : Exit For
+        Next jAp
+        If lApId = -1 Then
+            sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & ": onbekend afhaalpunt '" & riApNaam(i) & "'"
+            nFoutAV = nFoutAV + 1
+        Else
+            riApId(i) = lApId
+        End If
+
+        Dim aAltNamen() As String : aAltNamen = Split(riAltCsv(i), ",")
+        Dim iAlt As Integer, sIds As String : sIds = ""
+        For iAlt = 0 To UBound(aAltNamen)
+            Dim sNaamAlt As String : sNaamAlt = LCase(Trim(aAltNamen(iAlt)))
+            If sNaamAlt <> "" Then
+                If sNaamAlt = sApZoek Then
+                    sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & _
+                              ": alternatief '" & Trim(aAltNamen(iAlt)) & "' is hetzelfde als het afhaalpunt zelf"
+                    nFoutAV = nFoutAV + 1
+                Else
+                    Dim lAltId As Long : lAltId = -1
+                    Dim jAlt As Integer
+                    For jAlt = 0 To nAp - 1
+                        If apNaam(jAlt) = sNaamAlt Then lAltId = apId(jAlt) : Exit For
+                    Next jAlt
+                    If lAltId = -1 Then
+                        sFoutAV = sFoutAV & Chr(10) & "  rij " & (riRij(i) + 1) & _
+                                  ": onbekend alternatief '" & Trim(aAltNamen(iAlt)) & "'"
+                        nFoutAV = nFoutAV + 1
+                    Else
+                        If sIds <> "" Then sIds = sIds & ","
+                        sIds = sIds & CStr(lAltId)
+                    End If
+                End If
+            End If
+        Next iAlt
+        riAltIdsCsv(i) = sIds
+    Next i
+
+    If nFoutAV > 0 Then
+        MsgBox nFoutAV & " fout(en) in tabblad 'afhaalpunt_verlof':" & Chr(10) & sFoutAV & Chr(10) & Chr(10) & _
+               "Naam moet exact overeenkomen met afhaalpunten.naam of naam_publiek. " & _
+               "Corrigeer en start de macro opnieuw. Er is nog niets weggeschreven.", 16, "Validatiefout"
+        oStmt.close()
+        oConn.close()
+        Exit Sub
+    End If
+
+    ' === Fase 3: dedup tegen reeds bestaande sluitingen (afhaalpunt_id,vanaf) ===
+    Dim sBestaandeSleutels As String : sBestaandeSleutels = "|"
+    Dim oExistRS As Object
+    oExistRS = oStmt.executeQuery("SELECT afhaalpunt_id, vanaf_jaar, vanaf_week FROM afhaalpunt_sluitingen")
+    Do While oExistRS.next()
+        sBestaandeSleutels = sBestaandeSleutels & oExistRS.getLong(1) & "#" & _
+                              oExistRS.getInt(2) & "#" & oExistRS.getInt(3) & "|"
+    Loop
+    oExistRS.close()
+
+    Dim bNieuw(MAX_RIJ) As Boolean
+    Dim nNieuw As Integer : nNieuw = 0
+    For i = 0 To nRij - 1
+        Dim sSleutel As String : sSleutel = riApId(i) & "#" & riVanafJ(i) & "#" & riVanafW(i)
+        bNieuw(i) = (InStr(sBestaandeSleutels, "|" & sSleutel & "|") = 0)
+        If bNieuw(i) Then nNieuw = nNieuw + 1
+    Next i
+
+    If nNieuw = 0 Then
+        MsgBox "Alle " & nRij & " rij(en) staan al als sluiting in de database. " & _
+               "Niets nieuws om te verwerken — invoer wordt wel gewist.", 64, "VerwerkAfhaalpuntVerlof"
+    Else
+        Dim nAntwAV As Integer
+        nAntwAV = MsgBox( _
+            nNieuw & " nieuwe afhaalpunt-sluiting(en) aanmaken (van " & nRij & " rij(en) in het tabblad)." & _
+            Chr(10) & Chr(10) & "Akkoord?", 1, "VerwerkAfhaalpuntVerlof")
+        If nAntwAV <> 1 Then
+            oStmt.close()
+            oConn.close()
+            Exit Sub
+        End If
+
+        ' === Fase 4: uitvoeren ===
+        On Error GoTo UitvoerFoutAV
+        For i = 0 To nRij - 1
+            If bNieuw(i) Then
+                Dim sAltArray As String
+                If riAltIdsCsv(i) = "" Then
+                    sAltArray = "ARRAY[]::int[]"
+                Else
+                    sAltArray = "ARRAY[" & riAltIdsCsv(i) & "]"
+                End If
+                oStmt.executeUpdate( _
+                    "INSERT INTO afhaalpunt_sluitingen " & _
+                    "(afhaalpunt_id, vanaf_jaar, vanaf_week, tot_jaar, tot_week, alternatieven, opmerking) VALUES (" & _
+                    riApId(i) & ", " & riVanafJ(i) & ", " & riVanafW(i) & ", " & _
+                    riTotJ(i) & ", " & riTotW(i) & ", " & sAltArray & ", " & SqlStr(riOpm(i)) & ")")
+            End If
+        Next i
+        On Error GoTo 0
+    End If
+
+    oStmt.close()
+    oConn.close()
+
+    ' Verwerkte invoercellen leegmaken (alle herkende rijen, ook dedup-skips —
+    ' de gevraagde eindtoestand bestaat sowieso al in de database)
+    For i = 0 To nRij - 1
+        oSheet.getCellByPosition(iApCol,     riRij(i)).setString("")
+        oSheet.getCellByPosition(iVanafJCol, riRij(i)).setString("")
+        oSheet.getCellByPosition(iVanafWCol, riRij(i)).setString("")
+        oSheet.getCellByPosition(iTotJCol,   riRij(i)).setString("")
+        oSheet.getCellByPosition(iTotWCol,   riRij(i)).setString("")
+        oSheet.getCellByPosition(iAltCol,    riRij(i)).setString("")
+        If iOpmCol >= 0 Then oSheet.getCellByPosition(iOpmCol, riRij(i)).setString("")
+    Next i
+
+    SluitSSHTunnels()
+    MsgBox nNieuw & " nieuwe sluiting(en) aangemaakt (van " & nRij & " verwerkte rij(en)).", 64, "Klaar"
+    Exit Sub
+
+UitvoerFoutAV:
+    MsgBox "Databasefout tijdens het wegschrijven: " & Err & " - " & Error, 16, "Fout"
+    SluitSSHTunnels()
+    Exit Sub
+
+VerbindingsFoutAV:
+    MsgBox "Verbindingsfout: " & Err & " - " & Error & Chr(10) & _
+           "Controleer of de SSH-tunnel actief is.", 16, "Fout"
+    SluitSSHTunnels()
+End Sub
+
 ' =============================================
 ' Verstuur bevestigingsmail voor een annulatie of stopzetting via de
 ' postgres-proxy. Sync HTTP-POST naar /actie=annulatie_bevestiging_mail.
