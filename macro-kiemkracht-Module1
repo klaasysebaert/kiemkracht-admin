@@ -450,9 +450,10 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         oKB = oSheets.getByName("klanten_beheer")
     End If
 
-    ' F-J (5-9) en L-AA (11-26) wissen; K (10) bevat gebruikersformules
+    ' F-J (5-9) en L-AB (11-27) wissen; K (10) bevat gebruikersformules.
+    ' AB (27) = interne alternatieven-snapshot, zie onderaan deze Sub.
     oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
-    oKB.getCellRangeByPosition(11, 0, 26, 10000).clearContents(7)
+    oKB.getCellRangeByPosition(11, 0, 27, 10000).clearContents(7)
 
     ' Aantal rijen vooraf, om de sjablonen op maat te maken
     mStap = "klanten_beheer — rijen tellen"
