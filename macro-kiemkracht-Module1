@@ -882,7 +882,7 @@ Sub MaakWeekbestand()
         "     AND (a.klant_id = b.klant_id OR (b.klant_id IS NULL AND LOWER(a.klant_email) = LOWER(b.klant_email)))) " & _
         " UNION ALL " & _
         "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
-        "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
+        "COALESCE(kwap.naam, ap.naam,''), COALESCE(kwap.dag_klaarmaken, ap.dag_klaarmaken,''), " & _
         "CASE COALESCE(vb.sleutel, a.formaat) " & _
         "  WHEN 'klein'       THEN 'klein pakket' " & _
         "  WHEN 'groot'       THEN 'groot pakket' " & _
@@ -916,7 +916,7 @@ Sub MaakWeekbestand()
         "     AND (ann.klant_id = k.id OR (ann.klant_id IS NULL AND LOWER(ann.klant_email) = LOWER(k.email1)))) " & _
         " UNION ALL " & _
         "SELECT 0, k.voornaam, k.familienaam, k.email1, " & _
-        "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), " & _
+        "COALESCE(kwap.naam, ap.naam,''), COALESCE(kwap.dag_klaarmaken, ap.dag_klaarmaken,''), " & _
         "CASE vb.sleutel " & _
         "  WHEN 'klein'       THEN 'klein pakket' " & _
         "  WHEN 'groot'       THEN 'groot pakket' " & _
