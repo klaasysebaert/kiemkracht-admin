@@ -2866,6 +2866,19 @@ Sub SchrijfWijzigingenTerug()
                     "(klant_id, ritme, formaat, status, bron) VALUES (" & _
                     CStr(nID) & ", '" & sRitmeBeh & "', '" & sFormaat & "', '" & sStatusBeh & "', 'primair')")
             End If
+
+            ' Afhaalpunt-alternatieven synchroniseren (backlog #27) — idempotente
+            ' DELETE+INSERT op elke gewijzigde rij, namen al gevalideerd/gerezolveerd
+            ' naar id's in sAltIdsCsv() vóór deze lus (zie hierboven).
+            oStmt.executeUpdate("DELETE FROM klant_afhaalpunt_alternatieven WHERE klant_id = " & CStr(nID))
+            If sAltIdsCsv(r) <> "" Then
+                Dim aAltIds() As String : aAltIds = Split(sAltIdsCsv(r), ",")
+                Dim iAltIns As Integer
+                For iAltIns = 0 To UBound(aAltIds)
+                    oStmt.executeUpdate("INSERT INTO klant_afhaalpunt_alternatieven (klant_id, afhaalpunt_id) VALUES (" & _
+                        CStr(nID) & ", " & aAltIds(iAltIns) & ")")
+                Next iAltIns
+            End If
         End If
         r = r + 1
     Loop
