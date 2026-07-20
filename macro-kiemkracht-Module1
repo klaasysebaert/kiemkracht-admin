@@ -1035,6 +1035,31 @@ Sub MaakWeekbestand()
     Loop
     oRS.close() : oStmt.close()
 
+    ' --- Stap 3c: wie deze week tijdelijk een ander afhaalpunt koos (backlog #27) ---
+    ' klant_afhaalpunt_keuze bevat elke live wissel via het bestelformulier voor
+    ' deze (jaar,week). Enkel tonen als de keuze écht afwijkt van het
+    ' thuisafhaalpunt — dat is wie de praktische info (adres/uren) nodig heeft.
+    Dim sWisselRapport As String : sWisselRapport = ""
+    Dim nWissel As Integer : nWissel = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT k.voornaam, k.familienaam, " & _
+        "COALESCE(hap.naam_publiek, hap.naam, '(geen thuisafhaalpunt)'), " & _
+        "COALESCE(gap.naam_publiek, gap.naam) " & _
+        "FROM klant_afhaalpunt_keuze kw " & _
+        "JOIN klanten k ON k.id = kw.klant_id " & _
+        "JOIN afhaalpunten gap ON gap.id = kw.afhaalpunt_id " & _
+        "LEFT JOIN afhaalpunten hap ON hap.id = k.afhaalpunt_id " & _
+        "WHERE kw.jaar = " & iJaar & " AND kw.week = " & iWeek & _
+        " AND (k.afhaalpunt_id IS NULL OR kw.afhaalpunt_id <> k.afhaalpunt_id) " & _
+        "ORDER BY k.familienaam, k.voornaam")
+    Do While oRS.next()
+        sWisselRapport = sWisselRapport & "• " & Trim(oRS.getString(1) & " " & oRS.getString(2)) & _
+                         ": " & oRS.getString(3) & " -> " & oRS.getString(4) & Chr(10)
+        nWissel = nWissel + 1
+    Loop
+    oRS.close() : oStmt.close()
+
     ' --- Stap 4: vooruitbestellingen voor stop/annulatie/start-kolommen ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
