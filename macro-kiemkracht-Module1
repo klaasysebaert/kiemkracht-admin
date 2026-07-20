@@ -2979,6 +2979,17 @@ Sub SchrijfWijzigingenTerug()
         rSync = rSync + 1
     Loop
 
+    ' Afhaalpunt-alternatieven-snapshot (kolom AB=27) bijwerken naar AA=26,
+    ' onafhankelijk van aKIdx (self-contained binnen klanten_beheer zelf) —
+    ' zo herkent de volgende run een teruggedraaide alternatieven-waarde weer.
+    Dim rSyncAlt As Integer : rSyncAlt = 1
+    Do While rSyncAlt <= nTotaal
+        If bGewijzigd(rSyncAlt) Then
+            oKB.getCellByPosition(27, rSyncAlt).setString(oKB.getCellByPosition(26, rSyncAlt).getString())
+        End If
+        rSyncAlt = rSyncAlt + 1
+    Loop
+
     MsgBox nUpdates & " klant(en) bijgewerkt in postgres.", 64, "Klaar"
     SluitSSHTunnels()
     Exit Sub
