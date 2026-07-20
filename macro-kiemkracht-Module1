@@ -2287,6 +2287,11 @@ Sub MaakWeekbestand()
         sCorrSuffix = Chr(10) & Chr(10) & _
             "Database-correcties t.o.v. de bestelling (URL):" & Chr(10) & sDbCorr
     End If
+    If sWisselRapport <> "" Then
+        sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
+            nWissel & " klant(en) met een tijdelijk ander afhaalpunt deze week " & _
+            "(praktische info nodig):" & Chr(10) & sWisselRapport
+    End If
 
     If bVanuitWeekbestand Then
         ' Kan het aanroepende document niet sluiten vanuit de lopende macro.
