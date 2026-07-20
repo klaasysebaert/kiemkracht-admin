@@ -2743,6 +2743,72 @@ Sub SchrijfWijzigingenTerug()
     ' === Stap 4: UPDATE enkel gewijzigde rijen ===
     Dim oStmt As Object : oStmt = oConn.createStatement()
     Dim nUpdates As Integer : nUpdates = 0
+
+    ' Afhaalpunt-alternatieven (backlog #27): namen uit kolom AA vooraf
+    ' opzoeken/valideren tegen afhaalpunten (naam of naam_publiek), vóór er
+    ' iets weggeschreven wordt — bij een onbekende naam breekt de macro af
+    ' zonder één enkele UPDATE uit te voeren.
+    Dim apNaam(200) As String, apId(200) As Long, nAp As Integer : nAp = 0
+    Dim oApRS As Object : oApRS = oStmt.executeQuery("SELECT id, naam, naam_publiek FROM afhaalpunten")
+    Do While oApRS.next()
+        apId(nAp)   = oApRS.getLong(1)
+        apNaam(nAp) = LCase(Trim(oApRS.getString(2)))
+        nAp = nAp + 1
+        Dim sNP As String : sNP = LCase(Trim(oApRS.getString(3)))
+        If sNP <> "" And sNP <> apNaam(nAp - 1) Then
+            apId(nAp)   = apId(nAp - 1)
+            apNaam(nAp) = sNP
+            nAp = nAp + 1
+        End If
+    Loop
+    oApRS.close()
+
+    Dim sAltIdsCsv(2000) As String
+    Dim sAltFout As String : sAltFout = ""
+    Dim nAltFout As Integer : nAltFout = 0
+    Dim rAlt As Integer : rAlt = 1
+    Do While rAlt <= nTotaal
+        sAltIdsCsv(rAlt) = ""
+        If bGewijzigd(rAlt) Then
+            Dim sAltCsv As String : sAltCsv = Trim(oKB.getCellByPosition(26, rAlt).getString())
+            If sAltCsv <> "" Then
+                Dim aAltNamen() As String : aAltNamen = Split(sAltCsv, ",")
+                Dim iAlt As Integer
+                Dim sIds As String : sIds = ""
+                For iAlt = 0 To UBound(aAltNamen)
+                    Dim sNaamAlt As String : sNaamAlt = LCase(Trim(aAltNamen(iAlt)))
+                    If sNaamAlt <> "" Then
+                        Dim lFoundId As Long : lFoundId = -1
+                        Dim jAp As Integer
+                        For jAp = 0 To nAp - 1
+                            If apNaam(jAp) = sNaamAlt Then lFoundId = apId(jAp) : Exit For
+                        Next jAp
+                        If lFoundId = -1 Then
+                            sAltFout = sAltFout & Chr(10) & "  rij " & (rAlt + 1) & _
+                                       ": onbekend afhaalpunt '" & Trim(aAltNamen(iAlt)) & "'"
+                            nAltFout = nAltFout + 1
+                        Else
+                            If sIds <> "" Then sIds = sIds & ","
+                            sIds = sIds & CStr(lFoundId)
+                        End If
+                    End If
+                Next iAlt
+                sAltIdsCsv(rAlt) = sIds
+            End If
+        End If
+        rAlt = rAlt + 1
+    Loop
+
+    If nAltFout > 0 Then
+        MsgBox nAltFout & " ongeldige afhaalpunt-naam/namen in kolom AA (afhaalpunt_alternatieven):" & Chr(10) & _
+               sAltFout & Chr(10) & Chr(10) & _
+               "Naam moet exact overeenkomen met afhaalpunten.naam of naam_publiek. " & _
+               "Corrigeer en start de macro opnieuw. Er is nog niets weggeschreven.", 16, "Validatiefout"
+        oStmt.close()
+        oConn.close()
+        Exit Sub
+    End If
+
     r = 1
     Do While r <= nTotaal
         If bGewijzigd(r) Then
