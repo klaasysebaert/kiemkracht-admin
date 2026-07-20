@@ -473,15 +473,17 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         "SELECT voornaam, familienaam, voornaam2, familienaam2, afhaalpunt_id, " & _
         "type, formaat, email1, email2, email3, email4, telefoon, " & _
         "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten, " & _
-        "email_afrekening, voornaam_afrekening, familienaam_afrekening, nooit_afrekening " & _
+        "email_afrekening, voornaam_afrekening, familienaam_afrekening, nooit_afrekening, " & _
+        "(SELECT string_agg(ap.naam, ',' ORDER BY ap.naam) FROM klant_afhaalpunt_alternatieven kaa " & _
+        " JOIN afhaalpunten ap ON ap.id = kaa.afhaalpunt_id WHERE kaa.klant_id = klanten.id) " & _
         "FROM klanten ORDER BY id")
 
     ' Twee sjablonen uit de doelbereiken zelf (juiste UNO-structuur); rechtstreeks
     ' invullen, geen geneste Basic-array opbouwen/doorgeven. F-J = querykolommen
-    ' 1-5, L-Z = querykolommen 6-20.
+    ' 1-5, L-AA = querykolommen 6-21.
     mStap = "klanten_beheer — sjablonen (" & (nRows + 1) & " rijen)"
     oRngA = oKB.getCellRangeByPosition(5,  0, 9,  nRows)
-    oRngB = oKB.getCellRangeByPosition(11, 0, 25, nRows)
+    oRngB = oKB.getCellRangeByPosition(11, 0, 26, nRows)
     aOutA = oRngA.getDataArray()
     aOutB = oRngB.getDataArray()
 
@@ -492,7 +494,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Next j
     aOutA(0) = aRij
     aRij = aOutB(0)
-    For j = 0 To 14
+    For j = 0 To 15
         aRij(j) = kbKol(j + 5)
     Next j
     aOutB(0) = aRij
@@ -510,7 +512,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         Next j
         aOutA(r) = aRij
         aRij = aOutB(r)
-        For j = 0 To 14
+        For j = 0 To 15
             sVal = oRS.getString(j + 6)
             If oRS.wasNull() Then sVal = ""
             aRij(j) = sVal
