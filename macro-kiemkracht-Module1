@@ -897,6 +897,8 @@ Sub MaakWeekbestand()
         "COALESCE(k.id, 999999) " & _
         "FROM abonnementen a JOIN klanten k ON k.id = a.klant_id " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+        "LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & " " & _
+        "LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id " & _
         "LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
         "WHERE a.status = 'actief' AND a.ritme IN (" & sParRitmes & ") " & _
         " AND (a.eind_jaar IS NULL OR (a.eind_jaar * 100 + a.eind_week) > " & iWeekNum & ") " & _
@@ -929,6 +931,8 @@ Sub MaakWeekbestand()
         "COALESCE(k.id, 999999) " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+        "LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & " " & _
+        "LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id " & _
         "INNER JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL AND vb.email_l = LOWER(k.email1))) " & _
         "WHERE k.status = 'actief' " & _
         " AND NOT EXISTS (SELECT 1 FROM abonnementen a3 WHERE a3.klant_id = k.id " & _
@@ -5049,6 +5053,8 @@ Sub KoffieWeekbestand()
             "       COALESCE(ap.dag_klaarmaken, ap.dag_afhaling, '') " & _
             "FROM klanten k " & _
             "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+        "LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & " " & _
+        "LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id " & _
             "WHERE k.id IN (" & sIds & ")")
         Do While oRS.next()
             sId  = oRS.getString(1)
