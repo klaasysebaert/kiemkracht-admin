@@ -2373,7 +2373,15 @@ Sub MaakWeekbestand()
     If sWisselRapport <> "" Then
         sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
             nWissel & " klant(en) met een tijdelijk ander afhaalpunt deze week " & _
-            "(praktische info nodig):" & Chr(10) & sWisselRapport & Chr(10) & _
+            "(praktische info nodig):" & Chr(10) & sWisselRapport
+    End If
+    If sNogGeslotenRapport <> "" Then
+        sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
+            nNogGesloten & " klant(en) staan nog op een deze week GESLOTEN afhaalpunt " & _
+            "(nog niet gewisseld):" & Chr(10) & sNogGeslotenRapport
+    End If
+    If sWisselRapport <> "" Or sNogGeslotenRapport <> "" Then
+        sCorrSuffix = sCorrSuffix & Chr(10) & _
             "Check ook kolom F (vragen_opmerkingen) / AW (ander, op de stapellijsten) " & _
             "in het weekbestand."
     End If
