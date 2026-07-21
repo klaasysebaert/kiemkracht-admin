@@ -2756,7 +2756,7 @@ Sub SchrijfWijzigingenTerug()
     If nAntw <> 1 Then Exit Sub
 
     ' === Stap 1: klanten-tabblad header → kolom-indices (geen SSH nodig) ===
-    Dim veldNamen(19) As String
+    Dim veldNamen(23) As String
     veldNamen(0)  = "voornaam"         : veldNamen(1)  = "familienaam"
     veldNamen(2)  = "voornaam2"        : veldNamen(3)  = "familienaam2"
     veldNamen(4)  = "afhaalpunt_id"    : veldNamen(5)  = "type"
@@ -2767,17 +2767,19 @@ Sub SchrijfWijzigingenTerug()
     veldNamen(14) = "opmerking_status" : veldNamen(15) = "nooit_groenten"
     veldNamen(16) = "email_afrekening"       : veldNamen(17) = "voornaam_afrekening"
     veldNamen(18) = "familienaam_afrekening" : veldNamen(19) = "nooit_afrekening"
+    veldNamen(20) = "mail_opt_out"           : veldNamen(21) = "mail_opt_out_reden"
+    veldNamen(22) = "koffie_opt_out"         : veldNamen(23) = "koffie_opt_out_reden"
 
     Dim klantenIdCol As Integer : klantenIdCol = -1
-    Dim kVeldCol(19) As Integer
+    Dim kVeldCol(23) As Integer
     Dim vi As Integer
-    For vi = 0 To 19 : kVeldCol(vi) = -1 : Next vi
+    For vi = 0 To 23 : kVeldCol(vi) = -1 : Next vi
 
     Dim hIdx As Integer : hIdx = 0
     Do While oKlanten.getCellByPosition(hIdx, 0).getString() <> ""
         Dim hNaam As String : hNaam = oKlanten.getCellByPosition(hIdx, 0).getString()
         If hNaam = "id" Then klantenIdCol = hIdx
-        For vi = 0 To 19
+        For vi = 0 To 23
             If hNaam = veldNamen(vi) Then kVeldCol(vi) = hIdx
         Next vi
         hIdx = hIdx + 1
