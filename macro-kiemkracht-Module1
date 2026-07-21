@@ -452,8 +452,10 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
 
     ' F-J (5-9) en L-AB (11-27) wissen; K (10) bevat gebruikersformules.
     ' AB (27) = interne alternatieven-snapshot, zie onderaan deze Sub.
+    ' AC-AF (28-31) = opt-outs (mail/koffie), zie onderaan deze Sub.
     oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
     oKB.getCellRangeByPosition(11, 0, 27, 10000).clearContents(7)
+    oKB.getCellRangeByPosition(28, 0, 31, 10000).clearContents(7)
 
     ' Aantal rijen vooraf, om de sjablonen op maat te maken
     mStap = "klanten_beheer — rijen tellen"
