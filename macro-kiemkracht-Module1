@@ -488,8 +488,10 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     mStap = "klanten_beheer — sjablonen (" & (nRows + 1) & " rijen)"
     oRngA = oKB.getCellRangeByPosition(5,  0, 9,  nRows)
     oRngB = oKB.getCellRangeByPosition(11, 0, 26, nRows)
+    oRngD = oKB.getCellRangeByPosition(28, 0, 31, nRows)
     aOutA = oRngA.getDataArray()
     aOutB = oRngB.getDataArray()
+    aOutD = oRngD.getDataArray()
 
     ' Koprijen
     aRij = aOutA(0)
@@ -502,6 +504,10 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         aRij(j) = kbKol(j + 5)
     Next j
     aOutB(0) = aRij
+    aRijD = aOutD(0)
+    aRijD(0) = "mail_opt_out"   : aRijD(1) = "mail_opt_out_reden"
+    aRijD(2) = "koffie_opt_out" : aRijD(3) = "koffie_opt_out_reden"
+    aOutD(0) = aRijD
 
     ' Datarijen — rechtstreeks in de sjabloonrijen schrijven
     mStap = "klanten_beheer — rijen schrijven"
