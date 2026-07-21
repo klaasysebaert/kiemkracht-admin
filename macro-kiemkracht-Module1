@@ -3187,6 +3187,14 @@ Sub SchrijfWijzigingenTerug()
                     End If
                 End If
             Next viS
+            ' Opt-outs (vi 20-23) apart bijsynchroniseren — de bovenstaande lus
+            ' dekt enkel 0-15 (bestaande beperking, niet aangepast).
+            For viS = 20 To 23
+                If kVeldCol(viS) >= 0 Then
+                    oKlanten.getCellByPosition(kVeldCol(viS), kRow).setString( _
+                        oKB.getCellByPosition(KBKolom(viS), rSync).getString())
+                End If
+            Next viS
         End If
         rSync = rSync + 1
     Loop
