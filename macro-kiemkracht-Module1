@@ -528,6 +528,13 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
             aRij(j) = sVal
         Next j
         aOutB(r) = aRij
+        aRijD = aOutD(r)
+        For j = 0 To 3
+            sVal = oRS.getString(j + 22)
+            If oRS.wasNull() Then sVal = ""
+            aRijD(j) = sVal
+        Next j
+        aOutD(r) = aRijD
         r = r + 1
     Loop
     oRS.close()
@@ -536,6 +543,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     mStap = "klanten_beheer — wegschrijven"
     oRngA.setDataArray(aOutA)
     oRngB.setDataArray(aOutB)
+    oRngD.setDataArray(aOutD)
 
     ' Kolom AB (27) = verborgen "vorige waarde"-snapshot van de alternatieven
     ' (kolom AA, laatste veld in aOutB). SchrijfWijzigingenTerug vergelijkt
