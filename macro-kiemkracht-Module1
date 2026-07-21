@@ -1076,6 +1076,37 @@ Sub MaakWeekbestand()
     Loop
     oRS.close() : oStmt.close()
 
+    ' --- Stap 3d: wie deze week nog op een gesloten afhaalpunt staat (backlog #27) ---
+    ' Klanten wiens geschreven afhaalpunt deze week in een lopende sluiting valt,
+    ' maar die zelf niet wisselden (geen klant_afhaalpunt_keuze-rij, dus niet in
+    ' het wisselrapport hierboven) — ze staan dus nog stil op het gesloten punt.
+    ' Lijst met gesloten-punt-namen + hun alternatieven wordt hier opgehaald;
+    ' de eigenlijke toets (elke geschreven rij tegen deze namenlijst) gebeurt
+    ' verderop in de rij-schrijflus, waar het geschreven afhaalpunt bekend is.
+    Dim nGesloten As Integer : nGesloten = 0
+    Dim gAfhNaam(50) As String
+    Dim gAfhAlt(50)  As String
+    Dim iVenster As Long : iVenster = iJaar * 100 + iWeek
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT ap.naam, " & _
+        "(SELECT string_agg(COALESCE(alt.naam_publiek, alt.naam), ', ' ORDER BY COALESCE(alt.naam_publiek, alt.naam)) " & _
+        " FROM afhaalpunten alt WHERE alt.id = ANY(s.alternatieven)) " & _
+        "FROM afhaalpunt_sluitingen s " & _
+        "JOIN afhaalpunten ap ON ap.id = s.afhaalpunt_id " & _
+        "WHERE (s.vanaf_jaar * 100 + s.vanaf_week) <= " & iVenster & _
+        " AND " & iVenster & " < (s.tot_jaar * 100 + s.tot_week)")
+    Do While oRS.next()
+        If nGesloten <= 50 Then
+            gAfhNaam(nGesloten) = oRS.getString(1)
+            gAfhAlt(nGesloten)  = oRS.getString(2)
+        End If
+        nGesloten = nGesloten + 1
+    Loop
+    oRS.close() : oStmt.close()
+    Dim sNogGeslotenRapport As String : sNogGeslotenRapport = ""
+    Dim nNogGesloten As Integer : nNogGesloten = 0
+
     ' --- Stap 4: vooruitbestellingen voor stop/annulatie/start-kolommen ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
