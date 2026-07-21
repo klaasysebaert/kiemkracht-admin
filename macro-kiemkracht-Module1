@@ -478,7 +478,8 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten, " & _
         "email_afrekening, voornaam_afrekening, familienaam_afrekening, nooit_afrekening, " & _
         "(SELECT string_agg(ap.naam, ',' ORDER BY ap.naam) FROM klant_afhaalpunt_alternatieven kaa " & _
-        " JOIN afhaalpunten ap ON ap.id = kaa.afhaalpunt_id WHERE kaa.klant_id = klanten.id) " & _
+        " JOIN afhaalpunten ap ON ap.id = kaa.afhaalpunt_id WHERE kaa.klant_id = klanten.id), " & _
+        "mail_opt_out, mail_opt_out_reden, koffie_opt_out, koffie_opt_out_reden " & _
         "FROM klanten ORDER BY id")
 
     ' Twee sjablonen uit de doelbereiken zelf (juiste UNO-structuur); rechtstreeks
