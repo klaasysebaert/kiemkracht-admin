@@ -2677,16 +2677,20 @@ Function JaarMap(iJaar As Integer) As String
 End Function
 
 ' =============================================
-' Kolomindex in klanten_beheer voor veldindex vi (0-19).
+' Kolomindex in klanten_beheer voor veldindex vi (0-23).
 ' Kolom K (index 10) is gereserveerd voor gebruikersformules.
-'   vi 0-4  → col 5-9  (F t/m J)
-'   vi 5-19 → col 11-25 (L t/m Z)
+'   vi 0-4   → col 5-9   (F t/m J)
+'   vi 5-19  → col 11-25 (L t/m Z)
+'   vi 20-23 → col 28-31 (AC t/m AF) — opt-outs, apart van AA/AB (26/27,
+'   afhaalpunt-alternatieven + snapshot) om die kolommen niet te verschuiven.
 ' =============================================
 Function KBKolom(vi As Integer) As Integer
     If vi < 5 Then
         KBKolom = 5 + vi
-    Else
+    ElseIf vi < 20 Then
         KBKolom = 6 + vi
+    Else
+        KBKolom = 28 + (vi - 20)
     End If
 End Function
 
@@ -2699,6 +2703,17 @@ Function SqlStr(s As String) As String
     Else
         SqlStr = "'" & Replace(s, "'", "''") & "'"
     End If
+End Function
+
+' =============================================
+' Helper: is een opt-out-vlag "aan"? Zelfde tri-state-lezing als
+' nooit_afrekening (NOT NULL boolean): leeg/expliciet-onwaar → False.
+' =============================================
+Function IsAanKB(s As String) As Boolean
+    Select Case LCase(Trim(s))
+        Case "", "f", "false", "0", "nee" : IsAanKB = False
+        Case Else                          : IsAanKB = True
+    End Select
 End Function
 
 Sub SchrijfWijzigingenTerug()
