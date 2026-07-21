@@ -3047,6 +3047,54 @@ Sub SchrijfWijzigingenTerug()
                                "opvolg_datum = NULL, opvolg_gemaild_op = NULL, "
             End If
 
+            ' Opt-outs (mail/koffie) — vi 20-23, kolommen AC-AF. Vlag zelf
+            ' ongewijzigd: enkel de reden bijwerken. Vlag flipt aan: zelfde
+            ' zij-effecten als een handmatige uitschrijving (uitschrijven.php,
+            ' GET/one-click-tak). Vlag flipt uit: exact de "ongedaan maken"-
+            ' semantiek van uitschrijven.php (herstelSubmit-tak).
+            Dim kIdxRow As Integer : kIdxRow = aKIdx(r)
+            Dim sMailOptNw   As String : sMailOptNw   = Trim(oKB.getCellByPosition(KBKolom(20), r).getString())
+            Dim sMailRedenNw As String : sMailRedenNw = Trim(oKB.getCellByPosition(KBKolom(21), r).getString())
+            Dim sKoffOptNw   As String : sKoffOptNw   = Trim(oKB.getCellByPosition(KBKolom(22), r).getString())
+            Dim sKoffRedenNw As String : sKoffRedenNw = Trim(oKB.getCellByPosition(KBKolom(23), r).getString())
+
+            Dim bMailOptNw As Boolean : bMailOptNw = IsAanKB(sMailOptNw)
+            Dim bKoffOptNw As Boolean : bKoffOptNw = IsAanKB(sKoffOptNw)
+            Dim bMailOptOud As Boolean, bKoffOptOud As Boolean
+            If kIdxRow >= 0 Then
+                bMailOptOud = IsAanKB(kVals(kIdxRow, 20))
+                bKoffOptOud = IsAanKB(kVals(kIdxRow, 22))
+            Else
+                bMailOptOud = False
+                bKoffOptOud = False
+            End If
+
+            Dim sMailOptClause As String
+            If bMailOptNw = bMailOptOud Then
+                sMailOptClause = ", mail_opt_out_reden = " & SqlStr(sMailRedenNw)
+            ElseIf bMailOptNw And Not bMailOptOud Then
+                sMailOptClause = ", mail_opt_out = TRUE, mail_opt_out_op = COALESCE(mail_opt_out_op, now()), " & _
+                                  "mail_opt_out_reden = " & SqlStr(sMailRedenNw) & ", " & _
+                                  "mail_opt_out_methode = COALESCE(mail_opt_out_methode, 'beheer'), " & _
+                                  "mail_opt_out_gemeld = FALSE"
+            Else
+                sMailOptClause = ", mail_opt_out = FALSE, mail_opt_out_op = NULL, mail_opt_out_reden = NULL, " & _
+                                  "mail_opt_out_methode = NULL, mail_opt_out_gemeld = FALSE"
+            End If
+
+            Dim sKoffOptClause As String
+            If bKoffOptNw = bKoffOptOud Then
+                sKoffOptClause = ", koffie_opt_out_reden = " & SqlStr(sKoffRedenNw)
+            ElseIf bKoffOptNw And Not bKoffOptOud Then
+                sKoffOptClause = ", koffie_opt_out = TRUE, koffie_opt_out_op = COALESCE(koffie_opt_out_op, now()), " & _
+                                  "koffie_opt_out_reden = " & SqlStr(sKoffRedenNw) & ", " & _
+                                  "koffie_opt_out_methode = COALESCE(koffie_opt_out_methode, 'beheer'), " & _
+                                  "koffie_opt_out_gemeld = FALSE"
+            Else
+                sKoffOptClause = ", koffie_opt_out = FALSE, koffie_opt_out_op = NULL, koffie_opt_out_reden = NULL, " & _
+                                  "koffie_opt_out_methode = NULL, koffie_opt_out_gemeld = FALSE"
+            End If
+
             Dim sSQL As String
             sSQL = "UPDATE klanten SET " & _
                    "voornaam = "             & SqlStr(sVoornaam)     & ", " & _
