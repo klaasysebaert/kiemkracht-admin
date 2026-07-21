@@ -3119,6 +3119,7 @@ Sub SchrijfWijzigingenTerug()
                    "familienaam_afrekening = " & SqlStr(sFamAfr)     & ", " & _
                    "nooit_afrekening = "     & sNooitAfrSql          & ", " & _
                    "nooit_groenten = "       & sNooitSql & _
+                   sMailOptClause & sKoffOptClause & _
                    " WHERE id = "            & CStr(nID)
 
             oStmt.executeUpdate(sSQL)
