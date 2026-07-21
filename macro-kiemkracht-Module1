@@ -2837,7 +2837,7 @@ Sub SchrijfWijzigingenTerug()
 
         Dim bWijz As Boolean : bWijz = (kIdx = -1)
         If Not bWijz Then
-            For vi = 0 To 19
+            For vi = 0 To 23
                 If kVals(kIdx, vi) <> Trim(oKB.getCellByPosition(KBKolom(vi), r).getString()) Then
                     bWijz = True : Exit For
                 End If
