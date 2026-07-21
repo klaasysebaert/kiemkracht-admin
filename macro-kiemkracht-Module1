@@ -1463,13 +1463,33 @@ Sub MaakWeekbestand()
         If Trim(bKlantId(b)) <> "" Then
             Dim lRijKId As Long : lRijKId = CLng(Val(bKlantId(b)))
             Dim iWm As Integer
+            Dim fWisselFound As Boolean : fWisselFound = False
             For iWm = 0 To nWissel - 1
                 If wisselKId(iWm) = lRijKId Then
                     Dim sWisselMark As String : sWisselMark = "alternatief voor " & wisselThuis(iWm)
                     sOpmFinaal = IIf(Trim(sOpmFinaal) <> "", sOpmFinaal & " / " & sWisselMark, sWisselMark)
+                    fWisselFound = True
                     Exit For
                 End If
             Next iWm
+            ' Niet gewisseld, maar het geschreven afhaalpunt is deze week wél
+            ' gesloten (backlog #27, Stap 3d) — klant staat nog op het gesloten punt.
+            If Not fWisselFound Then
+                Dim iG As Integer
+                For iG = 0 To nGesloten - 1
+                    If gAfhNaam(iG) = bAfh(b) Then
+                        Dim sGeslotenMark As String : sGeslotenMark = "nog op gesloten afhaalpunt"
+                        If Trim(gAfhAlt(iG)) <> "" Then
+                            sGeslotenMark = sGeslotenMark & " (alternatieven: " & gAfhAlt(iG) & ")"
+                        End If
+                        sOpmFinaal = IIf(Trim(sOpmFinaal) <> "", sOpmFinaal & " / " & sGeslotenMark, sGeslotenMark)
+                        sNogGeslotenRapport = sNogGeslotenRapport & "• " & bVoor(b) & " " & bFam(b) & _
+                            ": " & bAfh(b) & Chr(10)
+                        nNogGesloten = nNogGesloten + 1
+                        Exit For
+                    End If
+                Next iG
+            End If
         End If
         oSheet.getCellByPosition(cOpm, r).setString(sOpmFinaal)
         If Trim(sOpmFinaal) <> "" Then
