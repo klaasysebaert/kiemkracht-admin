@@ -2323,8 +2323,8 @@ Sub MaakWeekbestand()
         sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
             nWissel & " klant(en) met een tijdelijk ander afhaalpunt deze week " & _
             "(praktische info nodig):" & Chr(10) & sWisselRapport & Chr(10) & _
-            "Check ook kolom " & KolomLetter(cOpm) & " (vragen_opmerkingen) / " & _
-            KolomLetter(cAnder) & " (ander, op de stapellijsten) in het weekbestand."
+            "Check ook kolom F (vragen_opmerkingen) / AW (ander, op de stapellijsten) " & _
+            "in het weekbestand."
     End If
 
     If bVanuitWeekbestand Then
