@@ -3171,7 +3171,17 @@ Sub SchrijfWijzigingenTerug()
         If bGewijzigd(rSync) And aKIdx(rSync) >= 0 Then
             Dim kRow As Integer : kRow = aKIdx(rSync) + 1
             Dim viS As Integer
-            For viS = 0 To 15
+            ' 0-23: alle velden, incl. *_afrekening/nooit_afrekening (16-19) en
+            ' de opt-outs (20-23). FIX 2026-07-21: liep vroeger tot 15, waardoor
+            ' 16-19 nooit teruggeschreven werden naar het klanten-tabblad — de
+            ' vergelijkingsbasis bleef daar verouderd, en elke volgende run
+            ' herkende diezelfde klant opnieuw (ten onrechte) als gewijzigd,
+            ' tot een verse LaadAlleTabellen. Enkel de teller/extra UPDATE's
+            ' waren geraakt (SQL leest altijd de live klanten_beheer-cel, nooit
+            ' deze verouderde basis) — geen foute klantgegevens, wel onnodige
+            ' DELETE+INSERT-churn op abonnementen (aangemaakt_op/gewijzigd_op
+            ' reset voor vals-gemelde klanten).
+            For viS = 0 To 23
                 If kVeldCol(viS) >= 0 Then
                     If viS = 4 Then
                         Dim sAfhSync As String
@@ -3185,14 +3195,6 @@ Sub SchrijfWijzigingenTerug()
                         oKlanten.getCellByPosition(kVeldCol(viS), kRow).setString( _
                             oKB.getCellByPosition(KBKolom(viS), rSync).getString())
                     End If
-                End If
-            Next viS
-            ' Opt-outs (vi 20-23) apart bijsynchroniseren — de bovenstaande lus
-            ' dekt enkel 0-15 (bestaande beperking, niet aangepast).
-            For viS = 20 To 23
-                If kVeldCol(viS) >= 0 Then
-                    oKlanten.getCellByPosition(kVeldCol(viS), kRow).setString( _
-                        oKB.getCellByPosition(KBKolom(viS), rSync).getString())
                 End If
             Next viS
         End If
