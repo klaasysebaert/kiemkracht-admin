@@ -424,12 +424,12 @@ End Sub
 ' gebruikersformules en blijft ongemoeid. Bulk via setDataArray.
 ' ---------------------------------------------------------------------------
 Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
-    Dim oKB As Object, oStmt As Object, oRS As Object, oRngA As Object, oRngB As Object
+    Dim oKB As Object, oStmt As Object, oRS As Object, oRngA As Object, oRngB As Object, oRngD As Object
     Dim kbKol(20) As String
     Dim j As Integer
     Dim nRows As Long, r As Long
     Dim sVal As String
-    Dim aOutA As Variant, aOutB As Variant, aRij As Variant
+    Dim aOutA As Variant, aOutB As Variant, aOutD As Variant, aRij As Variant, aRijD As Variant
 
     kbKol(0)  = "voornaam"         : kbKol(1)  = "familienaam"
     kbKol(2)  = "voornaam2"        : kbKol(3)  = "familienaam2"
