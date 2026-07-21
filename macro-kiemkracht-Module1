@@ -2377,7 +2377,7 @@ Sub MaakWeekbestand()
     End If
     If sNogGeslotenRapport <> "" Then
         sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
-            nNogGesloten & " klant(en) staan nog op een deze week GESLOTEN afhaalpunt " & _
+            nNogGesloten & " klant(en) staan deze week nog op een GESLOTEN afhaalpunt " & _
             "(nog niet gewisseld):" & Chr(10) & sNogGeslotenRapport
     End If
     If sWisselRapport <> "" Or sNogGeslotenRapport <> "" Then
