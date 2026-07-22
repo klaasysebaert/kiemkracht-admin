@@ -1472,6 +1472,11 @@ Sub SamMigreerTabnamen(oDoc As Object)
     If oDoc.Sheets.hasByName(TAB_BST_OUD) And Not oDoc.Sheets.hasByName(TAB_BST) Then
         oDoc.Sheets.getByName(TAB_BST_OUD).Name = TAB_BST
     End If
+    ' eerste versie had één Afweeglijst-tab; nu één per dag (volledig afgeleid,
+    ' dus weggooien kan zonder verlies)
+    If oDoc.Sheets.hasByName(TAB_AFW_OUD) Then
+        oDoc.Sheets.removeByName(TAB_AFW_OUD)
+    End If
 End Sub
 
 ' Tabblad ophalen; aanmaken (achteraan) als het nog niet bestaat.
