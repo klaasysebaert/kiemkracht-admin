@@ -41,7 +41,9 @@ Const TAB_LOS = "Los"
 Const TAB_NOT = "Notities"
 Const TAB_BST = "Oogstlijst (bestellijst)"
 Const TAB_BST_OUD = "Bestellijst"     ' oudere documenten -> wordt hernoemd
-Const TAB_AFW = "Afweeglijst"
+Const TAB_AFW_DO  = "Afweeglijst donderdag"
+Const TAB_AFW_VR  = "Afweeglijst vrijdag"
+Const TAB_AFW_OUD = "Afweeglijst"     ' eerste versie: één blad -> wordt gewist
 
 Const SAM_MARKER = "Kiemkracht samenstelling"
 
