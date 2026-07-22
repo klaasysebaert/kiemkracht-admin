@@ -586,7 +586,9 @@ Sub VerversBestellijst()
     On Error GoTo 0
     SluitSSHTunnels()
     oDoc.calculateAll()
-    MsgBox "Aantallen/oogst-bestellijst ververst voor week " & iWeek & "/" & iJaar & ".", 64, "Klaar"
+    MsgBox "Week " & iWeek & "/" & iJaar & " opnieuw geladen uit de database " & _
+           "(samenstelling, losse groenten en notities) en de aantallen, " & _
+           "weglatingen en afweeglijsten ververst.", 64, "Klaar"
     Exit Sub
 
 SamVervFout:
