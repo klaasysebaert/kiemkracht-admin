@@ -199,6 +199,10 @@ Sub MaakSamenstellingDoc()
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_BST)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_AFW_DO)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_AFW_VR)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_OD)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_VD)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_OV)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_VV)
 
     On Error GoTo SamMaakFout
     oConn = MaakDBVerbinding()
