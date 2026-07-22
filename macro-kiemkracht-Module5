@@ -563,6 +563,7 @@ Sub VerversBestellijst()
     If bKlassiek Then
         KlasVulWeekcijfers(oDoc, oConn, iWeek, iJaar)
     Else
+        SamMigreerTabnamen(oDoc)
         SamVulBestellijst(oDoc, oConn, iWeek, iJaar)
     End If
     oConn.close()
