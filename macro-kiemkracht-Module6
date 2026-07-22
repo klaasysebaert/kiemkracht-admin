@@ -496,7 +496,7 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
         Next iSlot
     Next iBlok
 
-    ' --- 3. OogstBestel-tab (leest gDgAant/mWg* op moduleniveau) ---
+    ' --- 3. OogstBestel-tab (leest gDgAant/gWg* op moduleniveau) ---
     KlasVulOogstBestel(oDoc, oConn, iWeek, iJaar)
 
     ' --- 4. Besteld-tellers op de Los-tab ---
