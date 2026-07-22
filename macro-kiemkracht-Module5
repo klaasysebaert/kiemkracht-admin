@@ -1547,6 +1547,397 @@ Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object)
 End Sub
 
 ' ---------------------------------------------------------------------------
+' SamVulPrintbladen — de vier printbladen herbouwen (oogst + vullen, per dag).
+' Vervangen de printpagina's van Blad1 in de Google Sheet:
+'   "Oogst donderdag/vrijdag"  = overzicht bij het oogsten/bestellen: de vier
+'       maat-blokken met prijzen en Nodig, daaronder de totale hoeveelheid per
+'       groente voor die dag en de bijbestellijst van losse groenten.
+'   "Vullen donderdag/vrijdag" = aftikblad bij het vullen van de bakken: per
+'       maat welke groente er in gaat, hoeveel per pakket en hoeveel in totaal.
+' Alles wordt gelezen uit de Samenstelling-/Los-tab en de g*-arrays
+' (SamLaadDagcijfers moet dus eerst gedraaid zijn). Volledig afgeleid.
+' ---------------------------------------------------------------------------
+Private Sub SamVulPrintbladen(oDoc As Object, iWeek As Integer, iJaar As Integer)
+    SamVulPrintOogst(oDoc, 0, iWeek, iJaar)
+    SamVulPrintOogst(oDoc, 1, iWeek, iJaar)
+    SamVulPrintVullen(oDoc, 0, iWeek, iJaar)
+    SamVulPrintVullen(oDoc, 1, iWeek, iJaar)
+End Sub
+
+' Weglatingen van één groente/maat op één dag (0 = donderdag, 1 = vrijdag)
+Private Function SamWegDag(sNaam As String, iMaat As Integer, iDag As Integer) As Long
+    Dim iWg As Integer
+    SamWegDag = 0
+    For iWg = 0 To gNWg - 1
+        If gWgNaam(iWg) = sNaam And gWgMaat(iWg) = iMaat Then
+            If iDag = 0 Then SamWegDag = gWgDon(iWg) Else SamWegDag = gWgVrij(iWg)
+            Exit Function
+        End If
+    Next iWg
+End Function
+
+' ---------------------------------------------------------------------------
+' Oogst/bestelblad voor één dag (kolommen A..H)
+' ---------------------------------------------------------------------------
+Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
+                             iWeek As Integer, iJaar As Integer)
+    Dim oPr    As Object
+    Dim oSam   As Object
+    Dim oLos   As Object
+    Dim iSlot  As Integer
+    Dim iMaat  As Integer
+    Dim iRij   As Integer
+    Dim iKol   As Integer
+    Dim iG     As Integer
+    Dim sNaam  As String
+    Dim sTab   As String
+    Dim sDagLbl As String
+    Dim nAant  As Long
+    Dim nWeg   As Long
+    Dim dNodig As Double
+    Dim dPakket As Double
+    Dim dOmzet As Double
+    Dim dTot   As Double
+    Dim clKop  As Long
+    Dim aMaatNaam(3) As String
+    Dim aMaatKort(3) As String
+
+    aMaatNaam(0) = "Klein groentenpakket"
+    aMaatNaam(1) = "Groot groentenpakket"
+    aMaatNaam(2) = "Extra groot groentenpakket"
+    aMaatNaam(3) = "Mini groentenpakket"
+    aMaatKort(0) = "KG" : aMaatKort(1) = "GG"
+    aMaatKort(2) = "EGG" : aMaatKort(3) = "MINI"
+    clKop = RGB(220, 233, 200)
+    If iDag = 0 Then
+        sTab = TAB_PR_OD : sDagLbl = "DONDERDAG"
+    Else
+        sTab = TAB_PR_OV : sDagLbl = "VRIJDAG"
+    End If
+
+    oPr  = SamZorgTab(oDoc, sTab)
+    oSam = oDoc.Sheets.getByName(TAB_SAM)
+    oLos = oDoc.Sheets.getByName(TAB_LOS)
+    oPr.getCellRangeByPosition(0, 0, 7, PR_MAX_RIJ).clearContents(55)
+
+    ' --- Pakketgroenten inlezen ---
+    Dim gN(SAM_SLOTS - 1)     As String
+    Dim gGr(SAM_SLOTS - 1)    As Double
+    Dim gCo(SAM_SLOTS - 1)    As Double
+    Dim gHv(SAM_SLOTS - 1, 3) As Double
+    Dim gIn(SAM_SLOTS - 1, 3) As Double
+    Dim nG As Integer
+    nG = 0
+    For iSlot = 0 To SAM_SLOTS - 1
+        sNaam = oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
+        If sNaam <> "" Then
+            gN(nG)  = sNaam
+            gGr(nG) = oSam.getCellByPosition(1, SAM_RIJ0 + iSlot).getValue()
+            gCo(nG) = oSam.getCellByPosition(2, SAM_RIJ0 + iSlot).getValue()
+            For iMaat = 0 To 3
+                gHv(nG, iMaat) = oSam.getCellByPosition(3 + iMaat * 2, SAM_RIJ0 + iSlot).getValue()
+                gIn(nG, iMaat) = oSam.getCellByPosition(4 + iMaat * 2, SAM_RIJ0 + iSlot).getValue()
+            Next iMaat
+            nG = nG + 1
+        End If
+    Next iSlot
+
+    ' --- Kop: dag + PAKKETTEN-matrix ---
+    oPr.getCellByPosition(0, 0).setString(sDagLbl)
+    oPr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oPr.getCellByPosition(0, 0).CharHeight = 16
+    ' week + tijdstempel op een eigen rij: in kolom G/H loopt de tekst voorbij
+    ' de laatste printkolom en dat levert een lege overloop-pagina op
+    oPr.getCellByPosition(0, 1).setString("week " & iWeek & "/" & iJaar & _
+        " — ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+
+    oPr.getCellByPosition(2, 2).setString("PAKKETTEN")
+    For iMaat = 0 To 3
+        oPr.getCellByPosition(3 + iMaat, 2).setString(aMaatKort(iMaat))
+        oPr.getCellByPosition(3 + iMaat, 3).setValue(gDgTot(iMaat))
+        oPr.getCellByPosition(3 + iMaat, 4).setValue(gDgAant(iMaat, 0))
+        oPr.getCellByPosition(3 + iMaat, 5).setValue(gDgAant(iMaat, 1))
+    Next iMaat
+    oPr.getCellByPosition(2, 3).setString("don en vrij")
+    oPr.getCellByPosition(2, 4).setString("don")
+    oPr.getCellByPosition(2, 5).setString("vrij")
+    oPr.getCellRangeByPosition(2, 2, 6, 2).CellBackColor = clKop
+    oPr.getCellRangeByPosition(2, 2, 6, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oPr.getCellRangeByPosition(2, 4 + iDag, 6, 4 + iDag).CharWeight = _
+        com.sun.star.awt.FontWeight.BOLD
+
+    ' --- Kolomkoppen ---
+    iRij = 7
+    oPr.getCellByPosition(0, iRij).setString("Aantal")
+    oPr.getCellByPosition(1, iRij).setString("Groente")
+    oPr.getCellByPosition(2, iRij).setString("Grooth.")
+    oPr.getCellByPosition(3, iRij).setString("Cons.")
+    oPr.getCellByPosition(4, iRij).setString("Hoeveelh.")
+    oPr.getCellByPosition(5, iRij).setString("In pakket")
+    oPr.getCellByPosition(6, iRij).setString("Nodig")
+    oPr.getCellByPosition(7, iRij).setString("Weglating")
+    oPr.getCellRangeByPosition(0, iRij, 7, iRij).CellBackColor = clKop
+    oPr.getCellRangeByPosition(0, iRij, 7, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    iRij = iRij + 1
+
+    ' --- Vier maat-blokken ---
+    Dim dNodigTot(SAM_SLOTS - 1) As Double
+    For iG = 0 To nG - 1
+        dNodigTot(iG) = 0
+    Next iG
+
+    For iMaat = 0 To 3
+        oPr.getCellByPosition(0, iRij).setValue(gDgAant(iMaat, iDag))
+        oPr.getCellByPosition(1, iRij).setString(aMaatNaam(iMaat) & ":")
+        oPr.getCellRangeByPosition(0, iRij, 7, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+        iRij = iRij + 1
+        dPakket = 0
+        dOmzet  = 0
+        For iG = 0 To nG - 1
+            If gHv(iG, iMaat) > 0 Then
+                nWeg  = SamWegDag(gN(iG), iMaat, iDag)
+                nAant = gDgAant(iMaat, iDag) - nWeg
+                If nAant < 0 Then nAant = 0
+                dNodig = Int(nAant * gHv(iG, iMaat) * 100 + 0.5) / 100
+                oPr.getCellByPosition(0, iRij).setValue(nAant)
+                oPr.getCellByPosition(1, iRij).setString(gN(iG))
+                oPr.getCellByPosition(2, iRij).setString(Format(gGr(iG), "0.00"))
+                oPr.getCellByPosition(3, iRij).setString(Format(gCo(iG), "0.00"))
+                oPr.getCellByPosition(4, iRij).setString(Format(gHv(iG, iMaat), "0.00"))
+                oPr.getCellByPosition(4, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+                oPr.getCellByPosition(5, iRij).setString(Format(gIn(iG, iMaat), "0.00"))
+                oPr.getCellByPosition(6, iRij).setString(Format(dNodig, "0.00"))
+                If nWeg > 0 Then
+                    oPr.getCellByPosition(7, iRij).setString(nWeg & " niet!")
+                End If
+                dPakket = dPakket + gIn(iG, iMaat)
+                dOmzet  = dOmzet + nAant * gIn(iG, iMaat)
+                dNodigTot(iG) = dNodigTot(iG) + dNodig
+                iRij = iRij + 1
+            End If
+        Next iG
+        oPr.getCellByPosition(4, iRij).setString("Pakket EUR:")
+        oPr.getCellByPosition(5, iRij).setString(Format(dPakket, "0.00"))
+        oPr.getCellByPosition(6, iRij).setString("doel " & Format(mPakPrijs(iMaat), "0.00"))
+        oPr.getCellByPosition(7, iRij).setString(Format(Int(dOmzet * 100 + 0.5) / 100, "0.00"))
+        oPr.getCellRangeByPosition(4, iRij, 7, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+        iRij = iRij + 2
+    Next iMaat
+
+    ' --- Totale hoeveelheid per groente voor deze dag ---
+    iRij = iRij + 1
+    oPr.getCellByPosition(0, iRij).setString("TOTAAL NODIG " & sDagLbl & " (alle pakketten samen)")
+    oPr.getCellByPosition(0, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    iRij = iRij + 1
+    oPr.getCellByPosition(0, iRij).setString("Groente")
+    oPr.getCellByPosition(2, iRij).setString("Nodig")
+    oPr.getCellByPosition(3, iRij).setString("Grooth. EUR")
+    oPr.getCellByPosition(4, iRij).setString("Kost EUR")
+    oPr.getCellRangeByPosition(0, iRij, 4, iRij).CellBackColor = clKop
+    oPr.getCellRangeByPosition(0, iRij, 4, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    iRij = iRij + 1
+    For iG = 0 To nG - 1
+        If dNodigTot(iG) > 0 Then
+            oPr.getCellByPosition(0, iRij).setString(gN(iG))
+            oPr.getCellByPosition(2, iRij).setString(Format(dNodigTot(iG), "0.00"))
+            oPr.getCellByPosition(3, iRij).setString(Format(gGr(iG), "0.00"))
+            oPr.getCellByPosition(4, iRij).setString( _
+                Format(Int(dNodigTot(iG) * gGr(iG) * 100 + 0.5) / 100, "0.00"))
+            iRij = iRij + 1
+        End If
+    Next iG
+
+    ' --- Bijbestellijst losse groenten (besteld = teller van de hele week) ---
+    iRij = iRij + 2
+    oPr.getCellByPosition(0, iRij).setString("BIJBESTELLEN — losse groenten (besteld: hele week)")
+    oPr.getCellByPosition(0, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    iRij = iRij + 1
+    oPr.getCellByPosition(0, iRij).setString("Losse groente")
+    oPr.getCellByPosition(2, iRij).setString("Besteld")
+    oPr.getCellByPosition(3, iRij).setString("Eenheid")
+    oPr.getCellByPosition(4, iRij).setString("Grooth. EUR")
+    oPr.getCellByPosition(5, iRij).setString("Kost EUR")
+    oPr.getCellRangeByPosition(0, iRij, 5, iRij).CellBackColor = clKop
+    oPr.getCellRangeByPosition(0, iRij, 5, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    iRij = iRij + 1
+    Dim dBesteld As Double
+    Dim dGrooth  As Double
+    For iSlot = 0 To LOS_SLOTS - 1
+        sNaam = oLos.getCellByPosition(0, LOS_RIJ0 + iSlot).getString()
+        If sNaam <> "" Then
+            dBesteld = oLos.getCellByPosition(8, LOS_RIJ0 + iSlot).getValue()
+            dGrooth  = oLos.getCellByPosition(2, LOS_RIJ0 + iSlot).getValue()
+            If dBesteld > 0 Then
+                oPr.getCellByPosition(0, iRij).setString(sNaam)
+                oPr.getCellByPosition(2, iRij).setString(Format(dBesteld, "0.00"))
+                oPr.getCellByPosition(3, iRij).setString( _
+                    oLos.getCellByPosition(3, LOS_RIJ0 + iSlot).getString())
+                If dGrooth > 0 Then
+                    oPr.getCellByPosition(4, iRij).setString(Format(dGrooth, "0.00"))
+                    oPr.getCellByPosition(5, iRij).setString( _
+                        Format(Int(dBesteld * dGrooth * 100 + 0.5) / 100, "0.00"))
+                End If
+                iRij = iRij + 1
+            End If
+        End If
+    Next iSlot
+
+    ' --- Opmaak: getalkolommen rechts uitlijnen ---
+    oPr.getCellRangeByPosition(2, 7, 7, iRij).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
+    oPr.getCellRangeByPosition(0, 7, 0, iRij).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
+
+    ' --- Kolombreedtes (samen 170 mm, past staand op A4) ---
+    oPr.Columns.getByIndex(0).Width = 1500
+    oPr.Columns.getByIndex(1).Width = 4500
+    For iKol = 2 To 5
+        oPr.Columns.getByIndex(iKol).Width = 1800
+    Next iKol
+    oPr.Columns.getByIndex(6).Width = 1900
+    oPr.Columns.getByIndex(7).Width = 1900
+
+    SamZetPrintPagina(oDoc, oPr)
+End Sub
+
+' ---------------------------------------------------------------------------
+' Vulblad voor één dag (kolommen A..E): per maat wat er in de bak gaat
+' ---------------------------------------------------------------------------
+Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
+                              iWeek As Integer, iJaar As Integer)
+    Dim oPr    As Object
+    Dim oSam   As Object
+    Dim iSlot  As Integer
+    Dim iMaat  As Integer
+    Dim iRij   As Integer
+    Dim iKol   As Integer
+    Dim iG     As Integer
+    Dim sNaam  As String
+    Dim sTab   As String
+    Dim sDagLbl As String
+    Dim nAant  As Long
+    Dim nWeg   As Long
+    Dim dNodig As Double
+    Dim clKop  As Long
+    Dim aMaatNaam(3) As String
+    Dim aMaatKleur(3) As Long
+
+    aMaatNaam(0) = "Klein groentenpakket"
+    aMaatNaam(1) = "Groot groentenpakket"
+    aMaatNaam(2) = "Extra groot groentenpakket"
+    aMaatNaam(3) = "Mini groentenpakket"
+    ' maat-kleuren zoals het weekbestand
+    aMaatKleur(0) = RGB(204, 255, 153) : aMaatKleur(1) = RGB(153, 204, 255)
+    aMaatKleur(2) = RGB(178, 178, 178) : aMaatKleur(3) = RGB(255, 153, 204)
+    clKop = RGB(238, 238, 238)
+    If iDag = 0 Then
+        sTab = TAB_PR_VD : sDagLbl = "DONDERDAG"
+    Else
+        sTab = TAB_PR_VV : sDagLbl = "VRIJDAG"
+    End If
+
+    oPr  = SamZorgTab(oDoc, sTab)
+    oSam = oDoc.Sheets.getByName(TAB_SAM)
+    oPr.getCellRangeByPosition(0, 0, 4, PR_MAX_RIJ).clearContents(55)
+
+    Dim gN(SAM_SLOTS - 1)     As String
+    Dim gHv(SAM_SLOTS - 1, 3) As Double
+    Dim nG As Integer
+    nG = 0
+    For iSlot = 0 To SAM_SLOTS - 1
+        sNaam = oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
+        If sNaam <> "" Then
+            gN(nG) = sNaam
+            For iMaat = 0 To 3
+                gHv(nG, iMaat) = oSam.getCellByPosition(3 + iMaat * 2, SAM_RIJ0 + iSlot).getValue()
+            Next iMaat
+            nG = nG + 1
+        End If
+    Next iSlot
+
+    oPr.getCellByPosition(0, 0).setString(sDagLbl & " — pakketten vullen")
+    oPr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oPr.getCellByPosition(0, 0).CharHeight = 18
+    oPr.getCellByPosition(0, 1).setString("week " & iWeek & "/" & iJaar & _
+        " — ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+    oPr.getCellByPosition(0, 1).CharHeight = 10
+
+    iRij = 3
+    For iMaat = 0 To 3
+        oPr.getCellByPosition(0, iRij).setValue(gDgAant(iMaat, iDag))
+        oPr.getCellByPosition(1, iRij).setString(aMaatNaam(iMaat))
+        oPr.getCellRangeByPosition(0, iRij, 4, iRij).CellBackColor = aMaatKleur(iMaat)
+        oPr.getCellRangeByPosition(0, iRij, 4, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+        iRij = iRij + 1
+        oPr.getCellByPosition(0, iRij).setString("Aantal")
+        oPr.getCellByPosition(1, iRij).setString("Groente")
+        oPr.getCellByPosition(2, iRij).setString("Per pakket")
+        oPr.getCellByPosition(3, iRij).setString("Samen")
+        oPr.getCellByPosition(4, iRij).setString("Weglatingen")
+        oPr.getCellRangeByPosition(0, iRij, 4, iRij).CellBackColor = clKop
+        iRij = iRij + 1
+        For iG = 0 To nG - 1
+            If gHv(iG, iMaat) > 0 Then
+                nWeg  = SamWegDag(gN(iG), iMaat, iDag)
+                nAant = gDgAant(iMaat, iDag) - nWeg
+                If nAant < 0 Then nAant = 0
+                dNodig = Int(nAant * gHv(iG, iMaat) * 100 + 0.5) / 100
+                oPr.getCellByPosition(0, iRij).setValue(nAant)
+                oPr.getCellByPosition(1, iRij).setString(gN(iG))
+                oPr.getCellByPosition(2, iRij).setString("x " & Format(gHv(iG, iMaat), "0.00"))
+                oPr.getCellByPosition(3, iRij).setString("= " & Format(dNodig, "0.00"))
+                If nWeg > 0 Then
+                    oPr.getCellByPosition(4, iRij).setString(nWeg & " niet!")
+                Else
+                    oPr.getCellByPosition(4, iRij).setString("alle")
+                End If
+                iRij = iRij + 1
+            End If
+        Next iG
+        iRij = iRij + 1
+    Next iMaat
+
+    oPr.getCellRangeByPosition(0, 3, 4, iRij).CharHeight = 14
+    oPr.getCellByPosition(0, 0).CharHeight = 18
+    oPr.getCellByPosition(0, 1).CharHeight = 10
+    oPr.getCellRangeByPosition(0, 3, 0, iRij).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
+
+    oPr.Columns.getByIndex(0).Width = 1600
+    oPr.Columns.getByIndex(1).Width = 6000
+    oPr.Columns.getByIndex(2).Width = 2200
+    oPr.Columns.getByIndex(3).Width = 2200
+    oPr.Columns.getByIndex(4).Width = 2000
+
+    SamZetPrintPagina(oDoc, oPr)
+End Sub
+
+' Pagina-instelling voor de printbladen: A4 staand, marges 10 mm, geen
+' schaling (de kolombreedtes passen op de breedte; lange bladen lopen gewoon
+' door naar een tweede pagina). Elk blad is een eigen tab, dus elke dag-kop
+' begint sowieso bovenaan een pagina.
+Private Sub SamZetPrintPagina(oDoc As Object, oSheet As Object)
+    Dim oStyles As Object
+    Dim oStyle  As Object
+    On Error Resume Next
+    oStyles = oDoc.StyleFamilies.getByName("PageStyles")
+    If Not oStyles.hasByName("Printblad") Then
+        oStyle = oDoc.createInstance("com.sun.star.style.PageStyle")
+        oStyles.insertByName("Printblad", oStyle)
+    End If
+    oStyle = oStyles.getByName("Printblad")
+    oStyle.IsLandscape  = False
+    oStyle.Width        = 21000
+    oStyle.Height       = 29700
+    oStyle.LeftMargin   = 1000
+    oStyle.RightMargin  = 1000
+    oStyle.TopMargin    = 1000
+    oStyle.BottomMargin = 1000
+    oStyle.HeaderIsOn   = False
+    oStyle.FooterIsOn   = False
+    oStyle.ScaleToPages = 0
+    oStyle.PageScale    = 100
+    oSheet.PageStyle = "Printblad"
+    On Error GoTo 0
+End Sub
+' ---------------------------------------------------------------------------
 ' Besteld-tellers op de Los-tab verversen (kolom I, match op naam).
 ' Gedeeld door de tab-layout (Module5) en de klassieke layout (Module6).
 ' De kolom wordt eerst leeggemaakt: staat er een groente in het document die
