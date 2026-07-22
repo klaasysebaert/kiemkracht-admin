@@ -44,6 +44,10 @@ Const TAB_BST_OUD = "Bestellijst"     ' oudere documenten -> wordt hernoemd
 Const TAB_AFW_DO  = "Afweeglijst donderdag"
 Const TAB_AFW_VR  = "Afweeglijst vrijdag"
 Const TAB_AFW_OUD = "Afweeglijst"     ' eerste versie: één blad -> wordt gewist
+Const TAB_PR_OD   = "Oogst donderdag"
+Const TAB_PR_OV   = "Oogst vrijdag"
+Const TAB_PR_VD   = "Vullen donderdag"
+Const TAB_PR_VV   = "Vullen vrijdag"
 
 Const SAM_MARKER = "Kiemkracht samenstelling"
 
