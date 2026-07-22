@@ -587,10 +587,7 @@ Private Sub BouwEnVulSamenstelling(oDoc As Object, oConn As Object, _
     Dim oRS   As Object
     Dim iMaat As Integer
 
-    ' Documenten van vóór de hernoeming: tab 'Bestellijst' -> TAB_BST
-    If oDoc.Sheets.hasByName(TAB_BST_OUD) And Not oDoc.Sheets.hasByName(TAB_BST) Then
-        oDoc.Sheets.getByName(TAB_BST_OUD).Name = TAB_BST
-    End If
+    SamMigreerTabnamen(oDoc)
 
     ' --- Week-meta (weken-rij kan nog ontbreken → 'nieuw') ---
     mSamStatus   = "nieuw"
