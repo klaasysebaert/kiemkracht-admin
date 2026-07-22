@@ -1649,7 +1649,7 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     ' week + tijdstempel op een eigen rij: in kolom G/H loopt de tekst voorbij
     ' de laatste printkolom en dat levert een lege overloop-pagina op
     oPr.getCellByPosition(0, 1).setString("week " & iWeek & "/" & iJaar & _
-        " — ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+        " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
 
     oPr.getCellByPosition(1, 2).setString("PAKKETTEN")
     For iMaat = 0 To 3
@@ -1863,7 +1863,7 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
     oPr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oPr.getCellByPosition(0, 0).CharHeight = 18
     oPr.getCellByPosition(0, 1).setString("week " & iWeek & "/" & iJaar & _
-        " — ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+        " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
     oPr.getCellByPosition(0, 1).CharHeight = 10
 
     iRij = 3
