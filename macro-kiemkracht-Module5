@@ -1441,6 +1441,7 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
 
     ' --- Titel ---
     oAfw.getCellByPosition(0, 0).setString(sDagLbl)
+    oAfw.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oAfw.getCellByPosition(4, 0).setString( _
         "week " & iWeek & "/" & iJaar & " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
 
