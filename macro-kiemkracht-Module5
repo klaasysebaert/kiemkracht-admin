@@ -97,6 +97,9 @@ Const AFW_RIJ0    = 2             ' eerste blokrij (rij 3, 0-based)
 Const AFW_KOL_R   = 6             ' rechterhelft begint in kolom G
 Const AFW_MAX_RIJ = 200           ' wisbereik
 
+' Printbladen (oogst/vullen per dag): wisbereik
+Const PR_MAX_RIJ  = 200
+
 ' --- Module-variabelen (gezet door SamLaadWeekMeta / SamLaadPakketten) -----
 Private mPakId(3)    As Long      ' pakket_id per maat: 0=KG 1=GG 2=EGG 3=MINI
 Private mPakPrijs(3) As Double    ' doelprijs per maat
