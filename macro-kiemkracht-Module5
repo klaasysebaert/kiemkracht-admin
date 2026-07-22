@@ -1788,15 +1788,15 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
         End If
     Next iSlot
 
-    ' --- Opmaak: getalkolommen rechts uitlijnen ---
+    ' --- Opmaak: enkel de getalkolommen rechts uitlijnen (kolom A/B links,
+    ' anders kappen lange groentenamen en sectietitels links af) ---
     oPr.getCellRangeByPosition(2, 7, 7, iRij).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
-    oPr.getCellRangeByPosition(0, 7, 0, iRij).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
 
-    ' --- Kolombreedtes (samen 170 mm, past staand op A4) ---
+    ' --- Kolombreedtes (samen 175 mm, past staand op A4) ---
     oPr.Columns.getByIndex(0).Width = 1500
-    oPr.Columns.getByIndex(1).Width = 4500
+    oPr.Columns.getByIndex(1).Width = 4200
     For iKol = 2 To 5
-        oPr.Columns.getByIndex(iKol).Width = 1800
+        oPr.Columns.getByIndex(iKol).Width = 2000
     Next iKol
     oPr.Columns.getByIndex(6).Width = 1900
     oPr.Columns.getByIndex(7).Width = 1900
