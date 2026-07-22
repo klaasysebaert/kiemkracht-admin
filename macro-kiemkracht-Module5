@@ -82,17 +82,16 @@ Const BST_RIJ0     = 5
 Const BST_LOS_KOP  = 23
 Const BST_LOS0     = 24
 
-' Tab Afweeglijst: zelfde dag-blokken als de klassieke layout (Module6),
-' maar in een eigen tabblad. Per pakketgroente een blok van 7 rijen
-' (naam + MINI/EGG/GG/KG + totaalrij), twee blokken naast elkaar
-' (kolommen A.. en G..). Eerst DONDERDAG, dan VRIJDAG.
-' 16 slots -> 8 blok-paren x 7 rijen = 56 rijen per dag.
-Const AFW_BLOKH    = 7
-Const AFW_DON_LBL  = 2
-Const AFW_DON0     = 3
-Const AFW_VRIJ_LBL = 60
-Const AFW_VRIJ0    = 61
-Const AFW_EIND     = 117          ' laatste rij die gewist wordt
+' Tabs Afweeglijst donderdag / vrijdag: nabouw van de gelijknamige tabbladen
+' in de Google Sheet (print-layout, lettergrootte 20, één A4 per dag).
+' Per pakketgroente één blok: naamrij + één rij per maat die de groente
+' écht in het pakket heeft (MINI/EGG/GG/KG, maten zonder hoeveelheid krijgen
+' géén rij) + de rij "donderdag nodig:". Blokken staan aaneengesloten met
+' twee lege rijen ertussen en worden over twee bladhelften verdeeld:
+' links A..E, rechts G..K, allebei vanaf rij 3 (A1 = dag-titel).
+Const AFW_RIJ0    = 2             ' eerste blokrij (rij 3, 0-based)
+Const AFW_KOL_R   = 6             ' rechterhelft begint in kolom G
+Const AFW_MAX_RIJ = 200           ' wisbereik
 
 ' --- Module-variabelen (gezet door SamLaadWeekMeta / SamLaadPakketten) -----
 Private mPakId(3)    As Long      ' pakket_id per maat: 0=KG 1=GG 2=EGG 3=MINI
