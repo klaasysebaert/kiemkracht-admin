@@ -37,7 +37,9 @@
 Const TAB_SAM = "Samenstelling"
 Const TAB_LOS = "Los"
 Const TAB_NOT = "Notities"
-Const TAB_BST = "Bestellijst"
+Const TAB_BST = "Oogstlijst (bestellijst)"
+Const TAB_BST_OUD = "Bestellijst"     ' oudere documenten -> wordt hernoemd
+Const TAB_AFW = "Afweeglijst"
 
 Const SAM_MARKER = "Kiemkracht samenstelling"
 
