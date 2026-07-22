@@ -502,7 +502,7 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
     ' --- 4. Besteld-tellers op de Los-tab ---
     SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
 
-    oOgb.getCellByPosition(4, 0).setString("ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+    oOgb.getCellByPosition(4, 0).setString("versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
 End Sub
 
 ' ---------------------------------------------------------------------------
