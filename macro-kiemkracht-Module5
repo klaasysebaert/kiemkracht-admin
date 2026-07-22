@@ -1686,9 +1686,12 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
         dNodigTot(iG) = 0
     Next iG
 
+    Dim iKopRij As Integer
     For iMaat = 0 To 3
+        iKopRij = iRij
         oPr.getCellByPosition(0, iRij).setValue(gDgAant(iMaat, iDag))
         oPr.getCellByPosition(1, iRij).setString(aMaatNaam(iMaat) & ":")
+        oPr.getCellByPosition(6, iRij).setString("omzet:")
         oPr.getCellRangeByPosition(0, iRij, 7, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
         iRij = iRij + 1
         dPakket = 0
