@@ -1737,8 +1737,8 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     iRij = iRij + 1
     oPr.getCellByPosition(0, iRij).setString("Groente")
     oPr.getCellByPosition(2, iRij).setString("Nodig")
-    oPr.getCellByPosition(3, iRij).setString("Grooth. EUR")
-    oPr.getCellByPosition(4, iRij).setString("Kost EUR")
+    oPr.getCellByPosition(3, iRij).setString("Grooth.")
+    oPr.getCellByPosition(4, iRij).setString("Kost")
     oPr.getCellRangeByPosition(0, iRij, 4, iRij).CellBackColor = clKop
     oPr.getCellRangeByPosition(0, iRij, 4, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
     iRij = iRij + 1
