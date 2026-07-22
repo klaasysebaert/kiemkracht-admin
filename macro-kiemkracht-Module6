@@ -49,15 +49,9 @@ Private mKlasStatus      As String
 Private mKlasMarge       As Double
 Private mKlasBegTekst    As String
 
-' Weekcijfers-momentopname (gezet door KlasVulWeekcijfers; op moduleniveau
-' omdat StarBasic arrays niet betrouwbaar als Sub-parameter doorgeeft)
-Private mOgbAant(3, 1)   As Long     ' (maat, 0=don/1=vrij)
-Private mWgNaam(199)     As String   ' weglatingen per (groente, maat)
-Private mWgMaat(199)     As Integer
-Private mWgDon(199)      As Long
-Private mWgVrij(199)     As Long
-Private mWgOnb(199)      As Long     ' dag onbekend -> telt enkel in TOT mee
-Private mNWg             As Integer
+' Weekcijfers-momentopname: de g*-arrays (gDgAant/gDgTot/gWg*/gNWg) staan
+' Public in Module5 en worden gevuld door SamLaadDagcijfers — op moduleniveau
+' omdat StarBasic arrays niet betrouwbaar als Sub-parameter doorgeeft.
 
 ' ===========================================================================
 ' MaakSamenstellingKlassiek — nieuw klassiek samenstelling-bestand
@@ -461,179 +455,25 @@ End Sub
 Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar As Integer)
     Dim oSheet As Object
     Dim oOgb   As Object
-    Dim oStmt  As Object
-    Dim oRS    As Object
     Dim iMaat  As Integer
-    Dim iDag   As Integer
     Dim iBlok  As Integer
     Dim iSlot  As Integer
     Dim iRij   As Integer
+    Dim iWg    As Integer
     Dim sNaam  As String
-    Dim sDag   As String
-    Dim nTel   As Long
-    Dim sParRitmes As String
-    Dim iWeekNum   As Long
-    Dim sMaatCase  As String
-    Dim sTakJoins  As String
-    Dim sSql   As String
 
     oSheet = oDoc.Sheets.getByName(KLAS_TAB_SAM)
     oOgb   = SamZorgTab(oDoc, KLAS_TAB_OGB)
 
-    If (iWeek Mod 2) = 0 Then
-        sParRitmes = "'wekelijks','pare-week'"
-    Else
-        sParRitmes = "'wekelijks','onpare-week'"
-    End If
-    iWeekNum = CLng(iJaar) * 100 + iWeek
-
-    sMaatCase = "CASE LOWER(TRIM(REPLACE(%s, ' pakket', ''))) " & _
-                "WHEN 'klein' THEN 'klein' WHEN 'groot' THEN 'groot' " & _
-                "WHEN 'extra groot' THEN 'extra-groot' WHEN 'extra-groot' THEN 'extra-groot' " & _
-                "WHEN 'mini' THEN 'mini' END"
-    ' klant/afhaalpunt-joins voor de dag-bepaling van een bestelling
-    ' (zelfde COALESCE-volgorde als MaakWeekbestand: klant-afhaalpunt wint)
-    sTakJoins = " LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL " & _
-                "     AND k.email1 = b.klant_email)) " & _
-                " LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
-                " LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt "
-
-    ' --- 1. Aantal pakketten per maat per dag ---
-    Dim aAantTot(3)   As Long
-    For iMaat = 0 To 3
-        aAantTot(iMaat) = 0
-        mOgbAant(iMaat, 0) = 0
-        mOgbAant(iMaat, 1) = 0
-    Next iMaat
-
-    sSql = "WITH vb_week AS (" & _
-           " SELECT klant_id, LOWER(klant_email) AS email_l, " & _
-           Replace(sMaatCase, "%s", "formaat") & " AS sleutel " & _
-           " FROM vooruitbestellingen " & _
-           " WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek & _
-           "   AND formaat IS NOT NULL), " & _
-           "alle AS (" & _
-           " SELECT " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
-           " LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag " & _
-           " FROM bestellingen b " & sTakJoins & _
-           " WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
-           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
-           "   WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
-           "    AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
-           "         AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) " & _
-           " UNION ALL " & _
-           " SELECT COALESCE(vb.sleutel, a.formaat), LOWER(COALESCE(ap.dag_klaarmaken,'')) " & _
-           " FROM abonnementen a JOIN klanten k ON k.id = a.klant_id " & _
-           " LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
-           " LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL " & _
-           "      AND vb.email_l = LOWER(k.email1))) " & _
-           " WHERE a.status = 'actief' AND a.ritme IN (" & sParRitmes & ") " & _
-           "  AND (a.eind_jaar IS NULL OR (a.eind_jaar * 100 + a.eind_week) > " & iWeekNum & ") " & _
-           "  AND (a.start_jaar IS NULL OR (a.start_jaar * 100 + a.start_week) <= " & iWeekNum & ") " & _
-           "  AND (a.pauze_vanaf_week IS NULL OR " & _
-           "       (a.pauze_vanaf_jaar * 100 + a.pauze_vanaf_week) > " & iWeekNum & ") " & _
-           "  AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
-           "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
-           "    AND (bx.klant_id = k.id OR (bx.klant_id IS NULL " & _
-           "         AND LOWER(bx.klant_email) = LOWER(k.email1)))) " & _
-           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann2 " & _
-           "   WHERE ann2.jaar = " & iJaar & " AND ann2.week_annulatie = " & iWeek & _
-           "    AND (ann2.klant_id = k.id OR (ann2.klant_id IS NULL " & _
-           "         AND LOWER(ann2.klant_email) = LOWER(k.email1)))) " & _
-           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann3 " & _
-           "   WHERE ann3.jaar = " & iJaar & _
-           "    AND ann3.week_stopzetten_abonnement > 0 " & _
-           "    AND ann3.week_stopzetten_abonnement <= " & iWeek & _
-           "    AND (ann3.klant_id = k.id OR (ann3.klant_id IS NULL " & _
-           "         AND LOWER(ann3.klant_email) = LOWER(k.email1)))) " & _
-           " UNION ALL " & _
-           " SELECT vb.sleutel, LOWER(COALESCE(ap.dag_klaarmaken,'')) " & _
-           " FROM klanten k " & _
-           " LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
-           " INNER JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL " & _
-           "      AND vb.email_l = LOWER(k.email1))) " & _
-           " WHERE k.status = 'actief' AND vb.sleutel IS NOT NULL " & _
-           "  AND NOT EXISTS (SELECT 1 FROM abonnementen a3 WHERE a3.klant_id = k.id " & _
-           "   AND a3.status = 'actief' AND a3.ritme IN (" & sParRitmes & ") " & _
-           "   AND (a3.pauze_vanaf_week IS NULL OR " & _
-           "        (a3.pauze_vanaf_jaar * 100 + a3.pauze_vanaf_week) > " & iWeekNum & ") " & _
-           "   AND (a3.eind_jaar IS NULL OR (a3.eind_jaar * 100 + a3.eind_week) > " & iWeekNum & ") " & _
-           "   AND (a3.start_jaar IS NULL OR (a3.start_jaar * 100 + a3.start_week) <= " & iWeekNum & ")) " & _
-           "  AND NOT EXISTS (SELECT 1 FROM bestellingen bx " & _
-           "   WHERE bx.weeknummer = " & iWeek & " AND bx.jaar = " & iJaar & _
-           "    AND (bx.klant_id = k.id OR (bx.klant_id IS NULL " & _
-           "         AND LOWER(bx.klant_email) = LOWER(k.email1)))) " & _
-           "  AND NOT EXISTS (SELECT 1 FROM annulaties ann4 " & _
-           "   WHERE ann4.jaar = " & iJaar & " AND ann4.week_annulatie = " & iWeek & _
-           "    AND (ann4.klant_id = k.id OR (ann4.klant_id IS NULL " & _
-           "         AND LOWER(ann4.klant_email) = LOWER(k.email1))))) " & _
-           "SELECT sleutel, dag, COUNT(*) FROM alle WHERE sleutel IS NOT NULL GROUP BY 1, 2"
-
-    oStmt = oConn.createStatement()
-    oRS = oStmt.executeQuery(sSql)
-    Do While oRS.next()
-        iMaat = SamMaatIdx(oRS.getString(1))
-        sDag  = oRS.getString(2)
-        nTel  = oRS.getLong(3)
-        If iMaat >= 0 Then
-            aAantTot(iMaat) = aAantTot(iMaat) + nTel
-            If sDag = "donderdag" Then mOgbAant(iMaat, 0) = mOgbAant(iMaat, 0) + nTel
-            If sDag = "vrijdag"   Then mOgbAant(iMaat, 1) = mOgbAant(iMaat, 1) + nTel
-        End If
-    Loop
-    oRS.close() : oStmt.close()
+    ' --- 1+2. Aantal pakketten per maat per dag + weglatingen per (groente,
+    ' maat, dag): gedeelde loader in Module5, vult de g*-arrays ---
+    SamLaadDagcijfers(oConn, iWeek, iJaar)
 
     For iMaat = 0 To 3
-        oSheet.getCellByPosition(4 + iMaat, 2).setValue(aAantTot(iMaat))
-        oSheet.getCellByPosition(4 + iMaat, 3).setValue(mOgbAant(iMaat, 0))
-        oSheet.getCellByPosition(4 + iMaat, 4).setValue(mOgbAant(iMaat, 1))
+        oSheet.getCellByPosition(4 + iMaat, 2).setValue(gDgTot(iMaat))
+        oSheet.getCellByPosition(4 + iMaat, 3).setValue(gDgAant(iMaat, 0))
+        oSheet.getCellByPosition(4 + iMaat, 4).setValue(gDgAant(iMaat, 1))
     Next iMaat
-
-    ' --- 2. Weglatingen per (groente, maat, dag) ---
-    Dim iWg   As Integer
-    Dim iVind As Integer
-    mNWg = 0
-    oStmt = oConn.createStatement()
-    oRS = oStmt.executeQuery( _
-        "SELECT bw.groente_naam, " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
-        "LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag, COUNT(*) " & _
-        "FROM bestelling_weglatingen bw " & _
-        "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & sTakJoins & _
-        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
-        " AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
-        "  WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
-        "   AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
-        "        AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) " & _
-        "GROUP BY 1, 2, 3")
-    Do While oRS.next()
-        iMaat = SamMaatIdx(oRS.getString(2))
-        If iMaat >= 0 And mNWg < 200 Then
-            iVind = -1
-            For iWg = 0 To mNWg - 1
-                If mWgNaam(iWg) = oRS.getString(1) And mWgMaat(iWg) = iMaat Then
-                    iVind = iWg
-                    Exit For
-                End If
-            Next iWg
-            If iVind = -1 Then
-                iVind = mNWg
-                mWgNaam(mNWg) = oRS.getString(1)
-                mWgMaat(mNWg) = iMaat
-                mWgDon(mNWg) = 0 : mWgVrij(mNWg) = 0 : mWgOnb(mNWg) = 0
-                mNWg = mNWg + 1
-            End If
-            sDag = oRS.getString(3)
-            nTel = oRS.getLong(4)
-            If sDag = "donderdag" Then
-                mWgDon(iVind) = mWgDon(iVind) + nTel
-            ElseIf sDag = "vrijdag" Then
-                mWgVrij(iVind) = mWgVrij(iVind) + nTel
-            Else
-                mWgOnb(iVind) = mWgOnb(iVind) + nTel
-            End If
-        End If
-    Loop
-    oRS.close() : oStmt.close()
 
     ' M/N/O leegmaken en vullen (match op naam per maat-blok)
     For iBlok = 0 To 3
@@ -643,12 +483,12 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
             iRij = KLAS_BLOK0 + iBlok * KLAS_BLOKH + 1 + iSlot
             sNaam = oSheet.getCellByPosition(3, iRij).getString()
             If sNaam <> "" Then
-                For iWg = 0 To mNWg - 1
-                    If mWgNaam(iWg) = sNaam And mWgMaat(iWg) = iBlok Then
+                For iWg = 0 To gNWg - 1
+                    If gWgNaam(iWg) = sNaam And gWgMaat(iWg) = iBlok Then
                         oSheet.getCellByPosition(12, iRij).setValue( _
-                            mWgDon(iWg) + mWgVrij(iWg) + mWgOnb(iWg))
-                        oSheet.getCellByPosition(13, iRij).setValue(mWgDon(iWg))
-                        oSheet.getCellByPosition(14, iRij).setValue(mWgVrij(iWg))
+                            gWgDon(iWg) + gWgVrij(iWg) + gWgOnb(iWg))
+                        oSheet.getCellByPosition(13, iRij).setValue(gWgDon(iWg))
+                        oSheet.getCellByPosition(14, iRij).setValue(gWgVrij(iWg))
                         Exit For
                     End If
                 Next iWg
@@ -656,7 +496,7 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
         Next iSlot
     Next iBlok
 
-    ' --- 3. OogstBestel-tab (leest mOgbAant/mWg* op moduleniveau) ---
+    ' --- 3. OogstBestel-tab (leest gDgAant/mWg* op moduleniveau) ---
     KlasVulOogstBestel(oDoc, oConn, iWeek, iJaar)
 
     ' --- 4. Besteld-tellers op de Los-tab ---
@@ -788,13 +628,13 @@ Private Sub KlasVulOogstBestel(oDoc As Object, oConn As Object, _
                 iMaat = 3 - iMaatVolg              ' MINI, EGG, GG, KG
                 iRij = iBasisRij + 1 + iMaatVolg
                 nWegDag = 0
-                For iWg = 0 To mNWg - 1
-                    If mWgNaam(iWg) = gNaam(iG) And mWgMaat(iWg) = iMaat Then
-                        If iDag = 0 Then nWegDag = mWgDon(iWg) Else nWegDag = mWgVrij(iWg)
+                For iWg = 0 To gNWg - 1
+                    If gWgNaam(iWg) = gNaam(iG) And gWgMaat(iWg) = iMaat Then
+                        If iDag = 0 Then nWegDag = gWgDon(iWg) Else nWegDag = gWgVrij(iWg)
                         Exit For
                     End If
                 Next iWg
-                nAantalDag = mOgbAant(iMaat, iDag) - nWegDag
+                nAantalDag = gDgAant(iMaat, iDag) - nWegDag
                 If nAantalDag < 0 Then nAantalDag = 0
                 dNodig = 0
                 If gHoev(iG, iMaat) > 0 Then
