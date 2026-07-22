@@ -1460,6 +1460,7 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
         End If
 
         oAfw.getCellByPosition(iKol, iRij).setString(gN(iG))
+        oAfw.getCellByPosition(iKol, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
         iRij = iRij + 1
         dSom = 0
         For iMaatVolg = 0 To 3
