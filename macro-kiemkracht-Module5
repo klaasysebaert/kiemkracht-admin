@@ -537,7 +537,17 @@ SamHttpFout:
 End Sub
 
 ' ===========================================================================
-' VerversBestellijst — Bestellijst-tab + besteld-tellers verversen uit de DB
+' VerversBestellijst — het hele document verversen uit de DB: eerst de
+' samenstelling zelf opnieuw laden (zoals HerlaadSamenstelling, maar zonder
+' bevestigingsvraag), dan de verse tellingen erop zetten.
+'
+' Waarom de volledige herlaad: de tabs Los en Notities zijn een momentopname
+' van het moment waarop je het document maakte of laadde. Voegde je in de
+' cockpit nadien een losse groente toe, dan kende dit document ze niet en
+' klopte de bijbestel-lijst niet. De database is de bron van waarheid, dus
+' halen we die er hier altijd bij.
+' LET OP: net als bij HerlaadSamenstelling gaan lokale wijzigingen die je nog
+' niet met StartSchrijfSamenstelling hebt teruggeschreven, hierbij verloren.
 ' ===========================================================================
 Sub VerversBestellijst()
     Dim oDoc  As Object
