@@ -1305,6 +1305,133 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
 End Sub
 
 ' ---------------------------------------------------------------------------
+' SamVulAfweeglijst — tab Afweeglijst: per pakketgroente een DONDERDAG- en een
+' VRIJDAG-blok ("aantal x hoeveelheid = nodig", met "N niet!"-markering) in
+' twee kolommen, zoals de dag-blokken bovenaan de klassieke OogstBestel-tab.
+' Leest de samenstelling van de Samenstelling-tab en de aantallen/weglatingen
+' per dag uit de g*-arrays (SamLaadDagcijfers moet dus eerst gedraaid zijn).
+' Volledig afgeleid: geen invulvelden, wordt bij elke ververs herbouwd.
+' ---------------------------------------------------------------------------
+Private Sub SamVulAfweeglijst(oDoc As Object, iWeek As Integer, iJaar As Integer)
+    Dim oAfw   As Object
+    Dim oSam   As Object
+    Dim iSlot  As Integer
+    Dim iRij   As Integer
+    Dim iKol   As Integer
+    Dim iMaat  As Integer
+    Dim iDag   As Integer
+    Dim iWg    As Integer
+    Dim iG     As Integer
+    Dim sNaam  As String
+    Dim aMaatKleur(3) As Long
+    Dim aMaatLabel(3) As String
+    Dim aDagLbl(1)    As String
+    Dim aDag0(1)      As Integer
+    Dim iBasisRij  As Integer
+    Dim iBasisKol  As Integer
+    Dim iMaatVolg  As Integer
+    Dim nAantalDag As Long
+    Dim nWegDag    As Long
+    Dim dNodig     As Double
+    Dim dSom       As Double
+
+    ' maat-kleuren zoals het weekbestand (KG groen, GG blauw, EGG grijs, MINI roze)
+    aMaatKleur(0) = RGB(204, 255, 153) : aMaatKleur(1) = RGB(153, 204, 255)
+    aMaatKleur(2) = RGB(178, 178, 178) : aMaatKleur(3) = RGB(255, 153, 204)
+    aMaatLabel(0) = "KG" : aMaatLabel(1) = "GG"
+    aMaatLabel(2) = "EGG" : aMaatLabel(3) = "MINI"
+    aDagLbl(0) = "DONDERDAG" : aDagLbl(1) = "VRIJDAG"
+    aDag0(0) = AFW_DON0 : aDag0(1) = AFW_VRIJ0
+
+    oAfw = SamZorgTab(oDoc, TAB_AFW)
+    oSam = oDoc.Sheets.getByName(TAB_SAM)
+    oAfw.getCellRangeByPosition(0, 0, 11, AFW_EIND).clearContents(23)
+
+    oAfw.getCellByPosition(0, 0).setString("Afweeglijst — week " & iWeek & "/" & iJaar)
+    oAfw.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oAfw.getCellByPosition(4, 0).setString("ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+
+    ' --- Pakketgroenten + hoeveelheid per maat van de Samenstelling-tab ---
+    Dim gNaam(SAM_SLOTS - 1) As String
+    Dim gHoev(SAM_SLOTS - 1, 3) As Double
+    Dim nG As Integer
+    nG = 0
+    For iSlot = 0 To SAM_SLOTS - 1
+        sNaam = oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
+        If sNaam <> "" Then
+            gNaam(nG) = sNaam
+            For iMaat = 0 To 3
+                gHoev(nG, iMaat) = oSam.getCellByPosition(3 + iMaat * 2, SAM_RIJ0 + iSlot).getValue()
+            Next iMaat
+            nG = nG + 1
+        End If
+    Next iSlot
+
+    oAfw.getCellByPosition(0, AFW_DON_LBL).setString(aDagLbl(0))
+    oAfw.getCellByPosition(0, AFW_DON_LBL).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oAfw.getCellByPosition(0, AFW_VRIJ_LBL).setString(aDagLbl(1))
+    oAfw.getCellByPosition(0, AFW_VRIJ_LBL).CharWeight = com.sun.star.awt.FontWeight.BOLD
+
+    ' --- Dag-blokken (2 kolommen; maat-volgorde MINI/EGG/GG/KG zoals de Sheet) ---
+    For iDag = 0 To 1
+        For iG = 0 To nG - 1
+            iBasisRij = aDag0(iDag) + (iG \ 2) * AFW_BLOKH
+            iBasisKol = (iG Mod 2) * 6            ' links A.., rechts G..
+            oAfw.getCellByPosition(iBasisKol, iBasisRij).setString(gNaam(iG))
+            oAfw.getCellByPosition(iBasisKol, iBasisRij).CharWeight = _
+                com.sun.star.awt.FontWeight.BOLD
+            dSom = 0
+            For iMaatVolg = 0 To 3
+                iMaat = 3 - iMaatVolg              ' MINI, EGG, GG, KG
+                iRij = iBasisRij + 1 + iMaatVolg
+                nWegDag = 0
+                For iWg = 0 To gNWg - 1
+                    If gWgNaam(iWg) = gNaam(iG) And gWgMaat(iWg) = iMaat Then
+                        If iDag = 0 Then nWegDag = gWgDon(iWg) Else nWegDag = gWgVrij(iWg)
+                        Exit For
+                    End If
+                Next iWg
+                nAantalDag = gDgAant(iMaat, iDag) - nWegDag
+                If nAantalDag < 0 Then nAantalDag = 0
+                dNodig = 0
+                If gHoev(iG, iMaat) > 0 Then
+                    dNodig = Int(nAantalDag * gHoev(iG, iMaat) * 100 + 0.5) / 100
+                End If
+                oAfw.getCellByPosition(iBasisKol, iRij).setString(aMaatLabel(iMaat))
+                oAfw.getCellByPosition(iBasisKol, iRij).CellBackColor = aMaatKleur(iMaat)
+                oAfw.getCellByPosition(iBasisKol + 1, iRij).setValue(nAantalDag)
+                If gHoev(iG, iMaat) > 0 Then
+                    oAfw.getCellByPosition(iBasisKol + 2, iRij).setString( _
+                        "x " & Format(gHoev(iG, iMaat), "0.00"))
+                End If
+                oAfw.getCellByPosition(iBasisKol + 3, iRij).setValue(dNodig)
+                If nWegDag > 0 Then
+                    oAfw.getCellByPosition(iBasisKol + 4, iRij).setString(nWegDag & " niet!")
+                Else
+                    oAfw.getCellByPosition(iBasisKol + 4, iRij).setString("alle")
+                End If
+                dSom = dSom + dNodig
+            Next iMaatVolg
+            iRij = iBasisRij + 5
+            oAfw.getCellByPosition(iBasisKol, iRij).setString(LCase(aDagLbl(iDag)) & " nodig:")
+            oAfw.getCellByPosition(iBasisKol + 3, iRij).setValue(Int(dSom * 100 + 0.5) / 100)
+            oAfw.getCellByPosition(iBasisKol + 3, iRij).CharWeight = _
+                com.sun.star.awt.FontWeight.BOLD
+        Next iG
+    Next iDag
+
+    ' Kolombreedtes
+    oAfw.Columns.getByIndex(0).Width = 4200
+    For iKol = 1 To 5
+        oAfw.Columns.getByIndex(iKol).Width = 2100
+    Next iKol
+    oAfw.Columns.getByIndex(6).Width = 4200
+    For iKol = 7 To 11
+        oAfw.Columns.getByIndex(iKol).Width = 2100
+    Next iKol
+End Sub
+
+' ---------------------------------------------------------------------------
 ' Besteld-tellers op de Los-tab verversen (kolom I, match op naam).
 ' Gedeeld door de tab-layout (Module5) en de klassieke layout (Module6).
 ' ---------------------------------------------------------------------------
