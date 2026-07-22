@@ -1263,6 +1263,13 @@ End Sub
 ' Helpers
 ' ===========================================================================
 
+' Tabnamen van oudere documenten bijwerken (tab-layout).
+Sub SamMigreerTabnamen(oDoc As Object)
+    If oDoc.Sheets.hasByName(TAB_BST_OUD) And Not oDoc.Sheets.hasByName(TAB_BST) Then
+        oDoc.Sheets.getByName(TAB_BST_OUD).Name = TAB_BST
+    End If
+End Sub
+
 ' Tabblad ophalen; aanmaken (achteraan) als het nog niet bestaat.
 ' (publiek: ook gebruikt door de klassieke layout in Module6)
 Function SamZorgTab(oDoc As Object, sTabNaam As String) As Object
