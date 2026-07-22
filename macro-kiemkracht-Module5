@@ -23,8 +23,8 @@
 '                          open). Last-write-wins, zoals de cockpit zelf.
 '   VerversBestellijst   : de tabs "Oogstlijst (bestellijst)" (aantal pakketten
 '                          per maat, weglatingen, Nodig, besteld-tellers) en
-'                          "Afweeglijst donderdag"/"Afweeglijst vrijdag"
-'                          (print-klare afweegbladen) verversen.
+'                          "Afweeglijst donderdag"/"Afweeglijst vrijdag" en de
+'                          vier printbladen (Oogst/Vullen per dag) verversen.
 '
 ' Wachtwoord: COCKPIT_WACHTWOORD wordt gelezen uit
 '   %APPDATA%\LibreOffice\cockpit-wachtwoord-<omgeving>.txt
