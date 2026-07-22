@@ -1324,7 +1324,7 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
 
     ' Tijdstempel + eventuele niet-gematchte weglating-groenten
     oBst.getCellByPosition(6, BST_RIJ_AANT).setString( _
-        "ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+        "versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
     If sOnbekend <> "" Then
         oBst.getCellByPosition(0, BST_RIJ0 + SAM_SLOTS + 1).setString( _
             "Weglatingen voor groenten die niet in de samenstelling staan: " & _
