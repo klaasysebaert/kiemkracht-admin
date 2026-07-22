@@ -21,8 +21,10 @@
 '   SchrijfSamenstelling : het actieve document terugschrijven naar de DB
 '                          (de cockpit ziet de wijzigingen bij de volgende
 '                          open). Last-write-wins, zoals de cockpit zelf.
-'   VerversBestellijst   : de Bestellijst-tab (aantal pakketten per maat,
-'                          weglatingen, Nodig, besteld-tellers) verversen.
+'   VerversBestellijst   : de tabs "Oogstlijst (bestellijst)" (aantal pakketten
+'                          per maat, weglatingen, Nodig, besteld-tellers) en
+'                          "Afweeglijst" (dag-blokken donderdag/vrijdag)
+'                          verversen.
 '
 ' Wachtwoord: COCKPIT_WACHTWOORD wordt gelezen uit
 '   %APPDATA%\LibreOffice\cockpit-wachtwoord-<omgeving>.txt
