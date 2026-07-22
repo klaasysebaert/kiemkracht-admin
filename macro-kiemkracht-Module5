@@ -1318,8 +1318,9 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     ' --- 3. Besteld-tellers verversen op de Los-tab (kolom I) ---
     SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
 
-    ' --- 4. Afweeglijst (dag-blokken) opnieuw opbouwen ---
+    ' --- 4. Afweeglijsten en printbladen opnieuw opbouwen ---
     SamVulAfweeglijst(oDoc, iWeek, iJaar)
+    SamVulPrintbladen(oDoc, iWeek, iJaar)
 
     ' Tijdstempel + eventuele niet-gematchte weglating-groenten
     oBst.getCellByPosition(6, BST_RIJ_AANT).setString( _
