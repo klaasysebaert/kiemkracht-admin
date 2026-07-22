@@ -1066,34 +1066,31 @@ Private Sub SamBouwTabBestellijst(oDoc As Object)
 End Sub
 
 ' ---------------------------------------------------------------------------
-' SamVulBestellijst — momentopname uit de DB: aantal pakketten per maat
-' (zelfde drie takken als de klant-query in MaakWeekbestand: bestellingen,
+' SamLaadDagcijfers — momentopname uit de DB in de g*-arrays: aantal pakketten
+' per maat per dag (donderdag/vrijdag, dag = klant-afhaalpunt > bestelling-
+' afhaalpunt > leverdag) en de weglatingen per (groente, maat, dag).
+' Zelfde drie takken als de klant-query in MaakWeekbestand: bestellingen,
 ' ritme-abonnees zonder bestelling, weekperweek/toekomst-klanten met
-' vooruitbestelling), weglatingen per (groente, maat), besteld-tellers.
+' vooruitbestelling.
 ' LET OP: aggregaat-kopie van de MaakWeekbestand-logica — wijzigt die query
 ' (Module1, stap 3), pas dan ook hier aan. Het weekbestand blijft de
 ' gezaghebbende telling; dit is de vooraf-indicatie voor de groothandel.
+' Gedeeld door de tab-layout (Bestellijst + Afweeglijst) en de klassieke
+' layout (Module6).
 ' ---------------------------------------------------------------------------
-Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
-                              iWeek As Integer, iJaar As Integer)
-    Dim oBst  As Object
-    Dim oSam  As Object
-    Dim oLos  As Object
+Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
     Dim oStmt As Object
     Dim oRS   As Object
     Dim iMaat As Integer
-    Dim iSlot As Integer
+    Dim iWg   As Integer
     Dim iVind As Integer
-    Dim sNaam As String
+    Dim sDag  As String
+    Dim nTel  As Long
     Dim sParRitmes As String
     Dim iWeekNum   As Long
+    Dim sMaatCase  As String
+    Dim sTakJoins  As String
     Dim sSql  As String
-    Dim sOnbekend As String
-    Dim sMaatCase As String
-
-    oBst = oDoc.Sheets.getByName(TAB_BST)
-    oSam = oDoc.Sheets.getByName(TAB_SAM)
-    oLos = oDoc.Sheets.getByName(TAB_LOS)
 
     If (iWeek Mod 2) = 0 Then
         sParRitmes = "'wekelijks','pare-week'"
@@ -1107,8 +1104,20 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
                 "WHEN 'klein' THEN 'klein' WHEN 'groot' THEN 'groot' " & _
                 "WHEN 'extra groot' THEN 'extra-groot' WHEN 'extra-groot' THEN 'extra-groot' " & _
                 "WHEN 'mini' THEN 'mini' END"
+    ' klant/afhaalpunt-joins voor de dag-bepaling van een bestelling
+    ' (zelfde COALESCE-volgorde als MaakWeekbestand: klant-afhaalpunt wint)
+    sTakJoins = " LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL " & _
+                "     AND k.email1 = b.klant_email)) " & _
+                " LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
+                " LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt "
 
-    ' --- 1. Aantal pakketten per maat ---
+    ' --- 1. Aantal pakketten per maat per dag ---
+    For iMaat = 0 To 3
+        gDgTot(iMaat)     = 0
+        gDgAant(iMaat, 0) = 0
+        gDgAant(iMaat, 1) = 0
+    Next iMaat
+
     sSql = "WITH vb_week AS (" & _
            " SELECT klant_id, LOWER(klant_email) AS email_l, " & _
            Replace(sMaatCase, "%s", "formaat") & " AS sleutel " & _
@@ -1116,16 +1125,18 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
            " WHERE jaar = " & iJaar & " AND week_bestelling = " & iWeek & _
            "   AND formaat IS NOT NULL), " & _
            "alle AS (" & _
-           " SELECT " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel " & _
-           " FROM bestellingen b " & _
+           " SELECT " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
+           " LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag " & _
+           " FROM bestellingen b " & sTakJoins & _
            " WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
            "  AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
            "   WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
            "    AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
            "         AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) " & _
            " UNION ALL " & _
-           " SELECT COALESCE(vb.sleutel, a.formaat) " & _
+           " SELECT COALESCE(vb.sleutel, a.formaat), LOWER(COALESCE(ap.dag_klaarmaken,'')) " & _
            " FROM abonnementen a JOIN klanten k ON k.id = a.klant_id " & _
+           " LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
            " LEFT JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL " & _
            "      AND vb.email_l = LOWER(k.email1))) " & _
            " WHERE a.status = 'actief' AND a.ritme IN (" & sParRitmes & ") " & _
@@ -1148,8 +1159,9 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
            "    AND (ann3.klant_id = k.id OR (ann3.klant_id IS NULL " & _
            "         AND LOWER(ann3.klant_email) = LOWER(k.email1)))) " & _
            " UNION ALL " & _
-           " SELECT vb.sleutel " & _
+           " SELECT vb.sleutel, LOWER(COALESCE(ap.dag_klaarmaken,'')) " & _
            " FROM klanten k " & _
+           " LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
            " INNER JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL " & _
            "      AND vb.email_l = LOWER(k.email1))) " & _
            " WHERE k.status = 'actief' AND vb.sleutel IS NOT NULL " & _
@@ -1167,39 +1179,98 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
            "   WHERE ann4.jaar = " & iJaar & " AND ann4.week_annulatie = " & iWeek & _
            "    AND (ann4.klant_id = k.id OR (ann4.klant_id IS NULL " & _
            "         AND LOWER(ann4.klant_email) = LOWER(k.email1))))) " & _
-           "SELECT sleutel, COUNT(*) FROM alle WHERE sleutel IS NOT NULL GROUP BY sleutel"
+           "SELECT sleutel, dag, COUNT(*) FROM alle WHERE sleutel IS NOT NULL GROUP BY 1, 2"
 
-    For iMaat = 0 To 3
-        oBst.getCellByPosition(1 + iMaat, BST_RIJ_AANT).setValue(0)
-    Next iMaat
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery(sSql)
     Do While oRS.next()
         iMaat = SamMaatIdx(oRS.getString(1))
+        sDag  = oRS.getString(2)
+        nTel  = oRS.getLong(3)
         If iMaat >= 0 Then
-            oBst.getCellByPosition(1 + iMaat, BST_RIJ_AANT).setValue(oRS.getLong(2))
+            gDgTot(iMaat) = gDgTot(iMaat) + nTel
+            If sDag = "donderdag" Then gDgAant(iMaat, 0) = gDgAant(iMaat, 0) + nTel
+            If sDag = "vrijdag"   Then gDgAant(iMaat, 1) = gDgAant(iMaat, 1) + nTel
         End If
     Loop
     oRS.close() : oStmt.close()
 
-    ' --- 2. Weglatingen per (groente, maat) ---
-    oBst.getCellRangeByPosition(1, BST_RIJ0, 4, BST_RIJ0 + SAM_SLOTS - 1).clearContents(7)
-    sOnbekend = ""
+    ' --- 2. Weglatingen per (groente, maat, dag) ---
+    gNWg = 0
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT bw.groente_naam, " & Replace(sMaatCase, "%s", "b.pakket") & _
-        " AS sleutel, COUNT(*) " & _
+        "SELECT bw.groente_naam, " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
+        "LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag, COUNT(*) " & _
         "FROM bestelling_weglatingen bw " & _
-        "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & _
+        "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & sTakJoins & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
         " AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
         "  WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
         "   AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
         "        AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) " & _
-        "GROUP BY 1, 2")
+        "GROUP BY 1, 2, 3")
     Do While oRS.next()
-        sNaam = oRS.getString(1)
         iMaat = SamMaatIdx(oRS.getString(2))
+        If iMaat >= 0 And gNWg < 200 Then
+            iVind = -1
+            For iWg = 0 To gNWg - 1
+                If gWgNaam(iWg) = oRS.getString(1) And gWgMaat(iWg) = iMaat Then
+                    iVind = iWg
+                    Exit For
+                End If
+            Next iWg
+            If iVind = -1 Then
+                iVind = gNWg
+                gWgNaam(gNWg) = oRS.getString(1)
+                gWgMaat(gNWg) = iMaat
+                gWgDon(gNWg) = 0 : gWgVrij(gNWg) = 0 : gWgOnb(gNWg) = 0
+                gNWg = gNWg + 1
+            End If
+            sDag = oRS.getString(3)
+            nTel = oRS.getLong(4)
+            If sDag = "donderdag" Then
+                gWgDon(iVind) = gWgDon(iVind) + nTel
+            ElseIf sDag = "vrijdag" Then
+                gWgVrij(iVind) = gWgVrij(iVind) + nTel
+            Else
+                gWgOnb(iVind) = gWgOnb(iVind) + nTel
+            End If
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+End Sub
+
+' ---------------------------------------------------------------------------
+' SamVulBestellijst — de Bestellijst-tab (TAB_BST) vullen met de momentopname
+' uit SamLaadDagcijfers: aantal pakketten per maat, weglatingen per (groente,
+' maat), besteld-tellers. Bouwt daarna de Afweeglijst-tab opnieuw op.
+' ---------------------------------------------------------------------------
+Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
+                              iWeek As Integer, iJaar As Integer)
+    Dim oBst  As Object
+    Dim oSam  As Object
+    Dim iMaat As Integer
+    Dim iSlot As Integer
+    Dim iWg   As Integer
+    Dim iVind As Integer
+    Dim sNaam As String
+    Dim sOnbekend As String
+
+    oBst = oDoc.Sheets.getByName(TAB_BST)
+    oSam = oDoc.Sheets.getByName(TAB_SAM)
+
+    SamLaadDagcijfers(oConn, iWeek, iJaar)
+
+    ' --- 1. Aantal pakketten per maat (alle dagen samen) ---
+    For iMaat = 0 To 3
+        oBst.getCellByPosition(1 + iMaat, BST_RIJ_AANT).setValue(gDgTot(iMaat))
+    Next iMaat
+
+    ' --- 2. Weglatingen per (groente, maat), match op naam ---
+    oBst.getCellRangeByPosition(1, BST_RIJ0, 4, BST_RIJ0 + SAM_SLOTS - 1).clearContents(7)
+    sOnbekend = ""
+    For iWg = 0 To gNWg - 1
+        sNaam = gWgNaam(iWg)
         iVind = -1
         For iSlot = 0 To SAM_SLOTS - 1
             If oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString() = sNaam Then
@@ -1207,18 +1278,19 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
                 Exit For
             End If
         Next iSlot
-        If iVind >= 0 And iMaat >= 0 Then
-            oBst.getCellByPosition(1 + iMaat, BST_RIJ0 + iVind).setValue(oRS.getLong(3))
-        ElseIf iMaat >= 0 Then
-            If InStr(sOnbekend, "| " & sNaam) = 0 Then
-                sOnbekend = sOnbekend & "| " & sNaam
-            End If
+        If iVind >= 0 Then
+            oBst.getCellByPosition(1 + gWgMaat(iWg), BST_RIJ0 + iVind).setValue( _
+                gWgDon(iWg) + gWgVrij(iWg) + gWgOnb(iWg))
+        ElseIf InStr(sOnbekend, "| " & sNaam) = 0 Then
+            sOnbekend = sOnbekend & "| " & sNaam
         End If
-    Loop
-    oRS.close() : oStmt.close()
+    Next iWg
 
     ' --- 3. Besteld-tellers verversen op de Los-tab (kolom I) ---
     SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
+
+    ' --- 4. Afweeglijst (dag-blokken) opnieuw opbouwen ---
+    SamVulAfweeglijst(oDoc, iWeek, iJaar)
 
     ' Tijdstempel + eventuele niet-gematchte weglating-groenten
     oBst.getCellByPosition(6, BST_RIJ_AANT).setString( _
