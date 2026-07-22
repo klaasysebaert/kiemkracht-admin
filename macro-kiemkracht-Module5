@@ -1442,7 +1442,7 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     ' --- Titel ---
     oAfw.getCellByPosition(0, 0).setString(sDagLbl)
     oAfw.getCellByPosition(4, 0).setString( _
-        "week " & iWeek & "/" & iJaar & " — ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+        "week " & iWeek & "/" & iJaar & " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
 
     ' --- Blokken schrijven ---
     Dim iRijL As Integer
