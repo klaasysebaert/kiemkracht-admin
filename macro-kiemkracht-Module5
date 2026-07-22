@@ -1507,9 +1507,9 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
 
     ' --- Kolombreedtes (1/100 mm, omgerekend uit de Sheet) ---
     For iKol = 0 To AFW_KOL_R Step AFW_KOL_R
-        oAfw.Columns.getByIndex(iKol + 0).Width = 2400   ' maat / groentenaam
+        oAfw.Columns.getByIndex(iKol + 0).Width = 2200   ' maat / groentenaam
         oAfw.Columns.getByIndex(iKol + 1).Width = 1350   ' aantal
-        oAfw.Columns.getByIndex(iKol + 2).Width = 2000   ' x hoeveelheid
+        oAfw.Columns.getByIndex(iKol + 2).Width = 2200   ' x hoeveelheid
         oAfw.Columns.getByIndex(iKol + 3).Width = 2725   ' = nodig
         oAfw.Columns.getByIndex(iKol + 4).Width = 2000   ' alle / N niet!
     Next iKol
