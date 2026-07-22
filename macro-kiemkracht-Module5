@@ -23,8 +23,8 @@
 '                          open). Last-write-wins, zoals de cockpit zelf.
 '   VerversBestellijst   : de tabs "Oogstlijst (bestellijst)" (aantal pakketten
 '                          per maat, weglatingen, Nodig, besteld-tellers) en
-'                          "Afweeglijst" (dag-blokken donderdag/vrijdag)
-'                          verversen.
+'                          "Afweeglijst donderdag"/"Afweeglijst vrijdag"
+'                          (print-klare afweegbladen) verversen.
 '
 ' Wachtwoord: COCKPIT_WACHTWOORD wordt gelezen uit
 '   %APPDATA%\LibreOffice\cockpit-wachtwoord-<omgeving>.txt
@@ -1309,130 +1309,215 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
 End Sub
 
 ' ---------------------------------------------------------------------------
-' SamVulAfweeglijst — tab Afweeglijst: per pakketgroente een DONDERDAG- en een
-' VRIJDAG-blok ("aantal x hoeveelheid = nodig", met "N niet!"-markering) in
-' twee kolommen, zoals de dag-blokken bovenaan de klassieke OogstBestel-tab.
+' SamVulAfweeglijst — de twee afweegbladen (donderdag/vrijdag) herbouwen.
 ' Leest de samenstelling van de Samenstelling-tab en de aantallen/weglatingen
 ' per dag uit de g*-arrays (SamLaadDagcijfers moet dus eerst gedraaid zijn).
 ' Volledig afgeleid: geen invulvelden, wordt bij elke ververs herbouwd.
 ' ---------------------------------------------------------------------------
 Private Sub SamVulAfweeglijst(oDoc As Object, iWeek As Integer, iJaar As Integer)
+    SamVulAfweegDag(oDoc, 0, iWeek, iJaar)
+    SamVulAfweegDag(oDoc, 1, iWeek, iJaar)
+End Sub
+
+' ---------------------------------------------------------------------------
+' Eén afweegblad (iDag: 0 = donderdag, 1 = vrijdag), naar het model van de
+' gelijknamige Sheet-tabbladen:
+'   - per pakketgroente een blok: naam, dan per maat die de groente in dat
+'     pakket heeft "MINI | aantal | x hoeveelheid | = nodig | alle/N niet!",
+'     dan "donderdag nodig: | = totaal". Maten zonder hoeveelheid krijgen
+'     géén rij, blokken zijn dus ongelijk hoog.
+'   - blokken staan aaneengesloten (twee lege rijen ertussen) en worden over
+'     twee bladhelften verdeeld (links A..E, rechts G..K, vanaf rij 3) op het
+'     blokovergang die beide helften het meest gelijk maakt.
+'   - lettergrootte 20 en de kolombreedtes van de Sheet; pagina-instelling
+'     A4 staand, op één bladzijde geschaald.
+' ---------------------------------------------------------------------------
+Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
+                            iWeek As Integer, iJaar As Integer)
     Dim oAfw   As Object
     Dim oSam   As Object
     Dim iSlot  As Integer
     Dim iRij   As Integer
     Dim iKol   As Integer
     Dim iMaat  As Integer
-    Dim iDag   As Integer
+    Dim iMaatVolg As Integer
     Dim iWg    As Integer
     Dim iG     As Integer
     Dim sNaam  As String
-    Dim aMaatKleur(3) As Long
-    Dim aMaatLabel(3) As String
-    Dim aDagLbl(1)    As String
-    Dim aDag0(1)      As Integer
-    Dim iBasisRij  As Integer
-    Dim iBasisKol  As Integer
-    Dim iMaatVolg  As Integer
+    Dim sTab   As String
+    Dim sDagLbl As String
     Dim nAantalDag As Long
     Dim nWegDag    As Long
-    Dim dNodig     As Double
-    Dim dSom       As Double
+    Dim dNodig  As Double
+    Dim dSom    As Double
+    Dim aMaatLabel(3) As String
 
-    ' maat-kleuren zoals het weekbestand (KG groen, GG blauw, EGG grijs, MINI roze)
-    aMaatKleur(0) = RGB(204, 255, 153) : aMaatKleur(1) = RGB(153, 204, 255)
-    aMaatKleur(2) = RGB(178, 178, 178) : aMaatKleur(3) = RGB(255, 153, 204)
     aMaatLabel(0) = "KG" : aMaatLabel(1) = "GG"
     aMaatLabel(2) = "EGG" : aMaatLabel(3) = "MINI"
-    aDagLbl(0) = "DONDERDAG" : aDagLbl(1) = "VRIJDAG"
-    aDag0(0) = AFW_DON0 : aDag0(1) = AFW_VRIJ0
+    If iDag = 0 Then
+        sTab = TAB_AFW_DO : sDagLbl = "DONDERDAG"
+    Else
+        sTab = TAB_AFW_VR : sDagLbl = "VRIJDAG"
+    End If
 
-    oAfw = SamZorgTab(oDoc, TAB_AFW)
+    oAfw = SamZorgTab(oDoc, sTab)
     oSam = oDoc.Sheets.getByName(TAB_SAM)
-    oAfw.getCellRangeByPosition(0, 0, 11, AFW_EIND).clearContents(23)
+    ' inhoud én harde opmaak wissen (1+2+4+16+32), zodat een korter blad geen
+    ' resten van de vorige week overhoudt
+    oAfw.getCellRangeByPosition(0, 0, 10, AFW_MAX_RIJ).clearContents(55)
 
-    oAfw.getCellByPosition(0, 0).setString("Afweeglijst — week " & iWeek & "/" & iJaar)
-    oAfw.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oAfw.getCellByPosition(4, 0).setString("ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
-
-    ' --- Pakketgroenten + hoeveelheid per maat van de Samenstelling-tab ---
-    Dim gNaam(SAM_SLOTS - 1) As String
-    Dim gHoev(SAM_SLOTS - 1, 3) As Double
+    ' --- Groenten + hoeveelheid per maat van de Samenstelling-tab ---
+    Dim gN(SAM_SLOTS - 1) As String
+    Dim gH(SAM_SLOTS - 1, 3) As Double
+    Dim gHoogte(SAM_SLOTS - 1) As Integer   ' naamrij + maatrijen + totaalrij
     Dim nG As Integer
+    Dim nMaten As Integer
     nG = 0
     For iSlot = 0 To SAM_SLOTS - 1
         sNaam = oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
         If sNaam <> "" Then
-            gNaam(nG) = sNaam
+            nMaten = 0
             For iMaat = 0 To 3
-                gHoev(nG, iMaat) = oSam.getCellByPosition(3 + iMaat * 2, SAM_RIJ0 + iSlot).getValue()
+                gH(nG, iMaat) = oSam.getCellByPosition(3 + iMaat * 2, SAM_RIJ0 + iSlot).getValue()
+                If gH(nG, iMaat) > 0 Then nMaten = nMaten + 1
             Next iMaat
-            nG = nG + 1
+            If nMaten > 0 Then
+                gN(nG) = sNaam
+                gHoogte(nG) = 2 + nMaten
+                nG = nG + 1
+            End If
         End If
     Next iSlot
 
-    oAfw.getCellByPosition(0, AFW_DON_LBL).setString(aDagLbl(0))
-    oAfw.getCellByPosition(0, AFW_DON_LBL).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oAfw.getCellByPosition(0, AFW_VRIJ_LBL).setString(aDagLbl(1))
-    oAfw.getCellByPosition(0, AFW_VRIJ_LBL).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    ' --- Breekpunt: eerste blok van de rechterhelft (helften zo gelijk mogelijk) ---
+    Dim iBreek  As Integer
+    Dim iLinks  As Integer
+    Dim iRechts As Integer
+    Dim iBeste  As Integer
+    Dim iHoogst As Integer
+    Dim iTotaal As Integer
+    iTotaal = 0
+    For iG = 0 To nG - 1
+        iTotaal = iTotaal + gHoogte(iG) + 2       ' blok + twee lege rijen
+    Next iG
+    iBreek = nG                                    ' alles links (bij weinig blokken)
+    iBeste = iTotaal
+    iLinks = 0
+    For iG = 1 To nG - 1
+        iLinks = iLinks + gHoogte(iG - 1) + 2
+        iRechts = iTotaal - iLinks
+        If iLinks > iRechts Then iHoogst = iLinks Else iHoogst = iRechts
+        If iHoogst < iBeste Then
+            iBeste = iHoogst
+            iBreek = iG
+        End If
+    Next iG
 
-    ' --- Dag-blokken (2 kolommen; maat-volgorde MINI/EGG/GG/KG zoals de Sheet) ---
-    For iDag = 0 To 1
-        For iG = 0 To nG - 1
-            iBasisRij = aDag0(iDag) + (iG \ 2) * AFW_BLOKH
-            iBasisKol = (iG Mod 2) * 6            ' links A.., rechts G..
-            oAfw.getCellByPosition(iBasisKol, iBasisRij).setString(gNaam(iG))
-            oAfw.getCellByPosition(iBasisKol, iBasisRij).CharWeight = _
-                com.sun.star.awt.FontWeight.BOLD
-            dSom = 0
-            For iMaatVolg = 0 To 3
-                iMaat = 3 - iMaatVolg              ' MINI, EGG, GG, KG
-                iRij = iBasisRij + 1 + iMaatVolg
+    ' --- Titel ---
+    oAfw.getCellByPosition(0, 0).setString(sDagLbl)
+    oAfw.getCellByPosition(4, 0).setString( _
+        "week " & iWeek & "/" & iJaar & " — ververst: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+
+    ' --- Blokken schrijven ---
+    Dim iRijL As Integer
+    Dim iRijR As Integer
+    Dim iEindL As Integer
+    Dim iEindR As Integer
+    iRijL = AFW_RIJ0
+    iRijR = AFW_RIJ0
+    For iG = 0 To nG - 1
+        If iG < iBreek Then
+            iKol = 0 : iRij = iRijL
+        Else
+            iKol = AFW_KOL_R : iRij = iRijR
+        End If
+
+        oAfw.getCellByPosition(iKol, iRij).setString(gN(iG))
+        iRij = iRij + 1
+        dSom = 0
+        For iMaatVolg = 0 To 3
+            iMaat = 3 - iMaatVolg                  ' MINI, EGG, GG, KG
+            If gH(iG, iMaat) > 0 Then
                 nWegDag = 0
                 For iWg = 0 To gNWg - 1
-                    If gWgNaam(iWg) = gNaam(iG) And gWgMaat(iWg) = iMaat Then
+                    If gWgNaam(iWg) = gN(iG) And gWgMaat(iWg) = iMaat Then
                         If iDag = 0 Then nWegDag = gWgDon(iWg) Else nWegDag = gWgVrij(iWg)
                         Exit For
                     End If
                 Next iWg
                 nAantalDag = gDgAant(iMaat, iDag) - nWegDag
                 If nAantalDag < 0 Then nAantalDag = 0
-                dNodig = 0
-                If gHoev(iG, iMaat) > 0 Then
-                    dNodig = Int(nAantalDag * gHoev(iG, iMaat) * 100 + 0.5) / 100
-                End If
-                oAfw.getCellByPosition(iBasisKol, iRij).setString(aMaatLabel(iMaat))
-                oAfw.getCellByPosition(iBasisKol, iRij).CellBackColor = aMaatKleur(iMaat)
-                oAfw.getCellByPosition(iBasisKol + 1, iRij).setValue(nAantalDag)
-                If gHoev(iG, iMaat) > 0 Then
-                    oAfw.getCellByPosition(iBasisKol + 2, iRij).setString( _
-                        "x " & Format(gHoev(iG, iMaat), "0.00"))
-                End If
-                oAfw.getCellByPosition(iBasisKol + 3, iRij).setValue(dNodig)
+                dNodig = Int(nAantalDag * gH(iG, iMaat) * 100 + 0.5) / 100
+                oAfw.getCellByPosition(iKol, iRij).setString(aMaatLabel(iMaat))
+                oAfw.getCellByPosition(iKol + 1, iRij).setValue(nAantalDag)
+                oAfw.getCellByPosition(iKol + 2, iRij).setString( _
+                    "x " & Format(gH(iG, iMaat), "0.00"))
+                oAfw.getCellByPosition(iKol + 3, iRij).setString( _
+                    "= " & Format(dNodig, "0.00"))
                 If nWegDag > 0 Then
-                    oAfw.getCellByPosition(iBasisKol + 4, iRij).setString(nWegDag & " niet!")
+                    oAfw.getCellByPosition(iKol + 4, iRij).setString(nWegDag & " niet!")
                 Else
-                    oAfw.getCellByPosition(iBasisKol + 4, iRij).setString("alle")
+                    oAfw.getCellByPosition(iKol + 4, iRij).setString("alle")
                 End If
                 dSom = dSom + dNodig
-            Next iMaatVolg
-            iRij = iBasisRij + 5
-            oAfw.getCellByPosition(iBasisKol, iRij).setString(LCase(aDagLbl(iDag)) & " nodig:")
-            oAfw.getCellByPosition(iBasisKol + 3, iRij).setValue(Int(dSom * 100 + 0.5) / 100)
-            oAfw.getCellByPosition(iBasisKol + 3, iRij).CharWeight = _
-                com.sun.star.awt.FontWeight.BOLD
-        Next iG
-    Next iDag
+                iRij = iRij + 1
+            End If
+        Next iMaatVolg
+        oAfw.getCellByPosition(iKol, iRij).setString(LCase(sDagLbl) & " nodig:")
+        oAfw.getCellByPosition(iKol + 3, iRij).setString( _
+            "= " & Format(Int(dSom * 100 + 0.5) / 100, "0.00"))
+        iRij = iRij + 3                            ' totaalrij + twee lege rijen
 
-    ' Kolombreedtes
-    oAfw.Columns.getByIndex(0).Width = 4200
-    For iKol = 1 To 5
-        oAfw.Columns.getByIndex(iKol).Width = 2100
+        If iG < iBreek Then iRijL = iRij Else iRijR = iRij
+    Next iG
+    iEindL = iRijL : iEindR = iRijR
+    If iEindL < AFW_RIJ0 + 1 Then iEindL = AFW_RIJ0 + 1
+    If iEindR < AFW_RIJ0 + 1 Then iEindR = AFW_RIJ0 + 1
+
+    ' --- Opmaak: lettergrootte 20 zoals de Sheet (afweeglijst leest van ver) ---
+    oAfw.getCellRangeByPosition(0, 0, 4, iEindL - 1).CharHeight = 20
+    oAfw.getCellRangeByPosition(AFW_KOL_R, 0, AFW_KOL_R + 4, iEindR - 1).CharHeight = 20
+    oAfw.getCellByPosition(4, 0).CharHeight = 10   ' week/tijdstempel klein houden
+
+    ' --- Kolombreedtes (1/100 mm, omgerekend uit de Sheet) ---
+    For iKol = 0 To AFW_KOL_R Step AFW_KOL_R
+        oAfw.Columns.getByIndex(iKol + 0).Width = 2400   ' maat / groentenaam
+        oAfw.Columns.getByIndex(iKol + 1).Width = 1350   ' aantal
+        oAfw.Columns.getByIndex(iKol + 2).Width = 2000   ' x hoeveelheid
+        oAfw.Columns.getByIndex(iKol + 3).Width = 2725   ' = nodig
+        oAfw.Columns.getByIndex(iKol + 4).Width = 2000   ' alle / N niet!
     Next iKol
-    oAfw.Columns.getByIndex(6).Width = 4200
-    For iKol = 7 To 11
-        oAfw.Columns.getByIndex(iKol).Width = 2100
-    Next iKol
+    oAfw.Columns.getByIndex(5).Width = 760               ' tussenkolom F
+
+    SamZetAfweegPagina(oDoc, oAfw)
+End Sub
+
+' Pagina-instelling voor de afweegbladen: A4 staand, smalle marges, horizontaal
+' gecentreerd en op één bladzijde geschaald (ScaleToPages = 1), zodat het blad
+' altijd op één A4 past — ook als er een week veel groenten zijn.
+Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object)
+    Dim oStyles As Object
+    Dim oStyle  As Object
+    On Error Resume Next
+    oStyles = oDoc.StyleFamilies.getByName("PageStyles")
+    If Not oStyles.hasByName("Afweeglijst") Then
+        oStyle = oDoc.createInstance("com.sun.star.style.PageStyle")
+        oStyles.insertByName("Afweeglijst", oStyle)
+    End If
+    oStyle = oStyles.getByName("Afweeglijst")
+    oStyle.IsLandscape        = False
+    oStyle.Width              = 21000
+    oStyle.Height             = 29700
+    oStyle.LeftMargin         = 1000
+    oStyle.RightMargin        = 1000
+    oStyle.TopMargin          = 1000
+    oStyle.BottomMargin       = 1000
+    oStyle.HeaderIsOn         = False
+    oStyle.FooterIsOn         = False
+    oStyle.CenterHorizontally = True
+    oStyle.ScaleToPages       = 1
+    oSheet.PageStyle = "Afweeglijst"
+    On Error GoTo 0
 End Sub
 
 ' ---------------------------------------------------------------------------
