@@ -1722,8 +1722,11 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
         oPr.getCellByPosition(4, iRij).setString("Pakket EUR:")
         oPr.getCellByPosition(5, iRij).setString(Format(dPakket, "0.00"))
         oPr.getCellByPosition(6, iRij).setString("doel " & Format(mPakPrijs(iMaat), "0.00"))
-        oPr.getCellByPosition(7, iRij).setString(Format(Int(dOmzet * 100 + 0.5) / 100, "0.00"))
         oPr.getCellRangeByPosition(4, iRij, 7, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+        ' omzet van dit blok hoort bij de blok-kop (kolom H blijft vrij voor
+        ' de weglating-markering per groente)
+        oPr.getCellByPosition(7, iKopRij).setString( _
+            Format(Int(dOmzet * 100 + 0.5) / 100, "0.00"))
         iRij = iRij + 2
     Next iMaat
 
