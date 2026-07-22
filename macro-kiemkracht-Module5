@@ -1908,9 +1908,9 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
 
     oPr.Columns.getByIndex(0).Width = 1600
     oPr.Columns.getByIndex(1).Width = 6000
-    oPr.Columns.getByIndex(2).Width = 2200
-    oPr.Columns.getByIndex(3).Width = 2200
-    oPr.Columns.getByIndex(4).Width = 2000
+    oPr.Columns.getByIndex(2).Width = 2700
+    oPr.Columns.getByIndex(3).Width = 2400
+    oPr.Columns.getByIndex(4).Width = 2400
 
     SamZetPrintPagina(oDoc, oPr)
 End Sub
