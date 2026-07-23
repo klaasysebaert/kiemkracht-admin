@@ -1483,17 +1483,24 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
                 oAfw.getCellByPosition(iKol + 3, iRij).setString( _
                     "= " & Format(dNodig, "0.00"))
                 If nWegDag > 0 Then
+                    ' "N niet!" blijft zwart (springt eruit); zoals de Sheet
                     oAfw.getCellByPosition(iKol + 4, iRij).setString(nWegDag & " niet!")
                 Else
+                    ' "alle" lichtgrijs — minder opdringerig dan de weglatingen
                     oAfw.getCellByPosition(iKol + 4, iRij).setString("alle")
+                    oAfw.getCellByPosition(iKol + 4, iRij).CharColor = AFW_GRIJS_LICHT
                 End If
                 dSom = dSom + dNodig
                 iRij = iRij + 1
             End If
         Next iMaatVolg
+        ' totaalrij ("… nodig:") cursief + middengrijs, zoals de Sheet
         oAfw.getCellByPosition(iKol, iRij).setString(LCase(sDagLbl) & " nodig:")
         oAfw.getCellByPosition(iKol + 3, iRij).setString( _
             "= " & Format(Int(dSom * 100 + 0.5) / 100, "0.00"))
+        oAfw.getCellRangeByPosition(iKol, iRij, iKol + 4, iRij).CharPosture = _
+            com.sun.star.awt.FontSlant.ITALIC
+        oAfw.getCellRangeByPosition(iKol, iRij, iKol + 4, iRij).CharColor = AFW_GRIJS_MIDDEN
         iRij = iRij + 3                            ' totaalrij + twee lege rijen
 
         If iG < iBreek Then iRijL = iRij Else iRijR = iRij
