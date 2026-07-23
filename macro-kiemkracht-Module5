@@ -1196,9 +1196,12 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
            "    AND (ann3.klant_id = k.id OR (ann3.klant_id IS NULL " & _
            "         AND LOWER(ann3.klant_email) = LOWER(k.email1)))) " & _
            " UNION ALL " & _
-           " SELECT vb.sleutel, LOWER(COALESCE(ap.dag_klaarmaken,'')) " & _
+           " SELECT vb.sleutel, LOWER(COALESCE(kwap.dag_klaarmaken, ap.dag_klaarmaken,'')) " & _
            " FROM klanten k " & _
            " LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+           " LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id " & _
+           "      AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & _
+           " LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id " & _
            " INNER JOIN vb_week vb ON (vb.klant_id = k.id OR (vb.klant_id IS NULL " & _
            "      AND vb.email_l = LOWER(k.email1))) " & _
            " WHERE k.status = 'actief' AND vb.sleutel IS NOT NULL " & _
