@@ -1134,11 +1134,15 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
                 "WHEN 'extra groot' THEN 'extra-groot' WHEN 'extra-groot' THEN 'extra-groot' " & _
                 "WHEN 'mini' THEN 'mini' END"
     ' klant/afhaalpunt-joins voor de dag-bepaling van een bestelling
-    ' (zelfde COALESCE-volgorde als MaakWeekbestand: klant-afhaalpunt wint)
+    ' (zelfde COALESCE-volgorde als MaakWeekbestand: de tijdelijke weekkeuze
+    ' klant_afhaalpunt_keuze (kwap) wint van het thuisafhaalpunt (kap))
     sTakJoins = " LEFT JOIN klanten k ON (k.id = b.klant_id OR (b.klant_id IS NULL " & _
                 "     AND k.email1 = b.klant_email)) " & _
                 " LEFT JOIN afhaalpunten kap ON kap.id = k.afhaalpunt_id " & _
-                " LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt "
+                " LEFT JOIN afhaalpunten bap ON bap.naam = b.afhaalpunt " & _
+                " LEFT JOIN klant_afhaalpunt_keuze kw ON kw.klant_id = k.id " & _
+                "     AND kw.jaar = " & iJaar & " AND kw.week = " & iWeek & _
+                " LEFT JOIN afhaalpunten kwap ON kwap.id = kw.afhaalpunt_id "
 
     ' --- 1. Aantal pakketten per maat per dag ---
     For iMaat = 0 To 3
