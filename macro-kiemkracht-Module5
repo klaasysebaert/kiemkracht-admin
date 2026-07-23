@@ -1159,7 +1159,7 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
            "   AND formaat IS NOT NULL), " & _
            "alle AS (" & _
            " SELECT " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
-           " LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag " & _
+           " LOWER(COALESCE(kwap.dag_klaarmaken, kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag " & _
            " FROM bestellingen b " & sTakJoins & _
            " WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
            "  AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
@@ -1233,7 +1233,7 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT bw.groente_naam, " & Replace(sMaatCase, "%s", "b.pakket") & " AS sleutel, " & _
-        "LOWER(COALESCE(kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag, COUNT(*) " & _
+        "LOWER(COALESCE(kwap.dag_klaarmaken, kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag, COUNT(*) " & _
         "FROM bestelling_weglatingen bw " & _
         "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & sTakJoins & _
         "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
