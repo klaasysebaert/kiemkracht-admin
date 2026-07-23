@@ -1377,7 +1377,11 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     Dim dNodig  As Double
     Dim dSom    As Double
     Dim aMaatLabel(3) As String
+    Dim AFW_GRIJS_LICHT  As Long   ' "alle"            (Sheet: #CCCCCC)
+    Dim AFW_GRIJS_MIDDEN As Long   ' "… nodig:"-regel  (Sheet: #666666)
 
+    AFW_GRIJS_LICHT  = RGB(204, 204, 204)
+    AFW_GRIJS_MIDDEN = RGB(102, 102, 102)
     aMaatLabel(0) = "KG" : aMaatLabel(1) = "GG"
     aMaatLabel(2) = "EGG" : aMaatLabel(3) = "MINI"
     If iDag = 0 Then
