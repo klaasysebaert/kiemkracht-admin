@@ -17,9 +17,14 @@ Per wijziging één regel:
 
 ## Week 30 / 2026
 
-| Wie (klant + klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
-|---|---|---|
-|  |  |  |
+Gebeurtenis: Meloen Charentais (onder voorbehoud) was maandag als losse groente
+aangeboden, maar bleek donderdag/vrijdag nog niet rijp/oogstbaar. Drie handelingen:
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 1 | 2860 (regel 8) | Meloen niet oogstbaar — intrekken bij deze klant | Meloen staat in kolom AO → cel **AO8** gewist |
+| 2 | 2860, 2881, 2885, 2923, 3065, 3086, 3156, 3158, 3172, 2931, 2947, 3299, 3328 (alle meloen-bestellers) | Getroffen klanten verwittigen dat de meloen niet komt | Gefilterd op de meloen-bestellers, mailadressen uit **kolom G** in BCC in Thunderbird |
+| 3 | zelfde lijst (alle meloen-bestellers) | Meloen bij álle bestellers intrekken (niet oogstbaar) | **AO8:AO147** selecteren, delete |
 
 ---
 
