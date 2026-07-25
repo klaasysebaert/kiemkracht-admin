@@ -327,6 +327,34 @@ End Sub
 
 
 ' ---------------------------------------------------------------------------
+' UitschrijfAdvies — vaste "wat nu?"-tekst onder de uitschrijvers-pop-ups van
+' LaadAlleTabellen. Een uitschrijving zet enkel de opt-out-vlag: klanten.status
+' en klanten.type blijven ongemoeid, ook later (uitschrijven.php raakt ze niet
+' aan, en de nachtelijke flip_abonnementen() kijkt enkel naar pauzewindows en
+' abonnementen — nooit naar de opt-out-kolommen). De opvolging is dus handwerk.
+' sVlagOmschrijving: welke kolom je in klanten_beheer op 'f' zet om de
+' uitschrijving ongedaan te maken (verschilt voor groenten en koffie).
+' Zie ook kiemkracht-handleiding/05-klanten.md, "Uitschrijven uit de aanbodmail".
+' ---------------------------------------------------------------------------
+Private Function UitschrijfAdvies(sVlagOmschrijving As String) As String
+    UitschrijfAdvies = _
+        "WAT NU? De klant blijft staan zoals hij stond: status en type" & Chr(10) & _
+        "veranderen NIET automatisch, nu niet en later ook niet. Een" & Chr(10) & _
+        "uitschrijving is enkel een signaal — jij beslist per geval:" & Chr(10) & Chr(10) & _
+        "* Vergissing / wil de mails toch? Zet " & sVlagOmschrijving & Chr(10) & _
+        "  in klanten_beheer op f en draai StartSchrijfWijzigingenTerug" & Chr(10) & _
+        "  (of gebruik 'Terug inschrijven' op de klantenfiche)." & Chr(10) & Chr(10) & _
+        "* Bewust volledig gestopt? Zet kolom L (type) in klanten_beheer" & Chr(10) & _
+        "  op stop-definitief + StartSchrijfWijzigingenTerug. Bewust NIET" & Chr(10) & _
+        "  via klanten_stop_start: die stuurt nog een stopbevestigingsmail" & Chr(10) & _
+        "  naar iemand die zich net zelf afmeldde." & Chr(10) & Chr(10) & _
+        "* Tweede persoon op hetzelfde klant_id die wel mails wil? Laat de" & Chr(10) & _
+        "  klant staan; enkel dat ene adres valt weg." & Chr(10) & Chr(10) & _
+        "* Twijfel? Niets doen mag: hij krijgt gewoon geen aanbodmail meer." & Chr(10)
+End Function
+
+
+' ---------------------------------------------------------------------------
 ' LaadTabelSnel — laadt één DB-tabel volledig in een gelijknamig tabblad met
 ' één setDataArray-aanroep (veel sneller dan cel-per-cel). Numerieke SQL-types
 ' worden naar getal omgezet, de rest blijft tekst (zelfde gedrag als voorheen).
