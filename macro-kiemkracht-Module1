@@ -294,10 +294,15 @@ Sub LaadAlleTabellen()
     oIndicator.setValue(100)
     oIndicator.end()
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
-    If nUit > 0 Then MsgBox sUit, 48, nUit & " nieuwe uitschrijver(s) voor de aanbodmail" & _
-        Chr(10) & "(zie ook de mail_opt_out-kolommen in het klanten-tabblad)"
-    If nUitK > 0 Then MsgBox sUitK, 48, nUitK & " nieuwe KOFFIE-uitschrijver(s)" & _
-        Chr(10) & "(zie ook de koffie_opt_out-kolommen in het klanten-tabblad)"
+    ' De uitleg staat in de body, niet in de titel: een MsgBox-titel kapt af
+    ' op de eerste Chr(10), dus een tweede titelregel is onzichtbaar.
+    If nUit > 0 Then MsgBox sUit & Chr(10) & UitschrijfAdvies("mail_opt_out (kolom AC)"), _
+        48, nUit & " nieuwe uitschrijver(s) voor de aanbodmail"
+    If nUitK > 0 Then MsgBox sUitK & Chr(10) & UitschrijfAdvies("koffie_opt_out (kolom AE)") & Chr(10) & _
+        "Let op: wie enkel de KOFFIE-mails afmeldt, blijft gewoon groentenklant." & Chr(10) & _
+        "Type op stop-definitief zetten is enkel aan de orde als hij zich ook" & Chr(10) & _
+        "voor de groenten-aanbodmail uitschreef (of geen groenten afneemt).", _
+        48, nUitK & " nieuwe KOFFIE-uitschrijver(s)"
     SluitSSHTunnels()
     Exit Sub
 
