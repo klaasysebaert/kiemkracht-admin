@@ -345,9 +345,11 @@ Private Function UitschrijfAdvies(sVlagOmschrijving As String) As String
         "  in klanten_beheer op f en draai StartSchrijfWijzigingenTerug" & Chr(10) & _
         "  (of gebruik 'Terug inschrijven' op de klantenfiche)." & Chr(10) & Chr(10) & _
         "* Bewust volledig gestopt? Zet kolom L (type) in klanten_beheer" & Chr(10) & _
-        "  op stop-definitief + StartSchrijfWijzigingenTerug. Bewust NIET" & Chr(10) & _
-        "  via klanten_stop_start: die stuurt nog een stopbevestigingsmail" & Chr(10) & _
-        "  naar iemand die zich net zelf afmeldde." & Chr(10) & Chr(10) & _
+        "  op stop-definitief + StartSchrijfWijzigingenTerug. Dat volstaat;" & Chr(10) & _
+        "  via klanten_stop_start hoeft niet. Dat tabblad dient voor een stop" & Chr(10) & _
+        "  vanaf een bepaalde week, en het biedt achteraf een" & Chr(10) & _
+        "  bevestigingsmail aan (antwoord daar Nee: iemand die zich net zelf" & Chr(10) & _
+        "  afmeldde hoeft die niet)." & Chr(10) & Chr(10) & _
         "* Tweede persoon op hetzelfde klant_id die wel mails wil? Laat de" & Chr(10) & _
         "  klant staan; enkel dat ene adres valt weg." & Chr(10) & Chr(10) & _
         "* Twijfel? Niets doen mag: hij krijgt gewoon geen aanbodmail meer." & Chr(10)
