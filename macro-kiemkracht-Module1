@@ -224,7 +224,7 @@ Sub LaadAlleTabellen()
     oRSu = oStu.executeQuery( _
         "SELECT voornaam, familienaam, COALESCE(email1,''), " & _
         "COALESCE(to_char(mail_opt_out_op,'DD/MM/YYYY'),''), COALESCE(mail_opt_out_reden,''), " & _
-        "COALESCE(mail_opt_out_methode,'') " & _
+        "COALESCE(mail_opt_out_methode,''), COALESCE(type,'') " & _
         "FROM klanten WHERE mail_opt_out = true AND mail_opt_out_gemeld = false " & _
         "ORDER BY mail_opt_out_op")
     If Err = 0 Then
@@ -234,6 +234,7 @@ Sub LaadAlleTabellen()
                    " (" & oRSu.getString(3) & ")"
             If oRSu.getString(4) <> "" Then sUit = sUit & " - " & oRSu.getString(4)
             If oRSu.getString(6) <> "" Then sUit = sUit & " - via: " & oRSu.getString(6)
+            If oRSu.getString(7) <> "" Then sUit = sUit & " - huidig type: " & oRSu.getString(7)
             If oRSu.getString(5) <> "" Then sUit = sUit & " - reden: " & oRSu.getString(5)
             sUit = sUit & Chr(10)
         Loop
