@@ -264,6 +264,7 @@ Sub MaakOverzichten()
     Dim l          As Integer
     Dim nStreepjes As Integer
     Dim bNieuwAfh  As Boolean
+    Dim ao         As Integer   ' teller algemene opmerkingen
 
     ' Sorteer per dag dan per afhaalpunt
     Dim aBlok1(500) As String
