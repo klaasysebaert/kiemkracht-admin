@@ -3012,9 +3012,10 @@ Sub SchrijfWijzigingenTerug()
     Loop
 
     If nAltFout > 0 Then
-        MsgBox nAltFout & " ongeldige afhaalpunt-naam/namen in kolom AA (afhaalpunt_alternatieven):" & Chr(10) & _
+        MsgBox nAltFout & " ongeldige afhaalpunt-verwijzing(en) in kolom AA (afhaalpunt_alternatieven):" & Chr(10) & _
                sAltFout & Chr(10) & Chr(10) & _
-               "Naam moet exact overeenkomen met afhaalpunten.naam of naam_publiek. " & _
+               "Gebruik het afhaalpunt_id (bv. 18) of een naam die exact overeenkomt met " & _
+               "afhaalpunten.naam of naam_publiek. " & _
                "Corrigeer en start de macro opnieuw. Er is nog niets weggeschreven.", 16, "Validatiefout"
         oStmt.close()
         oConn.close()
