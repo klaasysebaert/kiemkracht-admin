@@ -664,8 +664,10 @@ Sub BereidKoffieMailmergeVoor()
     ' Bevestiging aan gebruiker
     Dim sAntwoord As Integer
     sAntwoord = MsgBox( _
-        "Koffie-mailmerge voorbereiden voor ALLE actieve klanten." & Chr(10) & _
-        "(inclusief pare-week klanten in onpare weken en omgekeerd)" & Chr(10) & Chr(10) & _
+        "Koffie-mailmerge voorbereiden voor IEDEREEN die de koffiemail" & Chr(10) & _
+        "niet heeft afgezegd (koffie_opt_out = nee)." & Chr(10) & _
+        "(inclusief pare-week klanten in onpare weken en omgekeerd, en" & Chr(10) & _
+        "inclusief wie met groenten gestopt is maar koffie wil houden)" & Chr(10) & Chr(10) & _
         "Doelomgeving: " & KOFFIE_URL & Chr(10) & Chr(10) & _
         "Doorgaan?", _
         36, "BereidKoffieMailmergeVoor")
