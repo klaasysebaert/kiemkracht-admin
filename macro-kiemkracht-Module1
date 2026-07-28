@@ -1484,8 +1484,33 @@ Sub MaakWeekbestand()
     ' Tel aantallen per pakkettype voor een reeks bestellingen (van index iVan tot iTot-1)
     ' Geeft terug in array: (0)=KG (1)=GG (2)=EGG (3)=MINI
 
-    ' --- KLANTDATA: gegroepeerd per leverdag > afhaalpunt ---
+    ' --- OPMERKINGEN-BLOK (rij 7 e.v.): algemene notities zonder klant ---
+    ' Aanwijzingen voor de medewerkers of voor jezelf, los van een bestelling.
+    ' Ze verschijnen bovenaan élk losse_groenten_per_klant-printdocument, zowel
+    ' donderdag als vrijdag (zie MaakOverzichten in Module3).
+    '
+    ' Vorm — bewust identiek aan een afhaalpunt-blok, zodat álle bestaande
+    ' rij-scans (overzichten, etiketten, afrekening, weglatingen, mailselectie)
+    ' het blok overslaan zonder één extra guard:
+    '   koprij      : A = "Opmerkingen", B = "afhaalpunt/dag"  → koprij-guard
+    '   notitierijen: A leeg, tekst in kolom AW (cAnder)       → lege-naam-guard
+    ' Onder de opgehaalde notities staan lege rijen klaar om doorheen de week
+    ' zelf in te typen; MaakOverzichten leest alles tot de eerste rij met een
+    ' ingevulde kolom A (= de eerste afhaalpunt-koprij).
+    Const nOpmVrij = 6                      ' lege notitierijen om zelf in te vullen
     r = 6
+    oSheet.getCellByPosition(cNaam, r).setString("Opmerkingen")
+    oSheet.getCellByPosition(cAfh,  r).setString("afhaalpunt/dag")
+    r = r + 1
+    Dim iOpm As Integer
+    For iOpm = 0 To nOpmAlg - 1
+        oSheet.getCellByPosition(cAnder, r).setString(aOpmAlg(iOpm))
+        r = r + 1
+    Next iOpm
+    r = r + nOpmVrij                        ' lege invulrijen
+    r = r + 1                               ' witregel vóór het eerste afhaalpunt
+
+    ' --- KLANTDATA: gegroepeerd per leverdag > afhaalpunt ---
     Dim sHuidigAfh  As String
     Dim sHuidigDag  As String
     Dim iAfhStart   As Integer  ' eerste rij van huidig afhaalpunt (voor subtotaal)
