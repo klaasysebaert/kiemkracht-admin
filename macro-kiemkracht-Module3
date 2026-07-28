@@ -123,7 +123,12 @@ Sub MaakOverzichten()
                 bHasG = True : Exit For
             End If
         Next g
-        If Not bHasG Then GoTo VolgendeRij
+        ' Een klant zonder losse groenten hoort hier normaal niet thuis, maar wél
+        ' als er iets in kolom AW ("ander") staat: dat is de enige plek waar een
+        ' aanwijzing zoals "honing deze week leveren" bij een klant kan hangen die
+        ' geen pakket en geen losse groenten heeft (bv. iemand op stop).
+        sAnder = Trim(oWkSheet.getCellByPosition(cAnder, i).getString())
+        If Not bHasG And sAnder = "" Then GoTo VolgendeRij
 
         sKlaarDag = oWkSheet.getCellByPosition(cKlaarDag, i).getString()
 
