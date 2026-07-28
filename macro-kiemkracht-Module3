@@ -105,6 +105,7 @@ Sub MaakOverzichten()
     Dim sPakket    As String
     Dim sBlok      As String
     Dim sAant      As String
+    Dim sAnder     As String
     Dim sWeg       As String
     Dim nAant      As Double
     Dim bHasG      As Boolean
