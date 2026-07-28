@@ -34,6 +34,7 @@ Sub MaakOverzichten()
     Const cWaarde      = 23  ' € losse (kolom X, ingevuld door MaakWeekbestand)
     Const cGroent0     = 24  ' eerste losse groente (kolom Y)
     Const nGroentSlots = 24
+    Const cAnder       = 48  ' kolom AW: "ander" — vrije opmerking per klant
     Const cWeg0        = 51
 
     Dim oDoc     As Object
