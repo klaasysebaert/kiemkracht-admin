@@ -162,6 +162,9 @@ Sub MaakOverzichten()
                 If sKlaarDag = "vrijdag"   Then aTotVrij(g) = aTotVrij(g) + nAant
             End If
         Next g
+        ' Kolom AW vóór de weglatingen, met hetzelfde voorvoegsel als in de
+        ' samenvattingsformule van kolom W ("ander/opmerking: ").
+        If sAnder <> "" Then sBlok = sBlok & Chr(10) & "ander/opmerking: " & sAnder
         For w = 0 To nWeg - 1
             sWeg = oWkSheet.getCellByPosition(cWeg0 + w, i).getString()
             If sWeg <> "" Then sBlok = sBlok & Chr(10) & "Geen: " & sWeg
