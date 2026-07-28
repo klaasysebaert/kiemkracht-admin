@@ -965,7 +965,8 @@ Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
     nNot = 0
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT tekst, voor_begeleidend, voor_weekplanner, voor_teeltplan, geaccepteerd, " & _
+        "SELECT tekst, voor_begeleidend, voor_weekplanner, voor_teeltplan, " & _
+        "voor_orderpicking, geaccepteerd, " & _
         "COALESCE(groente_naam,''), COALESCE(groente_id::text,'') " & _
         "FROM week_notitie WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & _
         " ORDER BY volgorde, id")
@@ -977,9 +978,10 @@ Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
             If oRS.getBoolean(3) Then oSheet.getCellByPosition(2, iRij).setString("x")
             If oRS.getBoolean(4) Then oSheet.getCellByPosition(3, iRij).setString("x")
             If oRS.getBoolean(5) Then oSheet.getCellByPosition(4, iRij).setString("x")
-            oSheet.getCellByPosition(5, iRij).setString(oRS.getString(6))
-            If oRS.getString(7) <> "" Then
-                oSheet.getCellByPosition(6, iRij).setValue(CLng(oRS.getString(7)))
+            If oRS.getBoolean(6) Then oSheet.getCellByPosition(5, iRij).setString("x")
+            oSheet.getCellByPosition(6, iRij).setString(oRS.getString(7))
+            If oRS.getString(8) <> "" Then
+                oSheet.getCellByPosition(7, iRij).setValue(CLng(oRS.getString(8)))
             End If
             nNot = nNot + 1
         End If
