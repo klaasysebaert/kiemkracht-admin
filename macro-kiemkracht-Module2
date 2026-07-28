@@ -631,10 +631,20 @@ Sub BereidKoffieMailmergeVoor()
     ' Maakt sheet "Koffiemailmerge" klaar in kiemkracht-data.ods
     ' met gepersonaliseerde koffie-URL per klant.
     '
-    ' Doelgroep: ALLE actieve klanten (alle types behalve stop-*),
-    '            zonder week-filter — pare-week-klanten krijgen ook
-    '            een uitnodiging in onpare weken en omgekeerd.
-    '            Klanten zonder email1 worden overgeslagen.
+    ' Doelgroep: IEDEREEN met koffie_opt_out = false, zonder week-filter
+    '            — pare-week-klanten krijgen ook een uitnodiging in
+    '            onpare weken en omgekeerd. Klanten zonder email1 worden
+    '            overgeslagen.
+    '
+    ' Bewust GEEN filter op klanten.type (2026-07-28): koffie is een
+    ' aparte mailstroom met een eigen opt-out-kolom. Vroeger sloot
+    ' "type NOT IN ('stop-tijdelijk','stop-definitief')" iedereen uit die
+    ' met groenten stopte — ook wie de koffie- en honingmail uitdrukkelijk
+    ' wél wilde blijven krijgen. Dat filter dubbelde koffie_opt_out en
+    ' won er stilzwijgend van. Nu is koffie_opt_out de ENIGE poort, zodat
+    ' groenten (status-gestuurd) en koffie (opt-out-gestuurd) los van
+    ' elkaar staan. Zelfde predicaat geldt als beschermingsregel bij een
+    ' toekomstige opkuis/anonimisering: wie hier nog in zit, niet wissen.
     '
     ' Doel-URL: koffie.kiemkracht.be (prod) of koffie.dev.kiemkracht.be (dev).
     ' Payload: voornaam, naam, email, klant_id, afhaalpunt — base64 in ?d=.
