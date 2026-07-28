@@ -944,22 +944,23 @@ Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
     oSheet.getCellByPosition(1, NOT_RIJ_KOP).setString("Klantmail (x)")
     oSheet.getCellByPosition(2, NOT_RIJ_KOP).setString("Weekplanner (x)")
     oSheet.getCellByPosition(3, NOT_RIJ_KOP).setString("Teeltplan (x)")
-    oSheet.getCellByPosition(4, NOT_RIJ_KOP).setString("Verwerkt (x)")
-    oSheet.getCellByPosition(5, NOT_RIJ_KOP).setString("Groente")
-    oSheet.getCellByPosition(6, NOT_RIJ_KOP).setString("groente_id")
-    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 6, NOT_RIJ_KOP).CellBackColor = clKop
-    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 6, NOT_RIJ_KOP).CharWeight = _
+    oSheet.getCellByPosition(4, NOT_RIJ_KOP).setString("Orderpicking (x)")
+    oSheet.getCellByPosition(5, NOT_RIJ_KOP).setString("Verwerkt (x)")
+    oSheet.getCellByPosition(6, NOT_RIJ_KOP).setString("Groente")
+    oSheet.getCellByPosition(7, NOT_RIJ_KOP).setString("groente_id")
+    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 7, NOT_RIJ_KOP).CellBackColor = clKop
+    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 7, NOT_RIJ_KOP).CharWeight = _
         com.sun.star.awt.FontWeight.BOLD
 
-    oSheet.getCellRangeByPosition(0, NOT_RIJ0, 6, NOT_RIJ0 + NOT_SLOTS - 1).CellBackColor = clInput
+    oSheet.getCellRangeByPosition(0, NOT_RIJ0, 7, NOT_RIJ0 + NOT_SLOTS - 1).CellBackColor = clInput
     oSheet.getCellRangeByPosition(0, NOT_RIJ0, 0, NOT_RIJ0 + NOT_SLOTS - 1).IsTextWrapped = True
 
     oSheet.Columns.getByIndex(0).Width = 12000
-    For iKol = 1 To 4
+    For iKol = 1 To 5
         oSheet.Columns.getByIndex(iKol).Width = 2800
     Next iKol
-    oSheet.Columns.getByIndex(5).Width = 3200
-    oSheet.Columns.getByIndex(6).Width = 2000
+    oSheet.Columns.getByIndex(6).Width = 3200
+    oSheet.Columns.getByIndex(7).Width = 2000
 
     nNot = 0
     oStmt = oConn.createStatement()
