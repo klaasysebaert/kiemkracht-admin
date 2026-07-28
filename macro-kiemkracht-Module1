@@ -2996,7 +2996,10 @@ Sub SchrijfWijzigingenTerug()
                             sAltFout = sAltFout & Chr(10) & "  rij " & (rAlt + 1) & _
                                        ": onbekend afhaalpunt '" & Trim(aAltNamen(iAlt)) & "'"
                             nAltFout = nAltFout + 1
-                        Else
+                        ElseIf InStr("," & sIds & ",", "," & CStr(lFoundId) & ",") = 0 Then
+                            ' Dubbels stil overslaan: hetzelfde punt kan twee keer
+                            ' opduiken (id én naam, of naam én naam_publiek) en de
+                            ' PK (klant_id, afhaalpunt_id) zou daar op breken.
                             If sIds <> "" Then sIds = sIds & ","
                             sIds = sIds & CStr(lFoundId)
                         End If
