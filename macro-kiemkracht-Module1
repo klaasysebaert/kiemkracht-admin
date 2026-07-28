@@ -1282,6 +1282,29 @@ Sub MaakWeekbestand()
         Next b
     Loop
     oRS.close() : oStmt.close()
+
+    ' --- Stap 7: week-notities met bestemming 'orderpicking' ---
+    ' Deze komen in het Opmerkingen-blok bovenaan het weekblad (rij 7) en
+    ' verschijnen zo op élk losse_groenten_per_klant-printdocument, zowel
+    ' donderdag als vrijdag (zie MaakOverzichten in Module3). Momentopname:
+    ' notities die je ná het aanmaken nog in de cockpit tikt, typ je zelf
+    ' bij in het blok.
+    Dim aOpmAlg(49) As String
+    Dim nOpmAlg     As Integer
+    nOpmAlg = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT tekst FROM week_notitie " & _
+        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & _
+        " AND voor_orderpicking AND btrim(tekst) <> '' " & _
+        "ORDER BY volgorde, id")
+    Do While oRS.next()
+        If nOpmAlg <= UBound(aOpmAlg) Then
+            aOpmAlg(nOpmAlg) = oRS.getString(1)
+            nOpmAlg = nOpmAlg + 1
+        End If
+    Loop
+    oRS.close() : oStmt.close()
     oConn.close()
 
     ' =============================================

@@ -914,7 +914,7 @@ Sub SamBouwTabLos(oDoc As Object, oConn As Object, _
 End Sub
 
 ' ---------------------------------------------------------------------------
-' Tab Notities: week-notities (3 bestemmingen) + begeleidende tekst
+' Tab Notities: week-notities (4 bestemmingen) + begeleidende tekst
 ' (publiek: ook gebruikt door de klassieke layout in Module6)
 ' ---------------------------------------------------------------------------
 Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
