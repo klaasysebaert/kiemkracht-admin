@@ -395,6 +395,36 @@ Sub MaakOverzichten()
         bFirstInDoc1 = True
         sPrevAfh1    = ""
 
+        ' Algemene opmerkingen als eerste kader, op élk dagdocument opnieuw.
+        ' Bewust 15pt: de kolom-/pagina-afbreekpas verderop reageert enkel op
+        ' 16pt (afhaalpuntkop) en 14pt (klantblok) en laat dit blok dus met rust.
+        If nAlgOpm > 0 Then
+            oWCursor.setPropertyValue("CharFontName",          "Calibri")
+            oWCursor.setPropertyValue("CharHeight",            15)
+            oWCursor.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
+            oWCursor.setPropertyValue("ParaTopMargin",         0)
+            oWCursor.setPropertyValue("TopBorder",             oBL)
+            oWCursor.setPropertyValue("BottomBorder",          oBL)
+            oWCursor.setPropertyValue("LeftBorder",            oBL)
+            oWCursor.setPropertyValue("RightBorder",           oBL)
+            oWCursor.setPropertyValue("TopBorderDistance",     100)
+            oWCursor.setPropertyValue("BottomBorderDistance",  100)
+            oWCursor.setPropertyValue("LeftBorderDistance",    150)
+            oWCursor.setPropertyValue("RightBorderDistance",   150)
+            oWCursor.setPropertyValue("ParaBottomMargin",      300)
+            oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+            oText.insertString(oWCursor, "OPMERKINGEN", False)
+            oWCursor.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+            For ao = 0 To nAlgOpm - 1
+                oText.insertControlCharacter(oWCursor, _
+                    com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                oText.insertString(oWCursor, Chr(8226) & " " & aAlgOpm(ao), False)
+            Next ao
+            oText.insertControlCharacter(oWCursor, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            bFirstInDoc1 = False
+        End If
+
         For b = 0 To n1 - 1
             If aDag1(b) <> sD Then GoTo VolgendBlok1
             bNieuwAfh = (sPrevAfh1 = "") Or (aAfh21(b) <> sPrevAfh1)
