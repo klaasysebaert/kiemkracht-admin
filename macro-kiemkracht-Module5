@@ -482,14 +482,15 @@ Sub SchrijfSamenstelling()
         iRij = NOT_RIJ0 + iSlot
         sNaam = Trim(oNot.getCellByPosition(0, iRij).getString())   ' de tekst
         If sNaam <> "" Then
-            sGid = Trim(oNot.getCellByPosition(6, iRij).getString())
+            sGid = Trim(oNot.getCellByPosition(7, iRij).getString())
             If sNotJson <> "" Then sNotJson = sNotJson & ","
             sNotJson = sNotJson & "{""tekst"":""" & SamJsonTekst(sNaam) & """," & _
                 "" & """voor_begeleidend"":" & SamJsBool(Trim(oNot.getCellByPosition(1, iRij).getString()) <> "") & "," & _
                 """voor_weekplanner"":" & SamJsBool(Trim(oNot.getCellByPosition(2, iRij).getString()) <> "") & "," & _
                 """voor_teeltplan"":" & SamJsBool(Trim(oNot.getCellByPosition(3, iRij).getString()) <> "") & "," & _
-                """geaccepteerd"":" & SamJsBool(Trim(oNot.getCellByPosition(4, iRij).getString()) <> "") & "," & _
-                """groente_naam"":""" & SamJsonTekst(Trim(oNot.getCellByPosition(5, iRij).getString())) & """"
+                """voor_orderpicking"":" & SamJsBool(Trim(oNot.getCellByPosition(4, iRij).getString()) <> "") & "," & _
+                """geaccepteerd"":" & SamJsBool(Trim(oNot.getCellByPosition(5, iRij).getString()) <> "") & "," & _
+                """groente_naam"":""" & SamJsonTekst(Trim(oNot.getCellByPosition(6, iRij).getString())) & """"
             If sGid <> "" And IsNumeric(sGid) Then
                 sNotJson = sNotJson & ",""groente_id"":" & CLng(sGid)
             End If
