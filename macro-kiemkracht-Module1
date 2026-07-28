@@ -1510,6 +1510,11 @@ Sub MaakWeekbestand()
     r = r + nOpmVrij                        ' lege invulrijen
     r = r + 1                               ' witregel vóór het eerste afhaalpunt
 
+    ' Eerste klantrij onthouden: de opmaak-pas verderop loopt dezelfde
+    ' rij-rekenkunde nog eens over en moet op dezelfde rij starten.
+    Dim rKlantStart As Integer
+    rKlantStart = r
+
     ' --- KLANTDATA: gegroepeerd per leverdag > afhaalpunt ---
     Dim sHuidigAfh  As String
     Dim sHuidigDag  As String
