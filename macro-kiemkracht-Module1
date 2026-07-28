@@ -2981,9 +2981,17 @@ Sub SchrijfWijzigingenTerug()
                     If sNaamAlt <> "" Then
                         Dim lFoundId As Long : lFoundId = -1
                         Dim jAp As Integer
-                        For jAp = 0 To nAp - 1
-                            If apNaam(jAp) = sNaamAlt Then lFoundId = apId(jAp) : Exit For
-                        Next jAp
+                        If IsNumeric(sNaamAlt) Then
+                            ' Rechtstreeks een afhaalpunt_id — moet wél bestaan.
+                            Dim lAltIdKand As Long : lAltIdKand = CLng(sNaamAlt)
+                            For jAp = 0 To nAp - 1
+                                If apId(jAp) = lAltIdKand Then lFoundId = lAltIdKand : Exit For
+                            Next jAp
+                        Else
+                            For jAp = 0 To nAp - 1
+                                If apNaam(jAp) = sNaamAlt Then lFoundId = apId(jAp) : Exit For
+                            Next jAp
+                        End If
                         If lFoundId = -1 Then
                             sAltFout = sAltFout & Chr(10) & "  rij " & (rAlt + 1) & _
                                        ": onbekend afhaalpunt '" & Trim(aAltNamen(iAlt)) & "'"
