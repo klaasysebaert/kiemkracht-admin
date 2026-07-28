@@ -195,6 +195,13 @@ Sub MaakOverzichten()
     nAlgOpm = 0
     For i = 6 To nLastRow
         If oWkSheet.getCellByPosition(cNaam, i).getString() = "Opmerkingen" Then
+            ' Ook kolom AW van de koprij zelf: wie één losse aanwijzing kwijt wil,
+            ' typt die van nature naast het woord "Opmerkingen" i.p.v. eronder.
+            sOpmRegel = Trim(oWkSheet.getCellByPosition(cAnder, i).getString())
+            If sOpmRegel <> "" Then
+                aAlgOpm(nAlgOpm) = sOpmRegel
+                nAlgOpm = nAlgOpm + 1
+            End If
             For iOpmRij = i + 1 To nLastRow
                 If oWkSheet.getCellByPosition(cNaam, iOpmRij).getString() <> "" Then Exit For
                 sOpmRegel = Trim(oWkSheet.getCellByPosition(cAnder, iOpmRij).getString())
