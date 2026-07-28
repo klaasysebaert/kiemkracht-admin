@@ -685,7 +685,7 @@ Sub BereidKoffieMailmergeVoor()
     Dim oStmt As Object
     Dim oRS   As Object
 
-    ' --- Stap 1: alle actieve klanten + afhaalpunt ---
+    ' --- Stap 1: alle koffie-geadresseerden + afhaalpunt ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT k.voornaam, k.familienaam, k.email1, k.type, " & _
