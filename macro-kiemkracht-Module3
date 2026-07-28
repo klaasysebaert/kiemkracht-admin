@@ -629,6 +629,34 @@ Sub MaakOverzichten()
         bFirstInDocF = True
         sPrevGrpF    = ""
 
+        ' Zelfde algemene-opmerkingen-kader als in het afhaalpunt-document.
+        If nAlgOpm > 0 Then
+            oWCursF.setPropertyValue("CharFontName",          "Calibri")
+            oWCursF.setPropertyValue("CharHeight",            15)
+            oWCursF.setPropertyValue("ParaAdjust",            com.sun.star.style.ParagraphAdjust.LEFT)
+            oWCursF.setPropertyValue("ParaTopMargin",         0)
+            oWCursF.setPropertyValue("TopBorder",             oBLF)
+            oWCursF.setPropertyValue("BottomBorder",          oBLF)
+            oWCursF.setPropertyValue("LeftBorder",            oBLF)
+            oWCursF.setPropertyValue("RightBorder",           oBLF)
+            oWCursF.setPropertyValue("TopBorderDistance",     100)
+            oWCursF.setPropertyValue("BottomBorderDistance",  100)
+            oWCursF.setPropertyValue("LeftBorderDistance",    150)
+            oWCursF.setPropertyValue("RightBorderDistance",   150)
+            oWCursF.setPropertyValue("ParaBottomMargin",      300)
+            oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
+            oTextF.insertString(oWCursF, "OPMERKINGEN", False)
+            oWCursF.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
+            For ao = 0 To nAlgOpm - 1
+                oTextF.insertControlCharacter(oWCursF, _
+                    com.sun.star.text.ControlCharacter.LINE_BREAK, False)
+                oTextF.insertString(oWCursF, Chr(8226) & " " & aAlgOpm(ao), False)
+            Next ao
+            oTextF.insertControlCharacter(oWCursF, _
+                com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK, False)
+            bFirstInDocF = False
+        End If
+
         For bF = 0 To nBlokF - 1
             If aDagF(bF) <> sD Then GoTo VolgendBlokF
             bNieuwGrp = (sPrevGrpF = "") Or (aGrpF(bF) <> sPrevGrpF)
