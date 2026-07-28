@@ -2945,9 +2945,10 @@ Sub SchrijfWijzigingenTerug()
     Dim nUpdates As Integer : nUpdates = 0
 
     ' Afhaalpunt-alternatieven (backlog #27): namen uit kolom AA vooraf
-    ' opzoeken/valideren tegen afhaalpunten (naam of naam_publiek), vóór er
-    ' iets weggeschreven wordt — bij een onbekende naam breekt de macro af
-    ' zonder één enkele UPDATE uit te voeren.
+    ' opzoeken/valideren tegen afhaalpunten (naam, naam_publiek of rechtstreeks
+    ' het afhaalpunt_id — zelfde invoervrijheid als het afhaalpunt_verlof-tabblad),
+    ' vóór er iets weggeschreven wordt — bij een onbekende naam/id breekt de macro
+    ' af zonder één enkele UPDATE uit te voeren.
     Dim apNaam(200) As String, apId(200) As Long, nAp As Integer : nAp = 0
     Dim oApRS As Object : oApRS = oStmt.executeQuery("SELECT id, naam, naam_publiek FROM afhaalpunten")
     Do While oApRS.next()
