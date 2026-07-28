@@ -2111,9 +2111,20 @@ Sub MaakWeekbestand()
         Next cIdx
     Next rIdx
 
-    ' --- KLANTDATA RIJEN (vanaf rij 6): opmaak per rij ---
+    ' --- OPMERKINGEN-BLOK: zelfde opmaak als een afhaalpunt-blok ---
+    ' Koprij geel/vet, notitierijen wit — inclusief de lege invulrijen, zodat
+    ' wat je er doorheen de week bijtypt er meteen bij hoort.
+    Dim rOpm As Integer
+    PasRijOpmaakToe(oSheet, 6, clGeel, True, _
+                    cGroent0, cAangep, cGeen, cWeg0, nWegSlots, clGeel, clGeel)
+    For rOpm = 7 To 6 + nOpmAlg + nOpmVrij
+        PasRijOpmaakToe(oSheet, rOpm, clWit, False, _
+                        cGroent0, cAangep, cGeen, cWeg0, nWegSlots, clCyan, clOranje)
+    Next rOpm
+
+    ' --- KLANTDATA RIJEN: opmaak per rij ---
     Dim rStart As Integer
-    rStart = 6
+    rStart = rKlantStart
     Dim rLoop As Integer
     rLoop = rStart
 
