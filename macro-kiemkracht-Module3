@@ -181,6 +181,32 @@ Sub MaakOverzichten()
         VolgendeRij:
     Next i
 
+    ' --- Algemene opmerkingen (Opmerkingen-blok bovenaan het weekblad) ---
+    ' Aanwijzingen zonder klant, voor de medewerkers of voor jezelf. Het blok
+    ' begint bij de koprij met "Opmerkingen" in kolom A; de regels eronder
+    ' hebben een lege kolom A en hun tekst in kolom AW. Alles tot de eerste rij
+    ' met een ingevulde kolom A (= de eerste afhaalpunt-koprij) hoort erbij, dus
+    ' ook wat je doorheen de week in de lege invulrijen bijtypt.
+    ' Ontbreekt het blok (ouder weekbestand), dan blijft nAlgOpm gewoon 0.
+    Dim aAlgOpm(99) As String
+    Dim nAlgOpm     As Integer
+    Dim iOpmRij     As Long
+    Dim sOpmRegel   As String
+    nAlgOpm = 0
+    For i = 6 To nLastRow
+        If oWkSheet.getCellByPosition(cNaam, i).getString() = "Opmerkingen" Then
+            For iOpmRij = i + 1 To nLastRow
+                If oWkSheet.getCellByPosition(cNaam, iOpmRij).getString() <> "" Then Exit For
+                sOpmRegel = Trim(oWkSheet.getCellByPosition(cAnder, iOpmRij).getString())
+                If sOpmRegel <> "" And nAlgOpm <= UBound(aAlgOpm) Then
+                    aAlgOpm(nAlgOpm) = sOpmRegel
+                    nAlgOpm = nAlgOpm + 1
+                End If
+            Next iOpmRij
+            Exit For
+        End If
+    Next i
+
     If nBlok = 0 Then
         MsgBox "Geen klanten met losse groenten gevonden.", 48, "Overzichten"
         Exit Sub
