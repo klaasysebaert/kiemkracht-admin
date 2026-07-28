@@ -836,7 +836,7 @@ Sub BereidKoffieMailmergeVoor()
     Dim nRijen As Integer
     nRijen = r - 1
     MsgBox "Koffie-mailmerge klaar!" & Chr(10) & Chr(10) & _
-           nRijen & " actieve klanten opgenomen in sheet 'Koffiemailmerge'." & Chr(10) & _
+           nRijen & " klanten opgenomen in sheet 'Koffiemailmerge'." & Chr(10) & _
            "Doelomgeving: " & KOFFIE_URL, _
            64, "BereidKoffieMailmergeVoor"
 
