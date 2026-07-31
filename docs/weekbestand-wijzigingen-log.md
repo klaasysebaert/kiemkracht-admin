@@ -54,6 +54,52 @@ aangeboden, maar bleek donderdag/vrijdag nog niet rijp/oogstbaar. Drie handeling
 
 ---
 
+## Week 31 / 2026
+
+*(genoteerd op 2026-07-31)*
+
+Gebeurtenis: **kerstomaatjes** waren als losse groente aangeboden, maar er zijn er
+op **vrijdag** geen. Donderdag-klanten krijgen ze wél — de intrekking geldt dus
+maar voor een **deel** van de bestellers, aangewezen via de dag-filter.
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 1 | alle kerstomaatjes-bestellers met leverdag **vrijdag** | Verwittigen dat de kerstomaatjes niet komen | Gefilterd op leverdag = vrijdag + kerstomaatjes-kolom ingevuld, mailadressen uit **kolom G** in BCC |
+| 2 | zelfde lijst | Kerstomaatjes intrekken bij die klanten (niet beschikbaar op vrijdag) | Met dezelfde filter actief: cellen in de kerstomaatjes-kolom gewist (enkel de vrijdag-rijen) |
+
+Volgorde is bewust: **eerst mailen, dan wissen** — de filter zelf ís de
+adressenlijst, en na het wissen is ze niet meer te reconstrueren.
+
+**DB-implicatie 1 — reikwijdte per segment, ook voor losse groenten.** Bij de
+meloen (week 30) was de reikwijdte "iedereen die besteld had" en de adressering
+een lijst `klant_id`'s. Hier is de reikwijdte een **segment** (leverdag =
+vrijdag) × de bestellers van één groente. Dezelfde segment-dimensie die eerder
+al voor pakketinhoud opdook (maat × dag × afhaalpunt) geldt dus óók voor losse
+groenten. Segment = alleen de *adressering*; het **feit blijft per (klant, week,
+groente)** — de DB moet het segment op het moment zelf uitklappen naar concrete
+klanten, anders is er volgende week niets meer om op terug te grijpen (klanten
+kunnen van dag wisselen).
+
+**DB-implicatie 2 — wélke dag?** Het weekbestand heeft drie dag-noties: kolom C
+"dag klaarmaken", verborgen kolom K "leverdag", kolom N "dag afhaling" (kan
+afwijken via `klant_afhaalpunt_keuze`). "Er zijn vrijdag geen kerstomaatjes" is
+een **oogst-/klaarmaakdag**-feit, niet een afhaaldag-feit. Voor klanten waar die
+twee uiteenlopen, kiest de filter mogelijk de verkeerde groep. Open vraag aan
+Klaas: op welke kolom filter je in de praktijk?
+
+**Nieuw soort gevolg — compensatie/voorrang (wens Klaas).** Idee: klanten die
+een groente door een tekort misliepen, krijgen **volgende week voorrang** op
+diezelfde groente. Dat is een echt nieuw stuk: de eerdere gevolgen (telling
+corrigeren, mail sturen) leven binnen dezelfde week, dit **overleeft de week**.
+Vorm: een tegoed/wachtrij per (klant, groente), aangemaakt door de intrekking en
+afgeboekt zodra de klant de groente krijgt. Sluit aan bij de eerdere vaststelling
+dat "wie bij tekort uitvalt" een menselijke verdeelbeslissing is: het systeem
+beslist niet, het **rangschikt** — bij schaarste toont de cockpit/afweeglijst de
+bestellers gesorteerd op wie het laatst iets misliep. Verwant aan de cadeaubon
+(week 29) — ook een tegoed — maar in natura i.p.v. in euro's.
+
+---
+
 <!--
 Nieuwe week? Kopieer dit blok:
 
