@@ -64,10 +64,10 @@ maar voor een **deel** van de bestellers, aangewezen via de dag-filter.
 
 | # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
 |---|---|---|---|
-| 1 | alle kerstomaatjes-bestellers met leverdag **vrijdag** | Verwittigen dat de kerstomaatjes niet komen | Gefilterd op leverdag = vrijdag + kerstomaatjes-kolom ingevuld, mailadressen uit **kolom G** in BCC |
-| 2 | zelfde lijst | Kerstomaatjes intrekken bij die klanten (niet beschikbaar op vrijdag) | Met dezelfde filter actief: cellen in de kerstomaatjes-kolom gewist (enkel de vrijdag-rijen) |
+| 1 | alle kerstomaatjes-bestellers met klaarmaakdag **vrijdag** | Verwittigen dat de kerstomaatjes niet komen | Gefilterd op de kerstomaatjes-kolom (ingevuld), mailadressen uit **kolom G** in BCC — enkel vanaf de eerste vrijdag-rij |
+| 2 | zelfde lijst | Kerstomaatjes intrekken bij die klanten (niet beschikbaar op vrijdag) | Met dezelfde selectie: cellen in de kerstomaatjes-kolom gewist |
 
-Volgorde is bewust: **eerst mailen, dan wissen** — de filter zelf ís de
+Volgorde is bewust: **eerst mailen, dan wissen** — de selectie zelf ís de
 adressenlijst, en na het wissen is ze niet meer te reconstrueren.
 
 **DB-implicatie 1 — reikwijdte per segment, ook voor losse groenten.** Bij de
