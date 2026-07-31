@@ -80,12 +80,29 @@ groente)** — de DB moet het segment op het moment zelf uitklappen naar concret
 klanten, anders is er volgende week niets meer om op terug te grijpen (klanten
 kunnen van dag wisselen).
 
-**DB-implicatie 2 — wélke dag?** Het weekbestand heeft drie dag-noties: kolom C
-"dag klaarmaken", verborgen kolom K "leverdag", kolom N "dag afhaling" (kan
-afwijken via `klant_afhaalpunt_keuze`). "Er zijn vrijdag geen kerstomaatjes" is
-een **oogst-/klaarmaakdag**-feit, niet een afhaaldag-feit. Voor klanten waar die
-twee uiteenlopen, kiest de filter mogelijk de verkeerde groep. Open vraag aan
-Klaas: op welke kolom filter je in de praktijk?
+**DB-implicatie 2 — de dag zit in de rij-VOLGORDE, niet in een filter.** (Klaas,
+2026-07-31.) In de praktijk wordt er niet op een dag-kolom gefilterd: er wordt
+gefilterd op de kerstomaatjes-kolom, en de vrijdag-grens wordt **op naam
+herkend** — vrijdag staat onder donderdag. Twee gevolgen:
+
+- *Semantisch klopt het.* De rijen staan gesorteerd op de query-kolom `leverdag`
+  = `COALESCE(kwap.dag_klaarmaken, kap.dag_klaarmaken, b.leverdag)` (Module1
+  ~915/1004) — dus op **klaarmaakdag mét weekkeuze-override**, precies de notie
+  die een oogsttekort nodig heeft. De ambachtelijke methode pakt gratis het
+  juiste segment. Voor de DB-vervanging ligt de segment-as daarmee vast:
+  `dag_klaarmaken` (keuze-override eerst), niet afhaaldag.
+- *Mechanisch is het fragiel.* De grens komt uit mensenkennis, niet uit data. Eén
+  rij te hoog beginnen = een donderdag-klant verliest tomaatjes die er wél zijn
+  én krijgt een mail; één rij te laag = een vrijdag-klant houdt tomaatjes die er
+  niet zijn en hoort niets. Beide falen stil. Bovendien is de sortering
+  **alfabetisch op de dagnaam** (donderdag < vrijdag): dat klopt vandaag toevallig,
+  maar een derde dag ("dinsdag", "woensdag") zou de vertrouwde volgorde omgooien
+  zonder dat er iets verandert aan het scherm.
+
+De vervanging moet dus niet de handeling nabouwen maar het **criterium**
+aanbieden — "groente × klaarmaakdag" — en de klantenlijst zelf afleiden. Dan
+komen mail, intrekking en (later) het voorrang-tegoed alle drie uit één en
+dezelfde, herhaalbare lijst.
 
 **Nieuw soort gevolg — compensatie/voorrang (wens Klaas).** Idee: klanten die
 een groente door een tekort misliepen, krijgen **volgende week voorrang** op
