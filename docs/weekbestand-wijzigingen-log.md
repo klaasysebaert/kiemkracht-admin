@@ -104,7 +104,49 @@ aanbieden — "groente × klaarmaakdag" — en de klantenlijst zelf afleiden. Da
 komen mail, intrekking en (later) het voorrang-tegoed alle drie uit één en
 dezelfde, herhaalbare lijst.
 
-**Nieuw soort gevolg — compensatie/voorrang (wens Klaas).** Idee: klanten die
+### Tweede gebeurtenis week 31 — eenmalige klant
+
+Een **eenmalige klant**: één keer een groot pakket, geen abonnement.
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 3 | 3331 Carmen ("(honing)" als familienaam) | Eén keer een pakket afnemen, zonder abonnement | **Niets** — normaal had je hier een **rij ingevoegd** en genoeg velden ingevuld om mee te tellen in de aantallen. In plaats daarvan als **nieuwe klant in de DB** aangemaakt (type `weekperweek`, status `actief`). Nog te doen: haar terug stopzetten. |
+
+**Dit is de omkering van alle vorige regels in deze log.** Alle eerdere gevallen
+waren *intrekkingen* die je in het weekbestand deed en die de DB nooit bereikten;
+dit is een *toevoeging* die je bewust **niet** in het weekbestand hebt gedaan,
+juist omdat een met de hand ingevoegde rij de telling in het samenstelling-doc
+niet haalt. De DB-route was hier al de betere — het handwerk heeft zichzelf
+weg-geselecteerd. Waardevol als bevestiging: waar de DB het feit al kan dragen,
+verdwijnt het weekbestand-handwerk vanzelf.
+
+**Het gat: er is geen notie "eenmalige afname".** De enige manier om in de
+telling te raken is een **volledige klantrelatie** aanmaken, die je daarna met de
+hand weer moet afsluiten. Dat opruimwerk moet je onthouden, en niets herinnert je
+eraan. Precies het onderscheid uit de hervorming relatie/levering
+(`hervorming-relatie-levering.md`): haar **levering** regelt zichzelf al goed —
+één bestelling, geen abonnement, dus volgende week staat ze nergens in het
+weekbestand — maar haar **relatie** blijft openstaan, en die is de mail-poort. Het
+"terug stoppen" gaat dus over precies één as, niet over leveringen. Een echt
+eenmalig-concept zou die relatie nooit geopend hebben.
+
+**Let op bij het stopzetten:** doe het via de gewone stop-invoer in
+`klanten_beheer` (kolom R + doel in S), niet met een handmatige `UPDATE` op
+`klanten.type` — dat veld wordt dagelijks door `flip_abonnementen()` herberekend
+en je wijziging draait terug.
+
+**Open punt (2026-08-02):** mag ze na het stopzetten nog aanbod-mails krijgen?
+Nog niet beslist; ze staat voorlopig ongewijzigd. "Nee" = relatie helemaal
+afsluiten, "ja" = het bestaande `weekperweek`-geval. Dat is de keuze die een
+eenmalig-concept expliciet zou moeten stellen op het moment van aanmaken.
+
+**Klein bijkomend gat: herkomst.** De familienaam is met de hand op "(honing)"
+gezet om te markeren dat ze uit het honing-kanaal komt. De `klanten`-tabel doet
+dus dienst als contactenlijst voor meerdere kanalen, met een pseudo-naam als
+herkomst-markering. Er is geen herkomst-/kanaal-veld — relevant voor de
+koffie/groenten-mailontkoppeling, waar de scheiding nu op `koffie_opt_out` leunt.
+
+### Nieuw soort gevolg — compensatie/voorrang (wens Klaas). Idee: klanten die
 een groente door een tekort misliepen, krijgen **volgende week voorrang** op
 diezelfde groente. Dat is een echt nieuw stuk: de eerdere gevolgen (telling
 corrigeren, mail sturen) leven binnen dezelfde week, dit **overleeft de week**.
