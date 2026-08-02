@@ -58,7 +58,9 @@ aangeboden, maar bleek donderdag/vrijdag nog niet rijp/oogstbaar. Drie handeling
 
 *(genoteerd op 2026-07-31)*
 
-Gebeurtenis: **kerstomaatjes** waren als losse groente aangeboden, maar er zijn er
+### Gebeurtenis 1 — kerstomaatjes niet beschikbaar op vrijdag
+
+**kerstomaatjes** waren als losse groente aangeboden, maar er zijn er
 op **vrijdag** geen. Donderdag-klanten krijgen ze wél — de intrekking geldt dus
 maar voor een **deel** van de bestellers, aangewezen via de dag-filter.
 
