@@ -146,17 +146,6 @@ dus dienst als contactenlijst voor meerdere kanalen, met een pseudo-naam als
 herkomst-markering. Er is geen herkomst-/kanaal-veld — relevant voor de
 koffie/groenten-mailontkoppeling, waar de scheiding nu op `koffie_opt_out` leunt.
 
-### Nieuw soort gevolg — compensatie/voorrang (wens Klaas). Idee: klanten die
-een groente door een tekort misliepen, krijgen **volgende week voorrang** op
-diezelfde groente. Dat is een echt nieuw stuk: de eerdere gevolgen (telling
-corrigeren, mail sturen) leven binnen dezelfde week, dit **overleeft de week**.
-Vorm: een tegoed/wachtrij per (klant, groente), aangemaakt door de intrekking en
-afgeboekt zodra de klant de groente krijgt. Sluit aan bij de eerdere vaststelling
-dat "wie bij tekort uitvalt" een menselijke verdeelbeslissing is: het systeem
-beslist niet, het **rangschikt** — bij schaarste toont de cockpit/afweeglijst de
-bestellers gesorteerd op wie het laatst iets misliep. Verwant aan de cadeaubon
-(week 29) — ook een tegoed — maar in natura i.p.v. in euro's.
-
 ---
 
 <!--
