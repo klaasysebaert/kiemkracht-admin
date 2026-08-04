@@ -756,6 +756,74 @@ Sub MaakWeekbestand()
     Loop
     oRS.close() : oStmt.close()
 
+    ' --- Stap 1b: vangnet voor bestelde groenten die niet (meer) in het aanbod staan ---
+    ' De koppeling bestelregel → kolom loopt op NAAM (stap 5 hieronder). Hernoem je
+    ' een losse groente in de cockpit terwijl er al besteld is — of haal je ze uit
+    ' het aanbod — dan houden de al geplaatste bestelregels de OUDE naam en vallen ze
+    ' hier STIL weg: die klanten krijgen hun groente niet en betalen ze niet. Gebeurd
+    ' in week 32/2026 ("Meloen Charentais" → "Meloen Charentais (volop!)" tijdens het
+    ' open bestelvenster: 22 klanten, 23 meloenen; achteraf rechtgezet in de DB).
+    ' Daarom krijgt elke bestelde naam die deze week niet in 'groenten' staat achteraan
+    ' een eigen kolom, met eenheid/prijs/x-notatie uit de recentste week (<= deze)
+    ' waarin die naam wél bestond — anders 0,00 € / "stuk". Zelfde principe als het
+    ' weglating-vangnet in stap 2. sHernoemRapport meldt het achteraf: twee kolommen
+    ' samenvoegen (hernoeming) of de kolom net wél wissen (groente niet oogstbaar)
+    ' blijft mensenwerk, maar vertrekt nu van zichtbare data i.p.v. van stille uitval.
+    Dim sHernoemRapport As String
+    Dim nHernoem        As Integer
+    Dim lHnWeekNum      As Long
+    Dim sHnNaam         As String
+    Dim sHnStuks        As String
+    Dim sHnInfo         As String
+    sHernoemRapport = ""
+    nHernoem   = 0
+    lHnWeekNum = CLng(iJaar) * 100 + iWeek
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT x.naam, COALESCE(h.eenheid, 'stuk'), COALESCE(h.per_stuk, false), " & _
+        "COALESCE(h.prijs, 0), x.klanten, x.stuks, (h.eenheid IS NULL) " & _
+        "FROM (SELECT br.groente_naam AS naam, COUNT(*) AS klanten, SUM(br.aantal) AS stuks " & _
+        "FROM bestelregels br " & _
+        "INNER JOIN bestellingen bst ON bst.id = br.bestelling_id " & _
+        "WHERE bst.weeknummer = " & iWeek & " AND bst.jaar = " & iJaar & " " & _
+        "AND NOT EXISTS (SELECT 1 FROM groenten g WHERE g.jaar = bst.jaar " & _
+        "AND g.weeknummer = bst.weeknummer AND g.naam = br.groente_naam) " & _
+        "GROUP BY br.groente_naam) x " & _
+        "LEFT JOIN LATERAL (SELECT g2.eenheid, g2.per_stuk, g2.prijs FROM groenten g2 " & _
+        "WHERE g2.naam = x.naam AND (g2.jaar * 100 + g2.weeknummer) <= " & lHnWeekNum & " " & _
+        "ORDER BY g2.jaar DESC, g2.weeknummer DESC LIMIT 1) h ON true " & _
+        "ORDER BY x.naam")
+    Do While oRS.next()
+        sHnNaam  = oRS.getString(1)
+        sHnStuks = oRS.getString(6)
+        If Len(sHnStuks) > 3 And Right(sHnStuks, 3) = ".00" Then
+            sHnStuks = Left(sHnStuks, Len(sHnStuks) - 3)
+        End If
+        sHnInfo  = oRS.getString(5) & " klant(en), " & sHnStuks & " besteld"
+        nHernoem = nHernoem + 1
+        ' Grens: er zijn 24 groente-slots vanaf kolom Y (nGroentSlots/cGroent0
+        ' staan verderop bij de kolomindices) — daarna loopt de layout in de
+        ' "ander"-kolom, dus dan enkel melden i.p.v. toevoegen.
+        If nGroenten >= 24 Then
+            sHernoemRapport = sHernoemRapport & "   - " & sHnNaam & " (" & sHnInfo & _
+                ") — GEEN VRIJ SLOT MEER, met de hand opnemen!" & Chr(10)
+        Else
+            groentNaam(nGroenten)    = sHnNaam
+            groentEenh(nGroenten)    = oRS.getString(2)
+            groentPerStuk(nGroenten) = oRS.getBoolean(3)
+            groentPrijs(nGroenten)   = oRS.getDouble(4)
+            sHernoemRapport = sHernoemRapport & "   - " & sHnNaam & " (" & sHnInfo & _
+                ") -> kolom " & KolomLetter(24 + nGroenten)
+            If oRS.getBoolean(7) Then
+                sHernoemRapport = sHernoemRapport & _
+                    ", PRIJS ONBEKEND (0,00 " & Chr(8364) & ") - zelf invullen in rij 3"
+            End If
+            sHernoemRapport = sHernoemRapport & Chr(10)
+            nGroenten = nGroenten + 1
+        End If
+    Loop
+    oRS.close() : oStmt.close()
+
     ' --- Pakketprijzen (voor het afrekeningstabblad) ---
     Dim prijsKlein As Double, prijsGroot As Double
     Dim prijsEGroot As Double, prijsMini As Double
