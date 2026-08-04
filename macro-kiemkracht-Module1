@@ -2571,6 +2571,18 @@ Sub MaakWeekbestand()
             "Check ook kolom F (vragen_opmerkingen) / AW (ander, op de stapellijsten) " & _
             "in het weekbestand."
     End If
+    ' Vangnet stap 1b: bestelde groenten die niet meer in het aanbod stonden.
+    ' Altijd melden — zonder deze regels ziet niemand dat er iets afweek.
+    If sHernoemRapport <> "" Then
+        sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
+            nHernoem & " bestelde losse groente(n) stonden niet meer in het aanbod van " & _
+            "deze week (hernoemd of geschrapt in de cockpit NA de eerste bestellingen). " & _
+            "Ze zijn als EXTRA kolom opgenomen i.p.v. stil weggelaten:" & Chr(10) & _
+            sHernoemRapport & _
+            "Bij een hernoeming staat dezelfde groente nu in twee kolommen: tel ze samen " & _
+            "in de nieuwe kolom en wis de oude. Was ze bewust geschrapt (niet oogstbaar), " & _
+            "wis dan de kolom en verwittig die klanten."
+    End If
 
     If bVanuitWeekbestand Then
         ' Kan het aanroepende document niet sluiten vanuit de lopende macro.
