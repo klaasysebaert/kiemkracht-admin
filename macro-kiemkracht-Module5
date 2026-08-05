@@ -2000,8 +2000,11 @@ Sub SamVerversLosBesteld(oDoc As Object, oConn As Object, _
     oLos.getCellRangeByPosition(8, LOS_RIJ0, 8, LOS_RIJ0 + LOS_SLOTS - 1).clearContents(7)
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
-        "SELECT naam, besteld FROM groenten " & _
-        "WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek)
+        "SELECT g.naam, COALESCE((SELECT SUM(br.aantal) FROM bestelregels br " & _
+        "INNER JOIN bestellingen b ON b.id = br.bestelling_id " & _
+        "WHERE b.jaar = g.jaar AND b.weeknummer = g.weeknummer " & _
+        "AND br.groente_naam = g.naam), 0) " & _
+        "FROM groenten g WHERE g.jaar = " & iJaar & " AND g.weeknummer = " & iWeek)
     Do While oRS.next()
         sNaam = oRS.getString(1)
         For iSlot = 0 To LOS_SLOTS - 1
