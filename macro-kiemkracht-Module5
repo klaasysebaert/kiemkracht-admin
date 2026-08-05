@@ -1977,6 +1977,17 @@ End Sub
 ' De kolom wordt eerst leeggemaakt: staat er een groente in het document die
 ' intussen uit de DB verdween of hernoemd werd, dan mag haar oude teller niet
 ' blijven staan (dat leest als een fout cijfer bij die groente).
+'
+' Het cijfer wordt GEREKEND uit bestelregels, niet gelezen uit groenten.besteld.
+' Die kolom is namelijk geen zuivere losse-teller: pasVoorraadAan() in
+' postgres-proxy.php telt er per bestelling ook +1 bij voor elke PAKKETgroente
+' met dezelfde naam. Staat een groente deze week zowel in het pakket als los in
+' het aanbod, dan zit het aantal pakketbestellingen mee in de teller. Week
+' 32/2026: Boterbonen 64,50 (= 63 pakketbestellingen + 1,5 kg echt los besteld),
+' Komkommer 68 (= 66 + 2), Tomaten 73,50 (= 67 + 6,5). Dat cijfer gaat naar de
+' Oogstlijst en de OogstBestel-tab, waar het bovenop de al berekende pakketnood
+' komt — dus zou je tientallen kilo's te veel bestellen bij de groothandel.
+' De som van bestelregels is exact wat ook in het weekbestand staat.
 ' ---------------------------------------------------------------------------
 Sub SamVerversLosBesteld(oDoc As Object, oConn As Object, _
                          iWeek As Integer, iJaar As Integer)
