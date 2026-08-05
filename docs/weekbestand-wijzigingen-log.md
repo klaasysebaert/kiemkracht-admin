@@ -161,6 +161,63 @@ koffie/groenten-mailontkoppeling, waar de scheiding nu op `koffie_opt_out` leunt
 
 ---
 
+## Week 32 / 2026
+
+*(genoteerd op 2026-08-05)*
+
+### Gebeurtenis 1 — bestelling per e-mail, buiten het bestelformulier
+
+**Yves Vandenheede (3097)** antwoordde op de aanbod-mail van ma 3 aug 11:10 met:
+*"Graag een klein pak +2kg patat en 2kg ui aub."* Hij is `weekperweek`, `actief`,
+afhaalpunt 't Voldersveld (klaarmaken donderdag, afhaling vrijdag) en bestelt
+normaal gewoon via het formulier (laatst week 29). Deze week kwam de bestelling
+per mail, ná het sluiten van het bestelvenster (ma 7u – di 13u15).
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 1 | 3097 Yves Vandenheede | Klein pakket + 2 kg aardappelen + 2 kg ui, per mail doorgegeven | **Rij met de hand toegevoegd** in `week_32_2026_definitief.ods` en genoeg velden ingevuld om mee te tellen (pakket-kolom + de losse-groentekolommen voor aardappelen en ui) |
+
+**Dit is het eerste geval in deze log zónder modelgat.** Alle vorige regels wezen
+op een notie die in de DB ontbreekt (cadeaubon = kortingsregel, tekort =
+intrekking-met-reden, eenmalige klant = relatie zonder levering). Hier past het
+feit exact in wat er al staat: één rij in `bestellingen` + twee in `bestelregels`,
+met `klant_id = 3097`. Er valt niets te ontwerpen. Wat ontbreekt is enkel de
+**deur**: het bestelformulier is klantgericht en verdwijnt na dinsdag 13u15, dus
+er is geen manier om als beheerder een bestelling in te voeren. (Server-side zit
+die grens er trouwens alleen op *wijzigen* — `postgres-proxy.php` ~1651; het
+aanmaken van een bestelling heeft geen venstercontrole. Het is dus vooral een
+UI-/toegangskwestie, geen nieuwe logica.)
+
+**Wat de handmatige rij kost.** De afrekening werkt gewoon — die is een levende
+formule over de cellen van het weekbestand. Wat wél wegvalt:
+
+- **De telling.** De oogst- en afweeglijsten voor week 32 waren al gegenereerd
+  (5 aug 7:56) toen de mail verwerkt werd; die tellen bovendien uit de DB. Zijn
+  klein pakket en zijn 2 kg aardappelen + 2 kg ui staan dus nergens in de
+  oogstcijfers — enkel in het hoofd van wie de rij toevoegde.
+- **`groenten.besteld` / `aantal_beschikbaar`** worden niet bijgewerkt, terwijl
+  elk van de 109 andere bestellingen van deze week dat wel deed.
+- **De geschiedenis.** Volgend jaar is "wat bestelde Yves in week 32" leeg; hij
+  ziet er in de data uit als een klant die sinds week 29 niets meer nam.
+- **Geen bevestigingsmail** — hij weet niet of het gelukt is behalve via een
+  handgeschreven antwoord.
+- **De rij is vluchtig:** een nieuwe `MaakWeekbestand`-run overschrijft ze.
+
+**Bijkomend: de vertaalstap van vrije tekst naar catalogus.** "klein pak" →
+`Klein pakket`; "2kg ui" → `Ui` (3,00 €/kg, stap 0,5); "2kg patat" → `Nieuwe
+aardappelen` (2,75 €/kg) *of* `Nieuwe aardappelen kriel` (3,35 €/kg) — dat laatste
+is een gok. Een invoerscherm dat het echte week-aanbod toont, haalt die gok eruit.
+
+**Kleinste bouwstuk in heel deze log: "bestelling invoeren namens een klant".**
+Dezelfde POST als het formulier, vanuit de portal/cockpit, met klantkiezer en het
+aanbod van de week. Dat pensioneert deze soort volledig, en meteen ook het geval
+"klant belt of mailt een *wijziging* na dinsdag 13u15" — dat kan vandaag helemaal
+niet, want `bestelling_wijzigen` weigert buiten het venster. Sluit aan bij het
+patroon van week 31 (Carmen): waar de DB het feit kan dragen, verdwijnt het
+weekbestand-handwerk vanzelf.
+
+---
+
 <!--
 Nieuwe week? Kopieer dit blok:
 
