@@ -680,7 +680,11 @@ Private Sub KlasVulOogstBestel(oDoc As Object, oConn As Object, _
     oOgb.getCellRangeByPosition(0, OGB_TAB_KOP, 8, OGB_TAB_KOP).CharWeight = _
         com.sun.star.awt.FontWeight.BOLD
 
-    ' losse groenten (besteld-teller + grooth) uit de DB
+    ' losse groenten (bijbestelling + grooth) uit de DB. Het bijbestel-aantal
+    ' wordt gerekend uit bestelregels en NIET uit groenten.besteld — die teller
+    ' bevat er ook de pakketbestellingen van dezelfde naam bij (zie de uitleg
+    ' bij SamVerversLosBesteld in Module5). Hier telt dat dubbel aan: kolom D
+    ' komt bovenop de al berekende Nodig do/vrij in kolom B en C.
     Dim losNaam(OGB_LOS_MAX - 1)   As String
     Dim losBesteld(OGB_LOS_MAX - 1) As Double
     Dim losGrooth(OGB_LOS_MAX - 1) As Double
