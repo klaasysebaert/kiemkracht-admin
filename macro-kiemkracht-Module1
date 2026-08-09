@@ -4599,7 +4599,9 @@ End Sub
 ' gesloten-week tot (niet: tot-en-met) de open-week — "vanaf" i.p.v. "tot" om
 ' de Nederlandse tot/tot-en-met-verwarring te vermijden.
 ' Gebouwd naar het skelet van VerwerkStopStart (validatie zonder DB, dan
-' verbinden, dedup tegen bestaande rijen, bevestigen, uitvoeren, invoer wissen).
+' verbinden, vergelijken met bestaande rijen, bevestigen, uitvoeren, invoer
+' wissen). Een rij met een bestaande sleutel (afhaalpunt + gesloten-vanaf-week)
+' werkt die sluiting bij; zo dient het tabblad ook om te corrigeren.
 ' ---------------------------------------------------------------------------
 Sub VerwerkAfhaalpuntVerlof()
 
