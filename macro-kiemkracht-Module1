@@ -4817,7 +4817,12 @@ Sub VerwerkAfhaalpuntVerlof()
         Exit Sub
     End If
 
-    ' === Fase 3: dedup tegen reeds bestaande sluitingen (afhaalpunt_id,vanaf) ===
+    ' === Fase 3: bestaande sluitingen opzoeken (sleutel = afhaalpunt_id,vanaf) ===
+    ' Een rij waarvan de sleutel al bestaat wordt BIJGEWERKT, niet overgeslagen:
+    ' zo corrigeer je een alternatievenlijst of een open-vanaf-week door de rij
+    ' gewoon opnieuw in te typen. (Vroeger werd zo'n rij stil genegeerd én daarna
+    ' tóch gewist, waardoor een correctie spoorloos verdween — je zag "niets
+    ' nieuws" en een leeg tabblad, terwijl de database onveranderd bleef.)
     Dim sBestaandeSleutels As String : sBestaandeSleutels = "|"
     Dim oExistRS As Object
     oExistRS = oStmt.executeQuery("SELECT afhaalpunt_id, vanaf_jaar, vanaf_week FROM afhaalpunt_sluitingen")
@@ -4829,51 +4834,68 @@ Sub VerwerkAfhaalpuntVerlof()
 
     Dim bNieuw(MAX_RIJ) As Boolean
     Dim nNieuw As Integer : nNieuw = 0
+    Dim nBij As Integer   : nBij = 0
     For i = 0 To nRij - 1
         Dim sSleutel As String : sSleutel = riApId(i) & "#" & riVanafJ(i) & "#" & riVanafW(i)
         bNieuw(i) = (InStr(sBestaandeSleutels, "|" & sSleutel & "|") = 0)
-        If bNieuw(i) Then nNieuw = nNieuw + 1
+        If bNieuw(i) Then
+            nNieuw = nNieuw + 1
+        Else
+            nBij = nBij + 1
+        End If
     Next i
 
-    If nNieuw = 0 Then
-        MsgBox "Alle " & nRij & " rij(en) staan al als sluiting in de database. " & _
-               "Niets nieuws om te verwerken — invoer wordt wel gewist.", 64, "VerwerkAfhaalpuntVerlof"
-    Else
-        Dim nAntwAV As Integer
-        nAntwAV = MsgBox( _
-            nNieuw & " nieuwe afhaalpunt-sluiting(en) aanmaken (van " & nRij & " rij(en) in het tabblad)." & _
-            Chr(10) & Chr(10) & "Akkoord?", 1, "VerwerkAfhaalpuntVerlof")
-        If nAntwAV <> 1 Then
-            oStmt.close()
-            oConn.close()
-            Exit Sub
-        End If
-
-        ' === Fase 4: uitvoeren ===
-        On Error GoTo UitvoerFoutAV
-        For i = 0 To nRij - 1
-            If bNieuw(i) Then
-                Dim sAltArray As String
-                If riAltIdsCsv(i) = "" Then
-                    sAltArray = "ARRAY[]::int[]"
-                Else
-                    sAltArray = "ARRAY[" & riAltIdsCsv(i) & "]"
-                End If
-                oStmt.executeUpdate( _
-                    "INSERT INTO afhaalpunt_sluitingen " & _
-                    "(afhaalpunt_id, vanaf_jaar, vanaf_week, tot_jaar, tot_week, alternatieven, opmerking) VALUES (" & _
-                    riApId(i) & ", " & riVanafJ(i) & ", " & riVanafW(i) & ", " & _
-                    riTotJ(i) & ", " & riTotW(i) & ", " & sAltArray & ", " & SqlStr(riOpm(i)) & ")")
-            End If
-        Next i
-        On Error GoTo 0
+    Dim sVraagAV As String : sVraagAV = ""
+    If nNieuw > 0 Then
+        sVraagAV = nNieuw & " nieuwe afhaalpunt-sluiting(en) aanmaken."
     End If
+    If nBij > 0 Then
+        If sVraagAV <> "" Then sVraagAV = sVraagAV & Chr(10)
+        sVraagAV = sVraagAV & nBij & " bestaande sluiting(en) bijwerken — " & _
+                   "open-vanaf-week, alternatieven en opmerking worden overschreven."
+    End If
+
+    Dim nAntwAV As Integer
+    nAntwAV = MsgBox(sVraagAV & Chr(10) & Chr(10) & "Akkoord?", 1, "VerwerkAfhaalpuntVerlof")
+    If nAntwAV <> 1 Then
+        oStmt.close()
+        oConn.close()
+        Exit Sub
+    End If
+
+    ' === Fase 4: uitvoeren ===
+    On Error GoTo UitvoerFoutAV
+    For i = 0 To nRij - 1
+        Dim sAltArray As String
+        If riAltIdsCsv(i) = "" Then
+            sAltArray = "ARRAY[]::int[]"
+        Else
+            sAltArray = "ARRAY[" & riAltIdsCsv(i) & "]"
+        End If
+        If bNieuw(i) Then
+            oStmt.executeUpdate( _
+                "INSERT INTO afhaalpunt_sluitingen " & _
+                "(afhaalpunt_id, vanaf_jaar, vanaf_week, tot_jaar, tot_week, alternatieven, opmerking) VALUES (" & _
+                riApId(i) & ", " & riVanafJ(i) & ", " & riVanafW(i) & ", " & _
+                riTotJ(i) & ", " & riTotW(i) & ", " & sAltArray & ", " & SqlStr(riOpm(i)) & ")")
+        Else
+            ' De alternatieven-volgorde is betekenisvol: de bestelpagina toont ze
+            ' in exact deze volgorde (array_position in bepaalAfhaalpuntOpties).
+            oStmt.executeUpdate( _
+                "UPDATE afhaalpunt_sluitingen SET " & _
+                "tot_jaar = " & riTotJ(i) & ", tot_week = " & riTotW(i) & ", " & _
+                "alternatieven = " & sAltArray & ", opmerking = " & SqlStr(riOpm(i)) & " " & _
+                "WHERE afhaalpunt_id = " & riApId(i) & _
+                " AND vanaf_jaar = " & riVanafJ(i) & " AND vanaf_week = " & riVanafW(i))
+        End If
+    Next i
+    On Error GoTo 0
 
     oStmt.close()
     oConn.close()
 
-    ' Verwerkte invoercellen leegmaken (alle herkende rijen, ook dedup-skips —
-    ' de gevraagde eindtoestand bestaat sowieso al in de database)
+    ' Verwerkte invoercellen leegmaken — elke herkende rij is nu effectief
+    ' aangemaakt of bijgewerkt, dus staat de gevraagde toestand in de database.
     For i = 0 To nRij - 1
         oSheet.getCellByPosition(iApCol,     riRij(i)).setString("")
         oSheet.getCellByPosition(iVanafJCol, riRij(i)).setString("")
