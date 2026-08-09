@@ -4907,7 +4907,8 @@ Sub VerwerkAfhaalpuntVerlof()
     Next i
 
     SluitSSHTunnels()
-    MsgBox nNieuw & " nieuwe sluiting(en) aangemaakt (van " & nRij & " verwerkte rij(en)).", 64, "Klaar"
+    MsgBox nNieuw & " nieuwe sluiting(en) aangemaakt, " & nBij & " bijgewerkt " & _
+           "(van " & nRij & " verwerkte rij(en)).", 64, "Klaar"
     Exit Sub
 
 UitvoerFoutAV:
