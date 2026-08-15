@@ -810,6 +810,7 @@ Private Sub SamBouwTabSamenstelling(oDoc As Object, oConn As Object, _
         oSheet.Columns.getByIndex(iKol).Width = 2100
     Next iKol
     oSheet.Columns.getByIndex(11).Width = 2000
+    oSheet.Columns.getByIndex(SAM_KOL_STAP).Width = 2400
 
     ' --- Data: week_pakketgroente + pakket_inhoud ---
     Dim aPgNaam(SAM_SLOTS - 1) As String
