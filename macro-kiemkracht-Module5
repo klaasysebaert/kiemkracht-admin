@@ -864,8 +864,17 @@ Private Sub SamBouwTabSamenstelling(oDoc As Object, oConn As Object, _
     Loop
     oRS.close() : oStmt.close()
 
-    ' Bewaarde Stapelkaart-keuzes terugzetten (op groentenaam)
+    ' --- Stapelkaart-kolom: keuzelijst, voorinvullen, bewaarde keuze terug ---
+    ' Keuzelijst op alle slots (ook de lege, zodat een later toegevoegde groente
+    ' ze meteen heeft); daarna elke ingevulde groente op "ja", en pas dan de
+    ' bewaarde keuze eroverheen — zo blijft een eerdere "nee" staan.
     Dim iSt As Integer
+    For iSlot = 0 To SAM_SLOTS - 1
+        SamZetStapelKeuzelijst(oSheet, SAM_RIJ0 + iSlot)
+    Next iSlot
+    For iSlot = 0 To nPG - 1
+        oSheet.getCellByPosition(SAM_KOL_STAP, SAM_RIJ0 + iSlot).setString("ja")
+    Next iSlot
     For iSlot = 0 To nPG - 1
         sNaam = oSheet.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
         For iSt = 0 To nStap - 1
@@ -875,6 +884,28 @@ Private Sub SamBouwTabSamenstelling(oDoc As Object, oConn As Object, _
             End If
         Next iSt
     Next iSlot
+End Sub
+
+' ---------------------------------------------------------------------------
+' Keuzelijst "ja"/"nee" op één Stapelkaart-cel. Celvalidatie i.p.v. een
+' formulier-selectievakje: het blijft gewone celinhoud, dus de keuze verhuist
+' gewoon mee als je rijen knipt en plakt om de volgorde te wijzigen.
+' Leeg blijft toegestaan (IgnoreBlankCells) — dat telt als "ja".
+' ---------------------------------------------------------------------------
+Private Sub SamZetStapelKeuzelijst(oSheet As Object, iRij As Integer)
+    Dim oCel As Object
+    Dim oVal As Object
+    oCel = oSheet.getCellByPosition(SAM_KOL_STAP, iRij)
+    oVal = oCel.Validation
+    oVal.Type             = com.sun.star.sheet.ValidationType.LIST
+    oVal.ShowList         = com.sun.star.sheet.TableValidationVisibility.UNSORTED
+    oVal.IgnoreBlankCells = True
+    oVal.ShowErrorMessage = True
+    oVal.ErrorAlertStyle  = com.sun.star.sheet.ValidationAlertStyle.STOP
+    oVal.ErrorTitle       = "Stapelkaart"
+    oVal.ErrorMessage     = "Kies 'ja' (stapelkaarten maken) of 'nee' (overslaan)."
+    oVal.setFormula1("""ja"";""nee""")
+    oCel.Validation = oVal
 End Sub
 
 ' ---------------------------------------------------------------------------
