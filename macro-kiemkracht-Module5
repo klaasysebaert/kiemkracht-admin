@@ -1638,6 +1638,8 @@ Private Sub SamVulPrintbladen(oDoc As Object, iWeek As Integer, iJaar As Integer
     SamVulPrintOogst(oDoc, 1, iWeek, iJaar)
     SamVulPrintVullen(oDoc, 0, iWeek, iJaar)
     SamVulPrintVullen(oDoc, 1, iWeek, iJaar)
+    ' de stapelkaarten lezen de Vullen-bladen, dus pas hierna
+    SamVulStapels(oDoc)
 End Sub
 
 ' Weglatingen van één groente/maat op één dag (0 = donderdag, 1 = vrijdag)
