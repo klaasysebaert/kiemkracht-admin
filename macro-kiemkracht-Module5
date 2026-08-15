@@ -62,6 +62,10 @@ Const SAM_RIJ_MAAT = 2
 Const SAM_RIJ_KOP  = 3
 Const SAM_RIJ0     = 4
 Const SAM_SLOTS    = 16   ' rijen 5-20; server-maximum blijft 12 pakketgroenten
+' Kolom M = "Stapelkaart": leeg/"ja" -> stapelkaarten maken, al de rest (nee, x, -)
+' -> deze groente krijgt geen kaarten (papier sparen). Lokale invoer, geen DB-veld:
+' wordt bij het herladen bewaard op groentenaam (SamBouwTabSamenstelling).
+Const SAM_KOL_STAP = 12
 
 ' Tab Los: rij 3 = koppen, rij 4.. = data.
 ' Kolommen: A naam, B prijs, C grooth, D eenheid, E ×-notatie, F stap,
