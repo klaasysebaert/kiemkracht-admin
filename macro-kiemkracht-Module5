@@ -48,6 +48,8 @@ Const TAB_PR_OD   = "Oogst donderdag"
 Const TAB_PR_OV   = "Oogst vrijdag"
 Const TAB_PR_VD   = "Vullen donderdag"
 Const TAB_PR_VV   = "Vullen vrijdag"
+Const TAB_ST_D    = "Stapels donderdag"
+Const TAB_ST_V    = "Stapels vrijdag"
 
 Const SAM_MARKER = "Kiemkracht samenstelling"
 
