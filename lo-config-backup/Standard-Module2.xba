@@ -201,4 +201,9 @@ Sub StartVerversBestellijst()
     ReloadKiemkracht()
     VerversBestellijst()
 End Sub
+
+Sub StartMaakStapels()
+    ReloadKiemkracht()
+    MaakStapels()
+End Sub
 </script:module>

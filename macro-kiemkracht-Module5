@@ -751,7 +751,7 @@ Private Sub SamBouwTabSamenstelling(oDoc As Object, oConn As Object, _
     oSheet.getCellRangeByPosition(0, SAM_RIJ_KOP, SAM_KOL_STAP, SAM_RIJ_KOP).CellBackColor = clKop
     oSheet.getCellRangeByPosition(0, SAM_RIJ_KOP, SAM_KOL_STAP, SAM_RIJ_KOP).CharWeight = _
         com.sun.star.awt.FontWeight.BOLD
-    oSheet.getCellByPosition(SAM_KOL_STAP, SAM_RIJ_MAAT).setString("(leeg = kaarten; 'nee' = geen)")
+    oSheet.getCellByPosition(SAM_KOL_STAP, SAM_RIJ_MAAT).setString("(ja = kaarten, nee = overslaan)")
 
     ' Data-rijen: formules voor Cons.EUR en EUR-in-pakket (zelfde dubbele
     ' afronding als de server: round(round(g*m*h,4),2))
