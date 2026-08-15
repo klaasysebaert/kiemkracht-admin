@@ -861,6 +861,18 @@ Private Sub SamBouwTabSamenstelling(oDoc As Object, oConn As Object, _
         End If
     Loop
     oRS.close() : oStmt.close()
+
+    ' Bewaarde Stapelkaart-keuzes terugzetten (op groentenaam)
+    Dim iSt As Integer
+    For iSlot = 0 To nPG - 1
+        sNaam = oSheet.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
+        For iSt = 0 To nStap - 1
+            If aStapNaam(iSt) = sNaam Then
+                oSheet.getCellByPosition(SAM_KOL_STAP, SAM_RIJ0 + iSlot).setString(aStapVlag(iSt))
+                Exit For
+            End If
+        Next iSt
+    Next iSlot
 End Sub
 
 ' ---------------------------------------------------------------------------
