@@ -692,7 +692,24 @@ Private Sub SamBouwTabSamenstelling(oDoc As Object, oConn As Object, _
     aMaatLabel(2) = "EGG" : aMaatLabel(3) = "MINI"
 
     oSheet = SamZorgTab(oDoc, TAB_SAM)
-    oSheet.getCellRangeByPosition(0, 0, 12, SAM_RIJ0 + SAM_SLOTS + 4).clearContents(23)
+
+    ' Stapelkaart-keuzes (kolom M) bewaren: het blad wordt hieronder gewist en
+    ' opnieuw uit de DB gevuld, maar die keuze is lokale invoer. Terugzetten
+    ' gebeurt op groentenaam, onderaan deze Sub.
+    Dim aStapNaam(SAM_SLOTS - 1) As String
+    Dim aStapVlag(SAM_SLOTS - 1) As String
+    Dim nStap As Integer
+    nStap = 0
+    For iSlot = 0 To SAM_SLOTS - 1
+        If oSheet.getCellByPosition(0, SAM_RIJ0 + iSlot).getString() <> "" And _
+           oSheet.getCellByPosition(SAM_KOL_STAP, SAM_RIJ0 + iSlot).getString() <> "" Then
+            aStapNaam(nStap) = oSheet.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
+            aStapVlag(nStap) = oSheet.getCellByPosition(SAM_KOL_STAP, SAM_RIJ0 + iSlot).getString()
+            nStap = nStap + 1
+        End If
+    Next iSlot
+
+    oSheet.getCellRangeByPosition(0, 0, SAM_KOL_STAP, SAM_RIJ0 + SAM_SLOTS + 4).clearContents(23)
 
     ' Kop / week-info
     oSheet.getCellByPosition(0, 0).setString(SAM_MARKER)
