@@ -209,6 +209,8 @@ Sub MaakSamenstellingDoc()
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_VD)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_OV)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_VV)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_ST_D)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_ST_V)
 
     On Error GoTo SamMaakFout
     oConn = MaakDBVerbinding()
@@ -2018,6 +2020,329 @@ Private Sub SamZetPrintPagina(oDoc As Object, oSheet As Object)
     On Error GoTo 0
 End Sub
 ' ---------------------------------------------------------------------------
+' ---------------------------------------------------------------------------
+' Stapelkaarten — nabouw van de Google-Doc "Print_voor_stapels_3_blokken".
+' Eén kaart per (pakketgroente x maat) die op die dag nodig is:
+'     Boterbonen MINI donderdag :
+'            20 x 0,40
+'                                              Boterbonen: 1 van 4
+' Drie kaarten per A4, met twee lichtgrijze perforatie-hulptekens op exact
+' 8 cm van elkaar (richtpunt voor de nietloze perforator, past in een ringmap)
+' en een snijstippellijn op elk derde van de pagina.
+'
+' De kaarten staan in de knip-en-stapel-volgorde van het Apps Script: de lijst
+' wordt in drie gelijke delen gesplitst en pagina i draagt deel1(i), deel2(i),
+' deel3(i). Knip je alle vellen in drie stroken en leg je de drie stapels op
+' elkaar, dan loopt de volgorde gewoon door.
+'
+' Bron: de Samenstelling-tab (groenten, hoeveelheden, Stapelkaart-kolom) en de
+' Vullen-tab van die dag (aantal per maat, weglatingen al verrekend). Dus GEEN
+' databank nodig — StartMaakStapels herbouwt de bladen meteen nadat je in de
+' kolom Stapelkaart een groente aan- of afvinkt.
+' ---------------------------------------------------------------------------
+Const ST_MAX_RIJ  = 400
+Const ST_RIJEN    = 7        ' rijen per kaart (marks/blank/titel/detail/teller/vul/snij)
+Const ST_KAARTH   = 9076     ' hoogte per kaart in 1/100 mm (= 1/3 van de printzone)
+
+' ---------------------------------------------------------------------------
+' MaakStapels — beide stapelbladen herbouwen uit het document zelf.
+' Losse macro (Start-wrapper) zodat een wijziging in de kolom Stapelkaart
+' meteen zichtbaar wordt, zonder de databank te bevragen.
+' ---------------------------------------------------------------------------
+Sub MaakStapels()
+    Dim oDoc As Object
+    oDoc = ThisComponent
+    If Not SamIsSamenstellingDoc(oDoc) Then
+        MsgBox "Het actieve document is geen samenstelling-bestand (tab-layout).", _
+               48, "Stapelkaarten"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName(TAB_PR_VD) Then
+        MsgBox "De Vullen-bladen bestaan nog niet. Draai eerst " & _
+               "StartVerversBestellijst.", 48, "Stapelkaarten"
+        Exit Sub
+    End If
+    SamVulStapels(oDoc)
+    oDoc.getCurrentController().setActiveSheet(oDoc.Sheets.getByName(TAB_ST_D))
+    MsgBox "Stapelkaarten opnieuw opgebouwd." & Chr(10) & Chr(10) & _
+           SamStapelOverslagen(oDoc), 64, "Klaar"
+End Sub
+
+' Beide dagen (aangeroepen door SamVulPrintbladen en door MaakStapels)
+Sub SamVulStapels(oDoc As Object)
+    SamVulStapelDag(oDoc, 0)
+    SamVulStapelDag(oDoc, 1)
+End Sub
+
+' Tekst voor de bevestigingsmelding: welke groenten geen kaart kregen.
+Function SamStapelOverslagen(oDoc As Object) As String
+    Dim oSam  As Object
+    Dim iSlot As Integer
+    Dim sNaam As String
+    Dim sUit  As String
+    oSam = oDoc.Sheets.getByName(TAB_SAM)
+    sUit = ""
+    For iSlot = 0 To SAM_SLOTS - 1
+        sNaam = oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
+        If sNaam <> "" And Not SamWilStapelkaart(oSam, iSlot) Then
+            sUit = sUit & ", " & sNaam
+        End If
+    Next iSlot
+    If sUit = "" Then
+        SamStapelOverslagen = "Alle groenten kregen kaarten. Geen kaart nodig " & _
+            "voor een groente? Zet 'nee' in de kolom Stapelkaart (Samenstelling)."
+    Else
+        SamStapelOverslagen = "Zonder stapelkaart (kolom Stapelkaart): " & Mid(sUit, 3)
+    End If
+End Function
+
+' Kolom M leeg of "ja" -> kaarten maken; al de rest -> overslaan.
+Function SamWilStapelkaart(oSam As Object, iSlot As Integer) As Boolean
+    Dim s As String
+    s = LCase(Trim(oSam.getCellByPosition(SAM_KOL_STAP, SAM_RIJ0 + iSlot).getString()))
+    SamWilStapelkaart = (s = "" Or s = "ja")
+End Function
+
+' ---------------------------------------------------------------------------
+' Eén stapelblad (iDag: 0 = donderdag, 1 = vrijdag)
+' ---------------------------------------------------------------------------
+Private Sub SamVulStapelDag(oDoc As Object, iDag As Integer)
+    Dim oSt    As Object
+    Dim oSam   As Object
+    Dim oVul   As Object
+    Dim iSlot  As Integer
+    Dim iMaat  As Integer
+    Dim iMaatVolg As Integer
+    Dim iRij   As Integer
+    Dim iG     As Integer
+    Dim sNaam  As String
+    Dim sTab   As String
+    Dim sVul   As String
+    Dim sDagLbl As String
+    Dim clGrijs As Long
+    Dim aMaatLabel(3) As String
+    Dim aMaatNaam(3)  As String
+
+    aMaatLabel(0) = "KG" : aMaatLabel(1) = "GG"
+    aMaatLabel(2) = "EGG" : aMaatLabel(3) = "MINI"
+    aMaatNaam(0) = "Klein groentenpakket"
+    aMaatNaam(1) = "Groot groentenpakket"
+    aMaatNaam(2) = "Extra groot groentenpakket"
+    aMaatNaam(3) = "Mini groentenpakket"
+    clGrijs = RGB(183, 183, 183)
+    If iDag = 0 Then
+        sTab = TAB_ST_D : sVul = TAB_PR_VD : sDagLbl = "donderdag"
+    Else
+        sTab = TAB_ST_V : sVul = TAB_PR_VV : sDagLbl = "vrijdag"
+    End If
+
+    oSt  = SamZorgTab(oDoc, sTab)
+    oSam = oDoc.Sheets.getByName(TAB_SAM)
+    oVul = SamZorgTab(oDoc, sVul)
+
+    ' --- Blad leegmaken: samenvoegingen los, inhoud + opmaak weg, rijen terug
+    ' naar standaard (een kortere week mag geen resten van vorige week tonen) ---
+    oSt.getCellRangeByPosition(0, 0, 4, ST_MAX_RIJ).merge(False)
+    oSt.getCellRangeByPosition(0, 0, 4, ST_MAX_RIJ).clearContents(55)
+    For iRij = 0 To ST_MAX_RIJ
+        oSt.Rows.getByIndex(iRij).IsStartOfNewPage = False
+        oSt.Rows.getByIndex(iRij).OptimalHeight = True
+    Next iRij
+
+    ' --- Groenten + hoeveelheden van de Samenstelling-tab ---
+    Dim gN(SAM_SLOTS - 1)      As String
+    Dim gH(SAM_SLOTS - 1, 3)   As Double
+    Dim gAant(SAM_SLOTS - 1, 3) As Long
+    Dim nG As Integer
+    nG = 0
+    For iSlot = 0 To SAM_SLOTS - 1
+        sNaam = oSam.getCellByPosition(0, SAM_RIJ0 + iSlot).getString()
+        If sNaam <> "" And SamWilStapelkaart(oSam, iSlot) Then
+            gN(nG) = sNaam
+            For iMaat = 0 To 3
+                gH(nG, iMaat) = oSam.getCellByPosition(3 + iMaat * 2, SAM_RIJ0 + iSlot).getValue()
+                gAant(nG, iMaat) = 0
+            Next iMaat
+            nG = nG + 1
+        End If
+    Next iSlot
+
+    ' --- Aantallen per (groente, maat) van de Vullen-tab van die dag.
+    ' Daar staan de aantallen mét de weglatingen al verrekend; de maat is de
+    ' blok-kop in kolom B, de groenten staan eronder. ---
+    Dim iHuidigeMaat As Integer
+    Dim sB As String
+    iHuidigeMaat = -1
+    For iRij = 0 To PR_MAX_RIJ
+        sB = oVul.getCellByPosition(1, iRij).getString()
+        If sB <> "" Then
+            iMaat = -1
+            For iMaatVolg = 0 To 3
+                If aMaatNaam(iMaatVolg) = sB Then iMaat = iMaatVolg
+            Next iMaatVolg
+            If iMaat >= 0 Then
+                iHuidigeMaat = iMaat
+            ElseIf sB <> "Groente" And iHuidigeMaat >= 0 Then
+                For iG = 0 To nG - 1
+                    If gN(iG) = sB Then
+                        gAant(iG, iHuidigeMaat) = CLng(oVul.getCellByPosition(0, iRij).getValue())
+                        Exit For
+                    End If
+                Next iG
+            End If
+        End If
+    Next iRij
+
+    ' --- Kaarten samenstellen: per groente de maten MINI, EGG, GG, KG (zelfde
+    ' volgorde als de Sheet). Nodig = 0 -> geen kaart, net als de J-formule. ---
+    Dim itSoort(SAM_SLOTS * 4)  As String
+    Dim itTitel(SAM_SLOTS * 4)  As String
+    Dim itDetail(SAM_SLOTS * 4) As String
+    Dim itNr(SAM_SLOTS * 4)     As Integer
+    Dim itVan(SAM_SLOTS * 4)    As Integer
+    Dim nIt As Integer
+    Dim iVanaf As Integer
+    Dim iTel   As Integer
+    nIt = 0
+    For iG = 0 To nG - 1
+        iVanaf = nIt
+        For iMaatVolg = 0 To 3
+            iMaat = 3 - iMaatVolg                  ' MINI, EGG, GG, KG
+            If gH(iG, iMaat) > 0 And gAant(iG, iMaat) > 0 Then
+                itSoort(nIt)  = gN(iG)
+                itTitel(nIt)  = gN(iG) & " " & aMaatLabel(iMaat) & " " & sDagLbl & " :"
+                itDetail(nIt) = gAant(iG, iMaat) & " x " & Format(gH(iG, iMaat), "0.00")
+                nIt = nIt + 1
+            End If
+        Next iMaatVolg
+        ' teller "<groente>: N van M" over de kaarten van deze groente
+        For iTel = iVanaf To nIt - 1
+            itNr(iTel)  = iTel - iVanaf + 1
+            itVan(iTel) = nIt - iVanaf
+        Next iTel
+    Next iG
+
+    ' --- Kop wanneer er niets te stapelen valt ---
+    If nIt = 0 Then
+        oSt.getCellByPosition(0, 0).setString( _
+            "Geen stapelkaarten voor " & sDagLbl & " — geen pakketgroenten met een aantal.")
+        SamZetStapelPagina(oDoc, oSt)
+        Exit Sub
+    End If
+
+    ' --- Drie gelijke delen; pagina i draagt deel1(i), deel2(i), deel3(i) ---
+    Dim nDeel  As Integer
+    Dim nSlots As Integer
+    Dim iKaart As Integer
+    Dim iIdx   As Integer
+    Dim iBasis As Integer
+    Dim iPos   As Integer
+    nDeel  = Int((nIt + 2) / 3)
+    nSlots = nDeel * 3
+
+    For iKaart = 0 To nSlots - 1
+        iPos   = iKaart Mod 3
+        iIdx   = iPos * nDeel + (iKaart \ 3)
+        iBasis = iKaart * ST_RIJEN
+
+        ' perforatie-hulptekens (kolom B en D staan exact 8 cm uit elkaar)
+        oSt.getCellByPosition(1, iBasis).setString("|")
+        oSt.getCellByPosition(1, iBasis).CharColor = clGrijs
+        oSt.getCellByPosition(3, iBasis).setString("|")
+        oSt.getCellByPosition(3, iBasis).CharColor = clGrijs
+
+        If iIdx < nIt Then
+            ' titel + detail, groot en gecentreerd over de volle breedte
+            oSt.getCellRangeByPosition(0, iBasis + 2, 4, iBasis + 2).merge(True)
+            oSt.getCellByPosition(0, iBasis + 2).setString(itTitel(iIdx))
+            oSt.getCellByPosition(0, iBasis + 2).CharHeight = 28
+            oSt.getCellByPosition(0, iBasis + 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
+            oSt.getCellByPosition(0, iBasis + 2).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
+
+            oSt.getCellRangeByPosition(0, iBasis + 3, 4, iBasis + 3).merge(True)
+            oSt.getCellByPosition(0, iBasis + 3).setString(itDetail(iIdx))
+            oSt.getCellByPosition(0, iBasis + 3).CharHeight = 28
+            oSt.getCellByPosition(0, iBasis + 3).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
+
+            ' teller rechts onderaan de kaart
+            oSt.getCellRangeByPosition(0, iBasis + 4, 4, iBasis + 4).merge(True)
+            oSt.getCellByPosition(0, iBasis + 4).setString( _
+                itSoort(iIdx) & ": " & itNr(iIdx) & " van " & itVan(iIdx))
+            oSt.getCellByPosition(0, iBasis + 4).CharHeight = 10
+            oSt.getCellByPosition(0, iBasis + 4).CharPosture = com.sun.star.awt.FontSlant.ITALIC
+            oSt.getCellByPosition(0, iBasis + 4).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
+        End If
+
+        ' snijstippellijn onder kaart 1 en 2 van elke pagina
+        If iPos < 2 Then
+            oSt.getCellRangeByPosition(0, iBasis + 6, 4, iBasis + 6).merge(True)
+            oSt.getCellByPosition(0, iBasis + 6).setString( _
+                "-     -     -     -     -     -     -     -     -     -")
+            oSt.getCellByPosition(0, iBasis + 6).CharHeight = 10
+            oSt.getCellByPosition(0, iBasis + 6).CharColor = RGB(153, 153, 153)
+            oSt.getCellByPosition(0, iBasis + 6).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
+        End If
+
+        ' rijhoogtes: samen exact één derde van de printzone
+        SamZetRij(oSt, iBasis + 0, 500)
+        SamZetRij(oSt, iBasis + 1, 300)
+        SamZetRij(oSt, iBasis + 2, 1300)
+        SamZetRij(oSt, iBasis + 3, 1300)
+        SamZetRij(oSt, iBasis + 4, 450)
+        SamZetRij(oSt, iBasis + 5, ST_KAARTH - 4250)
+        SamZetRij(oSt, iBasis + 6, 400)
+
+        ' nieuwe pagina bij elke eerste kaart van een drietal
+        If iPos = 0 And iKaart > 0 Then
+            oSt.Rows.getByIndex(iBasis).IsStartOfNewPage = True
+        End If
+    Next iKaart
+
+    ' --- Kolombreedtes: samen 184,6 mm = A4 min 2 x 12,7 mm marge.
+    ' De linkerranden van kolom B en D liggen op 52,30 en 132,30 mm, dus
+    ' precies 8 cm uit elkaar en symmetrisch rond het midden. ---
+    oSt.Columns.getByIndex(0).Width = 5230
+    oSt.Columns.getByIndex(1).Width = 250
+    oSt.Columns.getByIndex(2).Width = 7750
+    oSt.Columns.getByIndex(3).Width = 250
+    oSt.Columns.getByIndex(4).Width = 4980
+
+    SamZetStapelPagina(oDoc, oSt)
+End Sub
+
+' Rijhoogte vastzetten (automatische hoogte uit, anders krimpt de rij weer)
+Private Sub SamZetRij(oSheet As Object, iRij As Integer, iHoogte As Integer)
+    oSheet.Rows.getByIndex(iRij).OptimalHeight = False
+    oSheet.Rows.getByIndex(iRij).Height = iHoogte
+End Sub
+
+' Pagina-instelling voor de stapelbladen: A4 staand, marges 12,7 mm links/rechts
+' en 12,35 mm boven/onder — dezelfde printzone als het Google-document, zodat de
+' drie kaarten per blad en de perforatie-afstand kloppen. Geen schaling.
+Private Sub SamZetStapelPagina(oDoc As Object, oSheet As Object)
+    Dim oStyles As Object
+    Dim oStyle  As Object
+    On Error Resume Next
+    oStyles = oDoc.StyleFamilies.getByName("PageStyles")
+    If Not oStyles.hasByName("Stapelkaart") Then
+        oStyle = oDoc.createInstance("com.sun.star.style.PageStyle")
+        oStyles.insertByName("Stapelkaart", oStyle)
+    End If
+    oStyle = oStyles.getByName("Stapelkaart")
+    oStyle.IsLandscape  = False
+    oStyle.Width        = 21000
+    oStyle.Height       = 29700
+    oStyle.LeftMargin   = 1270
+    oStyle.RightMargin  = 1270
+    oStyle.TopMargin    = 1235
+    oStyle.BottomMargin = 1235
+    oStyle.HeaderIsOn   = False
+    oStyle.FooterIsOn   = False
+    oStyle.ScaleToPages = 0
+    oStyle.PageScale    = 100
+    oSheet.PageStyle = "Stapelkaart"
+    On Error GoTo 0
+End Sub
 ' Besteld-tellers op de Los-tab verversen (kolom I, match op naam).
 ' Gedeeld door de tab-layout (Module5) en de klassieke layout (Module6).
 ' De kolom wordt eerst leeggemaakt: staat er een groente in het document die
