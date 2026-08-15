@@ -777,6 +777,7 @@ Private Sub SamBouwTabSamenstelling(oDoc As Object, oConn As Object, _
         oSheet.getCellByPosition(5, iRij).CellBackColor = clInput
         oSheet.getCellByPosition(7, iRij).CellBackColor = clInput
         oSheet.getCellByPosition(9, iRij).CellBackColor = clInput
+        oSheet.getCellByPosition(SAM_KOL_STAP, iRij).CellBackColor = clInput
     Next iSlot
 
     ' Totalen / doelprijzen / verschil / teller
