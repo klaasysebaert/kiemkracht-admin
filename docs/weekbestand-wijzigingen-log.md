@@ -203,6 +203,14 @@ formule over de cellen van het weekbestand. Wat wél wegvalt:
   handgeschreven antwoord.
 - **De rij is vluchtig:** een nieuwe `MaakWeekbestand`-run overschrijft ze.
 
+> **Correctie (2026-08-16):** "de afrekening werkt gewoon" klopt niet helemaal.
+> Yves' handmatige rij (rij 100) heeft wél een spiegelrij op het
+> afrekening-tabblad, maar zijn **kolom X (€ losse groenten) staat op 0,00 €**
+> terwijl hij voor 11,50 € losse groenten bestelde. En in hetzelfde bestand
+> missen **drie andere klanten** hun spiegelrij volledig (Iris Walgraeve 2950,
+> Françoise Roussel 2931, Martijn Loosvelt Vandenbroucke 2932). Zie week 33
+> hieronder voor het mechanisme.
+
 **Bijkomend: de vertaalstap van vrije tekst naar catalogus.** "klein pak" →
 `Klein pakket`; "2kg ui" → `Ui` (3,00 €/kg, stap 0,5); "2kg patat" → `Nieuwe
 aardappelen` (2,75 €/kg) *of* `Nieuwe aardappelen kriel` (3,35 €/kg) — dat laatste
