@@ -226,6 +226,108 @@ weekbestand-handwerk vanzelf.
 
 ---
 
+## Week 33 / 2026
+
+*(genoteerd op 2026-08-16, tijdens het afwerken van `week_33_2026_definitief.ods`)*
+
+### Gebeurtenis 1 — nieuwe klant, bestelling retroactief ingevoerd
+
+Een nieuwe klant meldde zich ná het bestelvenster. Ze is eerst **in de database
+aangemaakt** (`klanten` id **3333**, Annemie Vanhee, type `abonnee`, status
+`actief`, afhaalpunt 't Hoge) en haar bestelling is daarna **met de hand in het
+weekbestand** gezet — mét haar `klant_id` in kolom P, zodat de koppeling met de
+afrekening/maandbestand op identiteit blijft werken.
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 1 | 3333 Annemie Vanhee ('t Hoge) | Als nieuwe klant deze week al meedraaien | Klant aangemaakt in de DB; **rij met de hand toegevoegd** in het 't Hoge-blok, incl. **klant_id 3333 in kolom P** |
+| 2 | zelfde | Een groente die **niet op het formulier stond** toch afnemen | `VoegLosseGroenteToe` (macro) uitgevoerd → eerste vrije slot **AU**, naam + prijs + eenheid; daarna haar hoeveelheid ingevuld |
+
+Dit is de omgekeerde volgorde van week 31 (Carmen): daar bleef het weekbestand
+leeg omdat de DB het feit al droeg, hier draagt de **DB alleen de klant** en niet
+de bestelling — er staat voor 3333 geen enkele rij in `bestellingen`. Zelfde
+ontbrekende deur als bij Yves (week 32): *bestelling invoeren namens een klant*.
+Het klant_id in kolom P is hier het redmiddel: zonder dat veld zou de afrekening
+haar op naam moeten matchen.
+
+De macro-route voor de extra groente werkt zoals bedoeld: naam in rij 2, prijs in
+rij 3 en de eenheid-metadata in `Blad2` (kolom I + rij 100), waardoor afrekening,
+samenvattingskolom en overzichten meelopen. Maar de groente bestaat **alleen in
+dit bestand**: niet in `groenten`, niet in het aanbod van de week, dus ook niet in
+de oogst-/afweeglijsten en niet in de geschiedenis.
+
+### Gebeurtenis 2 — het tweede tabblad groeit NIET mee (structureel)
+
+**Vaststelling bij het invoegen:** het tweede tabblad (`afrekening`) evolueert niet
+mee met een met de hand toegevoegde rij. Dat is geen detail — het is stil, en het
+gebeurt al weken.
+
+**Mechanisme.** `MaakWeekbestand` bouwt de afrekening als een **spiegel op
+rijnummer**: afrekening-rij *N* bevat formules die naar datablad-rij *N* wijzen
+(plus `nExtra = 10` lege reserve-rijen onderaan, precies voor een handmatige
+klant). Voeg je in het datablad een rij **tussenin** in, dan schuiven de
+verwijzingen van alle onderliggende afrekening-rijen netjes één op — maar er komt
+**geen nieuwe afrekening-rij bij**. De ingevoegde klant heeft dus nergens een
+spiegel. Een rij **onderaan bijzetten** werkt wél (dat is waar die 10 reserve-rijen
+voor dienen). Precies dat verschil verklaart waarom het soms lijkt te lukken.
+
+Twee gevolgen, allebei zonder foutmelding:
+
+1. **Kolom X (€ losse groenten) op het datablad is een formule naar
+   `afrekening.C<zelfde rij>`.** Bij een verschoven spiegel wijst die naar de
+   losse-groentenwaarde van de **buurklant**. In week 33 stond kolom X daardoor
+   bij 6 klanten fout, en het weektotaal X4 **203,92 € te laag** (1.365,80 €
+   getoond t.o.v. 1.569,72 € werkelijk besteld).
+2. **`MaakMaandbestand` valt terug op het rijnummer.** De maandafrekening zoekt de
+   afrekening-rij op `klant_id` (kolom F) en anders op naam — vindt ze geen van
+   beide, dan neemt ze **dezelfde rijnummer**, dus de rij van een andere klant
+   (Module2 ~1786). Pakketbedrag en weglatingen komen dan van die andere klant.
+
+**Toestand week 33 op 2026-08-16** (nagekeken in het opgeslagen bestand, vóór de
+rij van 3333): 142 klantrijen in het datablad, **136 spiegelrijen** in de
+afrekening. Zonder spiegelrij:
+
+| datablad | klant | klant_id | gevolg als de maandafrekening nu gemaakt wordt |
+|---|---|---|---|
+| 18 | Nelly Beddeleem | 3167 | € losse toont 0,00 € i.p.v. **171,25 €** (8 × tomaten voor directe verwerking); geen pakket, dus geen fout pakketbedrag |
+| 51 | Sara Verhoest | 3323 | mini-pakket wordt aangerekend aan **16,60 €** i.p.v. 13,30 €; haar weglating *kropsla* valt weg |
+| 151 | Lieve Borremans | 3232 | weglatingen *tomaten* + *courgette* vallen weg |
+| 183 | Françoise Roussel | 2931 | klein pakket wordt aangerekend aan **13,30 €** i.p.v. 16,60 € |
+| 184 | Stina Braem | 2937 | krijgt **2,15 €** korting die niet van haar is (weglating van de buurrij) |
+| 185 | Lukas Ameye | 3224 | bedrag valt toevallig gelijk |
+
+Daarbovenop: **Ann Maelfait (3228) staat twéé keer** in de afrekening (rijen 166 en
+168), en er staat een `#VERW!`-weesrij van een verwijderde klantrij. Beide
+vervuilen H4 (weglatingen-totaal) en dus het WEEKTOTAAL (H5 = 3.239,97 €).
+
+Het is niet tot week 33 beperkt — dezelfde controle over de vorige weken:
+
+| week | klantrijen | zonder spiegelrij | dubbel |
+|---|---|---|---|
+| 31 | 142 | 0 | 2893, 2934 |
+| 32 | 134 | 3 (2950, 2931, 2932) | 2929 (6×) |
+| 33 | 142 | 6 (zie tabel) | 3228 |
+
+**DB-implicatie — dit is geen ontbrekend concept, maar een ontbrekende
+integriteitscontrole.** Alle vorige regels in deze log wezen op een *notie* die de
+DB mist (kortingsregel, intrekking-met-reden, eenmalige afname). Hier is het
+model in orde: één rij per (klant, week) met bedragen. Wat de spreadsheet mist is
+wat een DB gratis geeft — **de garantie dat elke klantrij precies één
+afrekeningsrij heeft**. De koppeling is hier een rijnummer, en rijnummers
+overleven handwerk niet. In de DB-wereld is de afrekening geen tweede tabblad maar
+een **afgeleide van dezelfde bestelregels**: dan kan ze per definitie niet
+verschuiven, en verdwijnt deze hele foutsoort mee.
+
+**Zolang het weekbestand bestaat, is er een controle nodig** die na het handwerk
+zegt: "deze klant_id's uit het datablad hebben geen rij in de afrekening" +
+"deze klant_id's staan er dubbel" + "kolom X wijkt af van de zelf berekende
+losse-waarde". Dat is een kwartier macro-werk en het vangt precies wat vandaag
+stil misloopt. Alternatief (of aanvullend): `MaakMaandbestand` mag **niet stil
+terugvallen op het rijnummer** — geen match op klant_id of naam moet een
+zichtbare waarschuwing geven, niet het bedrag van de buurman.
+
+---
+
 <!--
 Nieuwe week? Kopieer dit blok:
 
