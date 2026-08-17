@@ -1372,11 +1372,7 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
         "LOWER(COALESCE(kwap.dag_klaarmaken, kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag, COUNT(*) " & _
         "FROM bestelling_weglatingen bw " & _
         "INNER JOIN bestellingen b ON b.id = bw.bestelling_id " & sTakJoins & _
-        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & _
-        " AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
-        "  WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
-        "   AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
-        "        AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) " & _
+        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & sGeenAnn & _
         "GROUP BY 1, 2, 3")
     Do While oRS.next()
         iMaat = SamMaatIdx(oRS.getString(2))
