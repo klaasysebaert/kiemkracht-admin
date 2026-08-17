@@ -22,7 +22,8 @@
 '                          (de cockpit ziet de wijzigingen bij de volgende
 '                          open). Last-write-wins, zoals de cockpit zelf.
 '   VerversBestellijst   : de tabs "Oogstlijst (bestellijst)" (aantal pakketten
-'                          per maat, weglatingen, Nodig, besteld-tellers) en
+'                          per maat én per dag met de som, weglatingen, Nodig,
+'                          besteld-tellers per dag) en
 '                          "Afweeglijst donderdag"/"Afweeglijst vrijdag" en de
 '                          vier printbladen (Oogst/Vullen per dag) verversen.
 '
