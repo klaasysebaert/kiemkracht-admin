@@ -45,6 +45,8 @@ ECHT_BASIC = r"C:\Users\klaas\AppData\Roaming\LibreOffice\4\user\basic"
 PROBES = [
     ("Module1", "KolomLetter", (5,), "F"),
     ("Module1", "KolomLetter", (43,), "AR"),
+    ("Module2", "Base64Encode", ("lo:test",), "bG86dGVzdA=="),
+    ("Module4", "ProviderTip", ("onbekend.be",), ""),
     ("Module5", "SamMaatIdx", ("extra-groot",), 2),
     ("Module5", "SamBase64", ("lo:test",), "bG86dGVzdA=="),
     ("Module6", "KlasLaatsteStatus", (), ""),
