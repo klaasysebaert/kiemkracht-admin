@@ -1140,9 +1140,8 @@ Private Sub SamBouwTabBestellijst(oDoc As Object)
         com.sun.star.awt.FontWeight.BOLD
     ' De dag-rijen zijn afgeleid uit de bestellingen, net als de weglatingen.
     oSheet.getCellRangeByPosition(1, BST_RIJ_DON, BST_KOL_SOM, BST_RIJ_VRIJ).CellBackColor = clAfgeleid
-    oSheet.getCellByPosition(0, BST_RIJ_VRIJ + 1).setString( _
-        "(donderdag + vrijdag kan lager liggen dan het totaal: pakketten zonder gekend afhaalpunt)")
-    oSheet.getCellByPosition(0, BST_RIJ_VRIJ + 1).CharColor = RGB(120, 120, 120)
+    ' rij BST_RIJ_VRIJ + 1 blijft leeg: SamVulBestellijst zet er een waarschuwing
+    ' als er pakketten zonder gekende dag zijn (do + vrij < totaal).
 
     oSheet.getCellByPosition(0, BST_RIJ_KOP).setString("Pakketgroente")
     oSheet.getCellByPosition(1, BST_RIJ_KOP).setString("weg KG")
