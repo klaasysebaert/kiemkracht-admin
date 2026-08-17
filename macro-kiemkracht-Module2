@@ -624,6 +624,72 @@ Function GenereerToken(iLen As Integer) As String
     GenereerToken = sR
 End Function
 
+' =============================================
+' Hulproutine: een hergebruikt mailmerge-tabblad filtervrij maken.
+'
+' De mailmerge-Subs hergebruiken hun tabblad en maken het leeg met
+' clearContents(7) — dat wist enkel celINHOUD. Een AutoFilter die ooit
+' met de hand op dat blad werd gezet (bv. om even enkel de abonnees te
+' bekijken) overleeft dat: de verbergvlaggen kleven aan het RIJNUMMER,
+' terwijl de volgende run daar andere klanten in schrijft. Je houdt dan
+' een willekeurige restselectie verborgen over.
+'
+' Vastgesteld 17/08/2026 op Koffiemailmerge: 128 verborgen rijen die
+' niet meer met het filter zelf overeenkwamen (61 weekperweek, 35
+' on_hold, 22 abonnee, ...). Dat is geen schoonheidsfoutje — rijen die
+' door een filter verborgen zijn, komen bij kopiëren niet mee naar het
+' verzendbestand, dus die klanten krijgen stilzwijgend geen mail.
+'
+' Daarom bij elke run: alle rijen zichtbaar zetten en de filterknopjes
+' weghalen. Stap 1 is het essentiële deel en heeft een terugvalpad;
+' stap 2 is opkuis en mag stilletjes mislukken (dan staan de knopjes er
+' nog, maar verbergt er niets meer).
+' =============================================
+Sub MaakBladFilterVrij(oDoc As Object, oSheet As Object)
+    Dim oRijen    As Object
+    Dim oNaamloos As Object
+    Dim oBereik   As Object
+    Dim oCursor   As Object
+    Dim nBlad     As Integer
+    Dim nLaatste  As Long
+    Dim iRij      As Long
+    Dim bGelukt   As Boolean
+
+    If IsNull(oSheet) Then Exit Sub
+    oRijen = oSheet.getRows()
+
+    ' 1. Alle rijen weer zichtbaar. De collectie-eigenschap zet ze in één
+    '    keer; lukt dat niet, dan rij per rij over het gebruikte gebied.
+    bGelukt = True
+    On Error Resume Next
+    oRijen.IsVisible = True
+    If Err <> 0 Then bGelukt = False
+    On Error GoTo 0
+
+    If Not bGelukt Then
+        oCursor = oSheet.createCursor()
+        oCursor.gotoEndOfUsedArea(True)
+        nLaatste = oCursor.getRangeAddress().EndRow
+        For iRij = 0 To nLaatste
+            oRijen.getByIndex(iRij).IsVisible = True
+        Next iRij
+    End If
+
+    ' 2. De AutoFilter zelf weg (de naamloze database-range van dit blad),
+    '    anders staan de knopjes er nog en volstaat één klik om opnieuw
+    '    rijen te verbergen.
+    On Error Resume Next
+    nBlad = oSheet.RangeAddress.Sheet
+    oNaamloos = oDoc.UnnamedDatabaseRanges
+    If Not IsNull(oNaamloos) Then
+        If oNaamloos.hasByTable(nBlad) Then
+            oBereik = oNaamloos.getByTable(nBlad)
+            oBereik.AutoFilter = False
+        End If
+    End If
+    On Error GoTo 0
+End Sub
+
 Sub BereidKoffieMailmergeVoor()
 
     ' =============================================
