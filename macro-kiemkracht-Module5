@@ -1239,6 +1239,10 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
     Dim sMaatCase  As String
     Dim sTakJoins  As String
     Dim sSql  As String
+    Dim sGeenAnn As String
+    Dim iLos     As Integer
+    Dim sLosNaam As String
+    Dim dLosAant As Double
 
     If (iWeek Mod 2) = 0 Then
         sParRitmes = "'wekelijks','pare-week'"
