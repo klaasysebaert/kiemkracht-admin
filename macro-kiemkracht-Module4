@@ -373,6 +373,10 @@ Sub BereidReddingsmailVoor()
         oSheet = oSheets.getByName("Reddingsmail")
     End If
 
+    ' Erfenis van een handmatige AutoFilter opruimen (zie MaakBladFilterVrij
+    ' in Module2)
+    MaakBladFilterVrij(oDoc, oSheet)
+
     ' --- Kolomhoofden ---
     Dim hoofden(4) As String
     hoofden(0) = "Voornaam"
