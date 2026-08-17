@@ -274,6 +274,9 @@ Sub BereidMailmergeVoor()
         oSheet = oSheets.getByName("Mailmerge")
     End If
 
+    ' Erfenis van een handmatige AutoFilter opruimen (zie MaakBladFilterVrij)
+    MaakBladFilterVrij(oDoc, oSheet)
+
     ' --- Stap 5: kolomhoofden Mailmerge-sheet ---
     Dim hoofden(19) As String
     hoofden(0)  = "Voornaam"
