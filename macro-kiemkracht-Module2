@@ -822,6 +822,9 @@ Sub BereidKoffieMailmergeVoor()
         oSheet = oSheets.getByName("Koffiemailmerge")
     End If
 
+    ' Erfenis van een handmatige AutoFilter opruimen (zie MaakBladFilterVrij)
+    MaakBladFilterVrij(oDoc, oSheet)
+
     ' --- Stap 3: kolomhoofden schrijven ---
     Dim hoofden(15) As String
     hoofden(0)  = "Voornaam"
