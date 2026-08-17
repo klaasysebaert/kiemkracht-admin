@@ -1176,14 +1176,18 @@ Private Sub SamBouwTabBestellijst(oDoc As Object)
     Next iSlot
     oSheet.getCellRangeByPosition(0, BST_RIJ0, 7, BST_RIJ0 + SAM_SLOTS - 1).CellBackColor = clAfgeleid
 
-    ' Losse groenten: nog te leveren bijbestellingen (besteld-teller uit Los-tab)
+    ' Losse groenten: nog te leveren bijbestellingen (besteld-teller uit Los-tab).
+    ' "do" en "vrij" komen als waarde uit SamVulBestellijst — de Los-tab kent de
+    ' dag-opdeling niet, die zit enkel in de bestellingen.
     oSheet.getCellByPosition(0, BST_LOS_KOP).setString("Losse groente")
-    oSheet.getCellByPosition(1, BST_LOS_KOP).setString("Besteld")
-    oSheet.getCellByPosition(2, BST_LOS_KOP).setString("Eenheid")
-    oSheet.getCellByPosition(3, BST_LOS_KOP).setString("Grooth.EUR")
-    oSheet.getCellByPosition(4, BST_LOS_KOP).setString("Kost EUR")
-    oSheet.getCellRangeByPosition(0, BST_LOS_KOP, 4, BST_LOS_KOP).CellBackColor = clKop
-    oSheet.getCellRangeByPosition(0, BST_LOS_KOP, 4, BST_LOS_KOP).CharWeight = _
+    oSheet.getCellByPosition(1, BST_LOS_KOP).setString("Besteld do")
+    oSheet.getCellByPosition(2, BST_LOS_KOP).setString("Besteld vrij")
+    oSheet.getCellByPosition(3, BST_LOS_KOP).setString("Besteld")
+    oSheet.getCellByPosition(4, BST_LOS_KOP).setString("Eenheid")
+    oSheet.getCellByPosition(5, BST_LOS_KOP).setString("Grooth.EUR")
+    oSheet.getCellByPosition(6, BST_LOS_KOP).setString("Kost EUR")
+    oSheet.getCellRangeByPosition(0, BST_LOS_KOP, 6, BST_LOS_KOP).CellBackColor = clKop
+    oSheet.getCellRangeByPosition(0, BST_LOS_KOP, 6, BST_LOS_KOP).CharWeight = _
         com.sun.star.awt.FontWeight.BOLD
     For iSlot = 0 To LOS_SLOTS - 1
         iRij = BST_LOS0 + iSlot
@@ -1191,16 +1195,17 @@ Private Sub SamBouwTabBestellijst(oDoc As Object)
         sL = CStr(LOS_RIJ0 + iSlot + 1)
         oSheet.getCellByPosition(0, iRij).setFormula( _
             "=IF(Los.A" & sL & "="""";"""";Los.A" & sL & ")")
-        oSheet.getCellByPosition(1, iRij).setFormula( _
-            "=IF($A" & sB & "="""";"""";Los.I" & sL & ")")
-        oSheet.getCellByPosition(2, iRij).setFormula( _
-            "=IF($A" & sB & "="""";"""";Los.D" & sL & ")")
         oSheet.getCellByPosition(3, iRij).setFormula( _
-            "=IF($A" & sB & "="""";"""";Los.C" & sL & ")")
+            "=IF($A" & sB & "="""";"""";Los.I" & sL & ")")
+        oSheet.getCellByPosition(3, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
         oSheet.getCellByPosition(4, iRij).setFormula( _
+            "=IF($A" & sB & "="""";"""";Los.D" & sL & ")")
+        oSheet.getCellByPosition(5, iRij).setFormula( _
+            "=IF($A" & sB & "="""";"""";Los.C" & sL & ")")
+        oSheet.getCellByPosition(6, iRij).setFormula( _
             "=IF(OR($A" & sB & "="""";Los.C" & sL & "="""");"""";ROUND(Los.I" & sL & "*Los.C" & sL & ";2))")
     Next iSlot
-    oSheet.getCellRangeByPosition(0, BST_LOS0, 4, BST_LOS0 + LOS_SLOTS - 1).CellBackColor = clAfgeleid
+    oSheet.getCellRangeByPosition(0, BST_LOS0, 6, BST_LOS0 + LOS_SLOTS - 1).CellBackColor = clAfgeleid
 
     oSheet.Columns.getByIndex(0).Width = 4500
     For iKol = 1 To 7
