@@ -670,9 +670,14 @@ Sub MaakBladFilterVrij(oDoc As Object, oSheet As Object)
     On Error GoTo 0
 
     If Not bGelukt Then
+        ' Rij per rij. Niet op het gebruikte gebied vertrouwen: clearContents
+        ' is hier al gepasseerd, dus dat kan ingekrompen zijn terwijl de
+        ' verbergvlaggen lager op het blad blijven staan. Vandaar een
+        ' ondergrens die ruim boven elke mailmerge-lijst ligt.
         oCursor = oSheet.createCursor()
         oCursor.gotoEndOfUsedArea(True)
         nLaatste = oCursor.getRangeAddress().EndRow
+        If nLaatste < 2000 Then nLaatste = 2000
         For iRij = 0 To nLaatste
             oRijen.getByIndex(iRij).IsVisible = True
         Next iRij
