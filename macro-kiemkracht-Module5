@@ -1256,6 +1256,12 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
                 "WHEN 'klein' THEN 'klein' WHEN 'groot' THEN 'groot' " & _
                 "WHEN 'extra groot' THEN 'extra-groot' WHEN 'extra-groot' THEN 'extra-groot' " & _
                 "WHEN 'mini' THEN 'mini' END"
+    ' annulatie-filter op een bestelling (alias b) — gedeeld door stap 2 en 3
+    sGeenAnn = " AND NOT EXISTS (SELECT 1 FROM annulaties ann1 " & _
+               "  WHERE ann1.jaar = " & iJaar & " AND ann1.week_annulatie = " & iWeek & _
+               "   AND (ann1.klant_id = b.klant_id OR (b.klant_id IS NULL " & _
+               "        AND LOWER(ann1.klant_email) = LOWER(b.klant_email)))) "
+
     ' klant/afhaalpunt-joins voor de dag-bepaling van een bestelling
     ' (zelfde COALESCE-volgorde als MaakWeekbestand: de tijdelijke weekkeuze
     ' klant_afhaalpunt_keuze (kwap) wint van het thuisafhaalpunt (kap))
