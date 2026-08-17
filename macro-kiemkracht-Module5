@@ -83,14 +83,22 @@ Const NOT_SLOTS        = 20
 Const NOT_RIJ_BEGLABEL = 24
 Const NOT_RIJ_BEG      = 25
 
-' Tab Bestellijst: rij 2 = maat-labels, rij 3 = aantallen per maat,
-' rij 5 = koppen pakketgroenten, rij 6-21 = data (loopt gelijk met
-' Samenstelling rij 5-20), rij 24 = koppen losse, rij 25.. = losse.
+' Tab Bestellijst: rij 2 = maat-labels + "Samen", rij 3 = aantal pakketten per
+' maat, rij 4/5 = waarvan donderdag / waarvan vrijdag, rij 7 = koppen
+' pakketgroenten, rij 8-23 = data (loopt gelijk met Samenstelling rij 5-20),
+' rij 25 = melding niet-gematchte weglatingen, rij 26 = koppen losse,
+' rij 27.. = losse.
+' De dag-opdeling en de Samen-kolom stonden er eerst niet op; ze maken de tab
+' bruikbaar zonder eerst naar de afweeglijsten te moeten (zelfde cijfers als
+' de Cijfers-tab van de weekcockpit).
 Const BST_RIJ_AANT = 2
-Const BST_RIJ_KOP  = 4
-Const BST_RIJ0     = 5
-Const BST_LOS_KOP  = 23
-Const BST_LOS0     = 24
+Const BST_RIJ_DON  = 3
+Const BST_RIJ_VRIJ = 4
+Const BST_RIJ_KOP  = 6
+Const BST_RIJ0     = 7
+Const BST_LOS_KOP  = 25
+Const BST_LOS0     = 26
+Const BST_KOL_SOM  = 5    ' kolom F op de aantal-rijen: alle maten samen
 
 ' Tabs Afweeglijst donderdag / vrijdag: nabouw van de gelijknamige tabbladen
 ' in de Google Sheet (print-layout, lettergrootte 20, één A4 per dag).
