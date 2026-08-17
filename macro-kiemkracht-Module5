@@ -1470,10 +1470,22 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
 
     SamLaadDagcijfers(oConn, iWeek, iJaar)
 
-    ' --- 1. Aantal pakketten per maat (alle dagen samen) ---
+    ' --- 1. Aantal pakketten per maat: totaal + de opdeling donderdag/vrijdag ---
+    nOnbDag = 0
     For iMaat = 0 To 3
         oBst.getCellByPosition(1 + iMaat, BST_RIJ_AANT).setValue(gDgTot(iMaat))
+        oBst.getCellByPosition(1 + iMaat, BST_RIJ_DON).setValue(gDgAant(iMaat, 0))
+        oBst.getCellByPosition(1 + iMaat, BST_RIJ_VRIJ).setValue(gDgAant(iMaat, 1))
+        nOnbDag = nOnbDag + gDgTot(iMaat) - gDgAant(iMaat, 0) - gDgAant(iMaat, 1)
     Next iMaat
+    ' Pakketten zonder gekende dag (geen afhaalpunt/leverdag) zitten enkel in het
+    ' totaal — zeg dat erbij, anders lijkt de matrix gewoon niet te kloppen.
+    If nOnbDag > 0 Then
+        oBst.getCellByPosition(0, BST_RIJ_VRIJ + 1).setString( _
+            nOnbDag & " pakket(ten) zonder gekende dag — die tellen enkel in het totaal mee.")
+    Else
+        oBst.getCellByPosition(0, BST_RIJ_VRIJ + 1).setString("")
+    End If
 
     ' --- 2. Weglatingen per (groente, maat), match op naam ---
     oBst.getCellRangeByPosition(1, BST_RIJ0, 4, BST_RIJ0 + SAM_SLOTS - 1).clearContents(7)
