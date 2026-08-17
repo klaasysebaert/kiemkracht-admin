@@ -131,6 +131,11 @@ Public gWgDon(199)   As Long
 Public gWgVrij(199)  As Long
 Public gWgOnb(199)   As Long      ' dag onbekend -> telt enkel in het totaal mee
 Public gNWg          As Integer
+Public gLosNaam(199) As String    ' losse groenten: besteld per (naam, dag)
+Public gLosDon(199)  As Double
+Public gLosVrij(199) As Double
+Public gLosOnb(199)  As Double
+Public gNLos         As Integer
 
 ' ===========================================================================
 ' MaakSamenstellingDoc — nieuw samenstelling-bestand voor een gekozen week
