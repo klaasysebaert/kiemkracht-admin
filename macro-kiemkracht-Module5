@@ -1534,8 +1534,8 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     SamVulAfweeglijst(oDoc, iWeek, iJaar)
     SamVulPrintbladen(oDoc, iWeek, iJaar)
 
-    ' Tijdstempel + eventuele niet-gematchte weglating-groenten
-    oBst.getCellByPosition(6, BST_RIJ_AANT).setString( _
+    ' Tijdstempel (kolom H, naast de matrix) + niet-gematchte weglating-groenten
+    oBst.getCellByPosition(7, BST_RIJ_AANT).setString( _
         "versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
     If sOnbekend <> "" Then
         oBst.getCellByPosition(0, BST_RIJ0 + SAM_SLOTS + 1).setString( _
