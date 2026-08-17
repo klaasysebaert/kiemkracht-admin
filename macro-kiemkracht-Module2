@@ -1143,6 +1143,9 @@ Sub BereidCombiMailmergeVoor()
         oSheet = oSheets.getByName("Mailmerge")
     End If
 
+    ' Erfenis van een handmatige AutoFilter opruimen (zie MaakBladFilterVrij)
+    MaakBladFilterVrij(oDoc, oSheet)
+
     ' --- Stap 4: kolomhoofden (0-19 identiek aan BereidMailmergeVoor, 20 = koffie) ---
     Dim hoofden(20) As String
     hoofden(0)  = "Voornaam"
