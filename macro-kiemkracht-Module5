@@ -1507,8 +1507,24 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
         End If
     Next iWg
 
-    ' --- 3. Besteld-tellers verversen op de Los-tab (kolom I) ---
+    ' --- 3. Besteld-tellers verversen op de Los-tab (kolom I) + de dag-opdeling
+    '        ervan op deze tab (kolom B/C; het totaal in D is een formule naar
+    '        Los.I, dus die drie kloppen altijd samen). ---
     SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
+    oLos = oDoc.Sheets.getByName(TAB_LOS)
+    oBst.getCellRangeByPosition(1, BST_LOS0, 2, BST_LOS0 + LOS_SLOTS - 1).clearContents(7)
+    For iSlot = 0 To LOS_SLOTS - 1
+        sNaam = oLos.getCellByPosition(0, LOS_RIJ0 + iSlot).getString()
+        If sNaam <> "" Then
+            For iLos = 0 To gNLos - 1
+                If gLosNaam(iLos) = sNaam Then
+                    oBst.getCellByPosition(1, BST_LOS0 + iSlot).setValue(gLosDon(iLos))
+                    oBst.getCellByPosition(2, BST_LOS0 + iSlot).setValue(gLosVrij(iLos))
+                    Exit For
+                End If
+            Next iLos
+        End If
+    Next iSlot
 
     ' --- 4. Afweeglijsten en printbladen opnieuw opbouwen ---
     SamVulAfweeglijst(oDoc, iWeek, iJaar)
