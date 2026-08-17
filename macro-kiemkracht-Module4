@@ -133,6 +133,11 @@ Sub BereidHeractivatieMailmergeVoor()
         oSheet = oSheets.getByName("Heractivatie")
     End If
 
+    ' Erfenis van een handmatige AutoFilter opruimen (zie MaakBladFilterVrij
+    ' in Module2 — verborgen rijen overleven clearContents en vallen bij
+    ' kopiëren stilzwijgend weg)
+    MaakBladFilterVrij(oDoc, oSheet)
+
     ' --- Stap 3: kolomhoofden schrijven ---
     Dim hoofden(14) As String
     hoofden(0)  = "Voornaam"
