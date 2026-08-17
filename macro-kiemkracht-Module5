@@ -1403,6 +1403,50 @@ Sub SamLaadDagcijfers(oConn As Object, iWeek As Integer, iJaar As Integer)
         End If
     Loop
     oRS.close() : oStmt.close()
+
+    ' --- 3. Losse groenten: besteld per (groente, dag) ---
+    ' Uit de bestelregels, NIET uit groenten.besteld (die teller telt ook de
+    ' pakketbestellingen van dezelfde naam mee — zie SamVerversLosBesteld).
+    ' Zelfde dag-bepaling en annulatie-filter als hierboven, zodat de dagen
+    ' altijd optellen tot het totaal dat SamVerversLosBesteld op de Los-tab zet.
+    gNLos = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT br.groente_naam, " & _
+        "LOWER(COALESCE(kwap.dag_klaarmaken, kap.dag_klaarmaken, bap.dag_klaarmaken, b.leverdag, '')) AS dag, " & _
+        "SUM(br.aantal) " & _
+        "FROM bestelregels br " & _
+        "INNER JOIN bestellingen b ON b.id = br.bestelling_id " & sTakJoins & _
+        "WHERE b.weeknummer = " & iWeek & " AND b.jaar = " & iJaar & sGeenAnn & _
+        "GROUP BY 1, 2")
+    Do While oRS.next()
+        sLosNaam = oRS.getString(1)
+        sDag     = oRS.getString(2)
+        dLosAant = oRS.getDouble(3)
+        iVind = -1
+        For iLos = 0 To gNLos - 1
+            If gLosNaam(iLos) = sLosNaam Then
+                iVind = iLos
+                Exit For
+            End If
+        Next iLos
+        If iVind = -1 And gNLos < 200 Then
+            iVind = gNLos
+            gLosNaam(gNLos) = sLosNaam
+            gLosDon(gNLos) = 0 : gLosVrij(gNLos) = 0 : gLosOnb(gNLos) = 0
+            gNLos = gNLos + 1
+        End If
+        If iVind >= 0 Then
+            If sDag = "donderdag" Then
+                gLosDon(iVind) = gLosDon(iVind) + dLosAant
+            ElseIf sDag = "vrijdag" Then
+                gLosVrij(iVind) = gLosVrij(iVind) + dLosAant
+            Else
+                gLosOnb(iVind) = gLosOnb(iVind) + dLosAant
+            End If
+        End If
+    Loop
+    oRS.close() : oStmt.close()
 End Sub
 
 ' ---------------------------------------------------------------------------
