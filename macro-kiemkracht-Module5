@@ -1451,17 +1451,21 @@ End Sub
 
 ' ---------------------------------------------------------------------------
 ' SamVulBestellijst — de Bestellijst-tab (TAB_BST) vullen met de momentopname
-' uit SamLaadDagcijfers: aantal pakketten per maat, weglatingen per (groente,
-' maat), besteld-tellers. Bouwt daarna de Afweeglijst-tab opnieuw op.
+' uit SamLaadDagcijfers: aantal pakketten per maat (totaal + donderdag/vrijdag),
+' weglatingen per (groente, maat), besteld-tellers per dag. Bouwt daarna de
+' Afweeglijst-tab opnieuw op.
 ' ---------------------------------------------------------------------------
 Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
                               iWeek As Integer, iJaar As Integer)
     Dim oBst  As Object
     Dim oSam  As Object
+    Dim oLos  As Object
     Dim iMaat As Integer
     Dim iSlot As Integer
     Dim iWg   As Integer
+    Dim iLos  As Integer
     Dim iVind As Integer
+    Dim nOnbDag As Long
     Dim sNaam As String
     Dim sOnbekend As String
 
