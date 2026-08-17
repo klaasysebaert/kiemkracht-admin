@@ -1118,12 +1118,31 @@ Private Sub SamBouwTabBestellijst(oDoc As Object)
     oSheet.getCellByPosition(3, 0).setString( _
         "Momentopname — ververs via StartVerversBestellijst (vlak voor het bestellen).")
 
+    ' --- Pakketten-matrix: maten in de kolommen, dagen in de rijen ---
     For iKol = 0 To 3
         oSheet.getCellByPosition(1 + iKol, BST_RIJ_AANT - 1).setString(aMaatLabel(iKol))
-        oSheet.getCellByPosition(1 + iKol, BST_RIJ_AANT - 1).CharWeight = _
-            com.sun.star.awt.FontWeight.BOLD
     Next iKol
+    oSheet.getCellByPosition(BST_KOL_SOM, BST_RIJ_AANT - 1).setString("Samen")
+    oSheet.getCellRangeByPosition(1, BST_RIJ_AANT - 1, BST_KOL_SOM, BST_RIJ_AANT - 1).CharWeight = _
+        com.sun.star.awt.FontWeight.BOLD
     oSheet.getCellByPosition(0, BST_RIJ_AANT).setString("Aantal pakketten:")
+    oSheet.getCellByPosition(0, BST_RIJ_DON).setString("waarvan donderdag:")
+    oSheet.getCellByPosition(0, BST_RIJ_VRIJ).setString("waarvan vrijdag:")
+    ' Samen-kolom als formule, zodat ze blijft kloppen als je een aantal
+    ' handmatig bijstelt (bv. een pakket dat je nog toevoegt).
+    For iRij = BST_RIJ_AANT To BST_RIJ_VRIJ
+        oSheet.getCellByPosition(BST_KOL_SOM, iRij).setFormula( _
+            "=SUM(B" & CStr(iRij + 1) & ":E" & CStr(iRij + 1) & ")")
+    Next iRij
+    oSheet.getCellRangeByPosition(0, BST_RIJ_AANT, BST_KOL_SOM, BST_RIJ_AANT).CharWeight = _
+        com.sun.star.awt.FontWeight.BOLD
+    oSheet.getCellRangeByPosition(BST_KOL_SOM, BST_RIJ_AANT, BST_KOL_SOM, BST_RIJ_VRIJ).CharWeight = _
+        com.sun.star.awt.FontWeight.BOLD
+    ' De dag-rijen zijn afgeleid uit de bestellingen, net als de weglatingen.
+    oSheet.getCellRangeByPosition(1, BST_RIJ_DON, BST_KOL_SOM, BST_RIJ_VRIJ).CellBackColor = clAfgeleid
+    oSheet.getCellByPosition(0, BST_RIJ_VRIJ + 1).setString( _
+        "(donderdag + vrijdag kan lager liggen dan het totaal: pakketten zonder gekend afhaalpunt)")
+    oSheet.getCellByPosition(0, BST_RIJ_VRIJ + 1).CharColor = RGB(120, 120, 120)
 
     oSheet.getCellByPosition(0, BST_RIJ_KOP).setString("Pakketgroente")
     oSheet.getCellByPosition(1, BST_RIJ_KOP).setString("weg KG")
