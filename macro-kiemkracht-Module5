@@ -2484,6 +2484,8 @@ End Sub
 ' Oogstlijst de kolommen "Besteld do" en "Besteld vrij" toont; anders zouden
 ' die twee niet optellen tot het totaal. Sindsdien vallen ook bestellingen van
 ' klanten die deze week geannuleerd hebben weg, net als in het weekbestand.
+' (oConn/iWeek/iJaar blijven in de signatuur staan voor de twee aanroepers —
+' Basic geeft anders een runtime-fout op het aantal parameters.)
 ' ---------------------------------------------------------------------------
 Sub SamVerversLosBesteld(oDoc As Object, oConn As Object, _
                          iWeek As Integer, iJaar As Integer)
