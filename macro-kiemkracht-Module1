@@ -1229,6 +1229,44 @@ Sub MaakWeekbestand()
     Dim sNogGeslotenRapport As String : sNogGeslotenRapport = ""
     Dim nNogGesloten As Integer : nNogGesloten = 0
 
+    ' --- Stap 3e: slapende klanten die deze week terugkwamen ---
+    ' Een on_hold-klant krijgt geen wekelijkse aanbodmail (alle on_hold-klanten
+    ' hebben type = 'on_hold', en de mailmerge-lus in Module2 slaat elk
+    ' niet-herkend type over). Zijn enige bestellink is die uit de eenmalige
+    ' reddingsmail (BereidHeractivatieMailmergeVoor, Module4). Bestelt hij toch,
+    ' dan zet postgres-proxy.php hem terug op actief + weekperweek en stempelt
+    ' gereactiveerd_jaar/week. Dat hier melden, want verder is er niets aan te
+    ' zien: de klantenrij lijkt onaangeroerd (gewijzigd_op blijft staan) en de
+    ' reddingsmail zelf laat geen DB-spoor na.
+    Dim sReactRapport As String : sReactRapport = ""
+    Dim nReact As Integer : nReact = 0
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT k.voornaam, k.familienaam, " & _
+        "COALESCE(rap.naam_publiek, rap.naam, '(geen afhaalpunt)'), " & _
+        "COALESCE(rap.dag_klaarmaken, ''), COALESCE(rap.dag_afhaling, '') " & _
+        "FROM klanten k " & _
+        "LEFT JOIN afhaalpunten rap ON rap.id = k.afhaalpunt_id " & _
+        "WHERE k.gereactiveerd_jaar = " & iJaar & _
+        " AND k.gereactiveerd_week = " & iWeek & " " & _
+        "ORDER BY k.familienaam, k.voornaam")
+    Do While oRS.next()
+        Dim sReactDagen As String
+        sReactDagen = ""
+        If oRS.getString(4) <> "" Then
+            sReactDagen = " (klaarmaken " & oRS.getString(4)
+            If oRS.getString(5) <> "" Then
+                sReactDagen = sReactDagen & ", afhaling " & oRS.getString(5)
+            End If
+            sReactDagen = sReactDagen & ")"
+        End If
+        sReactRapport = sReactRapport & "• " & _
+                        Trim(oRS.getString(1) & " " & oRS.getString(2)) & _
+                        " — " & oRS.getString(3) & sReactDagen & Chr(10)
+        nReact = nReact + 1
+    Loop
+    oRS.close() : oStmt.close()
+
     ' --- Stap 4: vooruitbestellingen voor stop/annulatie/start-kolommen ---
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
