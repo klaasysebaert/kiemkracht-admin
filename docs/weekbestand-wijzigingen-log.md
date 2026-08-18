@@ -367,6 +367,46 @@ Week 33 is ermee hersteld en nagerekend: pakketten, bijbestellingen en
 weglatingen komen alle drie exact overeen met een onafhankelijke herberekening
 uit de ruwe datablad-cijfers, en er staat geen `#VERW!` meer in het bestand.
 
+##### Week 31 en 32 mee hersteld (2026-08-18)
+
+Beide `_definitief`-bestanden waren nóg zwaarder verschoven dan week 33 — week 32
+liep op tot offset **−8** en had 187 `#VERW!`-cellen:
+
+| | week 31 | week 32 | week 33 |
+|---|---|---|---|
+| `#VERW!`-cellen | 98 | 187 | 49 |
+| offset-zones | 11 | 16 | 10 |
+| slechtste offset | −7 | −8 | +4 |
+| kolom X fout | 130 | 124 | ~60 |
+| klant zonder afrekeningsrij | 0 | 3 | 6 |
+| klant dubbel | 2 | 1 (6×) | 1 |
+| WEEKTOTAAL vóór → na | 2.790,82 (gelijk) | 3.056,02 → 3.052,02 | 3.247,57 → 3.457,90 |
+
+**Structurele schade ≠ geldschade.** Dat is de les van week 31: 98 `#VERW!`-cellen
+en elf offset-zones, en tóch geen enkele klant met een ander bedrag. De reden is
+dat `MaakMaandbestand` op **klant_id** koppelt en een verschoven afrekening-rij
+intern *consistent* is — alle cellen van die rij wijzen naar dezelfde (verkeerde)
+datarij, inclusief kolom F. Zolang elke klant ergens nog een rij mét zijn eigen
+klant_id heeft, komt het juiste bedrag mee. Pas wanneer een rij helemaal
+**wegvalt** (verschoven over een andere heen) valt de macro terug op het
+rijnummer, en dán pas gaat er geld mis:
+
+| week | klanten met ander bedrag | saldo | grootste afwijking |
+|---|---|---|---|
+| 31 | 0 | 0,00 € | — |
+| 32 | 3 (2950, 2931, 2932) | −1,47 € | Martijn Loosvelt Vandenbroucke −6,32 € |
+| 33 | 6 | +188,92 € | Nelly Beddeleem 16,60 € i.p.v. **171,25 €** |
+
+Week 31 valt in de **juli**-afrekening, die al gemaakt en gemailmergd is
+(`afrekening_juli_2026_definitief.ods`, `..._mailmerge.ods` van 2026-08-16) — die
+blijft dus gewoon correct, er hoeft niets rechtgezet. Week 32 en 33 vallen in
+**augustus**; die maandafrekening bestond nog niet, dus de correctie loopt vanzelf
+mee bij de eerstvolgende `MaakMaandbestand`.
+
+Alle drie de bestanden zijn na herstel nagerekend: pakketten, bijbestellingen en
+weglatingen komen exact overeen met een onafhankelijke herberekening uit de ruwe
+datablad-cijfers, en er staat nergens nog een `#VERW!`.
+
 **Wat dit niet oplost.** De macro herstelt de koppeling *achteraf*; ze belet niet
 dat ze breekt. Zolang de afrekening een tweede tabblad is dat op rijnummer
 koppelt, blijft dit handwerk-gevoelig — het onderliggende punt hierboven (de
