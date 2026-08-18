@@ -180,11 +180,19 @@ Sub BereidHeractivatieMailmergeVoor()
     For k = 0 To nKlanten - 1
 
         ' Groenten-bestellink: vrijblijvend los bestellen (type=weekperweek), base64 ?d=
+        ' leverdag MOET erbij: zonder die parameter blijft KLANT.levering leeg in
+        ' het formulier, en omdat een gekende klant nooit zelf een afhaalpunt
+        ' kiest valt de leverdag helemaal door naar "". De klant ziet dan geen
+        ' afhaaldatum (niet op het bevestigingsscherm, niet in de mail, en de
+        ' "Week van ..."-regel bij de losse groenten verdwijnt ook), en de
+        ' bestelling landt met een lege leverdag in de DB. Gebeurd in week
+        ' 34/2026, de eerste keer dat iemand deze link echt gebruikte.
         sQGroenten = "voornaam="    & UrlEncodeValue(kVoor(k))   & _
                      "&naam="       & UrlEncodeValue(kFam(k))    & _
                      "&email="      & UrlEncodeValue(kEmail(k))  & _
                      "&klant_id="   & kID(k)                     & _
                      "&type=weekperweek" & _
+                     "&leverdag="   & UrlEncodeValue(kLevdag(k)) & _
                      "&afhaalpunt=" & UrlEncodeValue(kAfhaal(k))
         sGroentenURL = BESTEL_URL & "?d=" & Base64UrlEncode(sQGroenten)
 
