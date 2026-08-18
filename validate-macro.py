@@ -50,6 +50,16 @@ PROBES = [
     ("Module5", "SamMaatIdx", ("extra-groot",), 2),
     ("Module5", "SamBase64", ("lo:test",), "bG86dGVzdA=="),
     ("Module6", "KlasLaatsteStatus", (), ""),
+    # Omgevingsbepaling: welke database een macro raakt hangt hiervan af, dus
+    # de naamregel zelf ook echt aftoetsen en niet enkel laten compileren.
+    ("Module1", "OmgevingUitNaam",
+     ("file:///C:/x/2026_week_34/samenstelling_34_2026.ods",), "prod"),
+    ("Module1", "OmgevingUitNaam",
+     ("file:///C:/x/2026_week_34/samenstelling_34_2026-dev.ods",), "dev"),
+    ("Module1", "OmgevingUitNaam",
+     ("file:///C:/x/kiemkracht-data.ods",), "prod"),
+    ("Module1", "OmgevingUitNaam",
+     ("file:///C:/x/kiemkracht-data-dev.ods",), "dev"),
 ]
 
 
