@@ -74,6 +74,11 @@ Sub StartVoegLosseGroenteToe()
     VoegLosseGroenteToe()
 End Sub
 
+Sub StartHerstelWeekbestandFormules()
+    ReloadKiemkracht()
+    HerstelWeekbestandFormules()
+End Sub
+
 Sub StartKoffieWeekbestand()
     ReloadKiemkracht()
     KoffieWeekbestand()

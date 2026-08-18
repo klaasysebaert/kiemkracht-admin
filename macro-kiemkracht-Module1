@@ -5678,3 +5678,310 @@ VerbindingsFout:
            "Controleer of de SSH-tunnel actief is.", 16, "Fout"
     SluitSSHTunnels()
 End Sub
+' =============================================
+' Kiemkracht - Weekbestand: rij-koppeling herstellen
+' ---------------------------------------------
+' Het afrekeningstabblad is een SPIEGEL van het datablad met één vast
+' contract: afrekening-rij N kijkt naar datablad-rij N. Dat contract
+' overleeft handwerk niet. Verplaats, wis of voeg je een rij in het
+' datablad in, dan verschuift LibreOffice elke verwijzing mee met de
+' BRON-CEL i.p.v. met de rij, en loopt de spiegel uit de pas:
+'   - afrekening-rij N kijkt plots naar datablad-rij N+1 (of N-1, ...)
+'   - een verwijderde rij laat een #VERW!-weesrij achter
+'   - een verplaatste klant staat twee keer in de afrekening
+'   - datablad-kolom X (= afrekening.C<rij>) wijst naar de buurklant
+'   - datablad-kolom W verliest zijn Blad2.I-eenheidsverwijzingen
+' De bedragen kloppen dan stil niet meer: WEEKTOTAAL (H5) en de
+' maandafrekening rekenen met de rij van iemand anders.
+'
+' Deze macro herschrijft die formules vanaf nul volgens het contract:
+'   - afrekening rij 7..laatste : A,B,C,D,E,F, W, Y..AV, AY, AZ..BK
+'   - datablad kolom W (samenvatting) + X (euro losse) op elke klantrij
+' Ze raakt NIETS anders aan: hoeveelheden, weglatingen, pakketprijzen
+' (B2:B5), het tabblad pakketwaardes en alle handmatige correcties in
+' het datablad blijven staan. Er wordt niets uit de database gehaald.
+'
+' Draaien: open het weekbestand en start deze macro vanuit dat venster.
+' Veilig om meermaals te draaien.
+' =============================================
+Sub HerstelWeekbestandFormules()
+    On Error GoTo Fout
+
+    ' Kolomindices (0-based) — identiek aan MaakWeekbestand
+    Const cNaam        = 0    ' A voornaam + familienaam
+    Const cAfh         = 1    ' B afhaalpunt
+    Const cWBest       = 15   ' P klant_id
+    Const cKG          = 17   ' R Klein pakket
+    Const cGG          = 18   ' S Groot pakket
+    Const cEGG         = 19   ' T Extra groot pakket
+    Const cMINI        = 20   ' U Mini pakket
+    Const cSamenv      = 22   ' W samenvatting (datablad) / detail losse (afrekening)
+    Const cWaarde      = 23   ' X euro losse groenten
+    Const cGroent0     = 24   ' Y eerste groente-slot
+    Const nGroentSlots = 24   ' Y..AV
+    Const cAnder       = 48   ' AW ander/opmerking
+    Const cGeen        = 50   ' AY detail weglatingen
+    Const cWeg0        = 51   ' AZ eerste weglating-slot
+    Const nWegSlots    = 12   ' AZ..BK
+    Const nExtra       = 10   ' extra lege rijen met formules klaar
+
+    ' --- Actief weekbestand ophalen + controleren ---
+    Dim oDoc As Object, oWk As Object, oAfr As Object, oPW As Object
+    oDoc = ThisComponent
+    If IsNull(oDoc) Then Exit Sub
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then
+        MsgBox "Geen rekenblad actief.", 16, "Formules herstellen"
+        Exit Sub
+    End If
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+        MsgBox "Geen rekenblad actief.", 16, "Formules herstellen"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName("Blad2") Or Not oDoc.Sheets.hasByName("afrekening") _
+       Or Not oDoc.Sheets.hasByName("pakketwaardes") Then
+        MsgBox "Dit lijkt geen weekbestand: tabblad Blad2, afrekening of " & _
+               "pakketwaardes ontbreekt. Open het weekbestand en start de " & _
+               "macro vanuit dat venster.", 16, "Formules herstellen"
+        Exit Sub
+    End If
+    oWk  = oDoc.Sheets.getByIndex(0)
+    oAfr = oDoc.Sheets.getByName("afrekening")
+    oPW  = oDoc.Sheets.getByName("pakketwaardes")
+
+    ' Oude-structuur-controle: de 24-slot-versie zet een koprij-formule in AV6.
+    If oAfr.getCellByPosition(cGroent0 + nGroentSlots - 1, 5).getFormula() = "" Then
+        If MsgBox("Dit weekbestand lijkt met een oudere versie gemaakt " & _
+            "(geen koprij-formule in afrekening!AV6)." & Chr(10) & Chr(10) & _
+            "Toch herstellen volgens de huidige structuur?", 4 + 48, _
+            "Formules herstellen") <> 6 Then Exit Sub
+    End If
+
+    Dim sData As String
+    sData = "'" & oWk.Name & "'"          ' bladnaam voor formules
+
+    ' --- Laatste klantrij van het datablad zoeken (1-based) ---
+    Dim oCur As Object
+    oCur = oWk.createCursor()
+    oCur.gotoEndOfUsedArea(False)
+    Dim iEind As Integer, iLaatste As Integer, iRij As Integer
+    iEind = oCur.RangeAddress.EndRow + 1
+    iLaatste = 0
+    For iRij = iEind To 7 Step -1
+        If Trim(oWk.getCellByPosition(cNaam, iRij - 1).getString()) <> "" Then
+            iLaatste = iRij
+            Exit For
+        End If
+    Next iRij
+    If iLaatste < 7 Then
+        MsgBox "Geen klantrijen gevonden in het datablad.", 16, "Formules herstellen"
+        Exit Sub
+    End If
+
+    Dim nLaatsteForm As Integer
+    nLaatsteForm = iLaatste + nExtra      ' laatste rij (1-based) met formules
+
+    ' --- Aantal rijen in 'pakketwaardes' (bron voor de weglatingswaarde) ---
+    Dim nPW As Integer
+    nPW = 0
+    For iRij = 2 To 200
+        If Trim(oPW.getCellByPosition(0, iRij - 1).getString()) = "" Then Exit For
+        nPW = nPW + 1
+    Next iRij
+    Dim nPwRijen As Integer : nPwRijen = nPW : If nPwRijen < 1 Then nPwRijen = 1
+
+    ' --- Vaste formule-onderdelen ---
+    Dim sFG As String, sLG As String, sWegF As String, sWegL As String
+    Dim sEenRng As String, sPwVal As String, sPwKey As String
+    sFG     = KolomLetter(cGroent0)                          ' Y
+    sLG     = KolomLetter(cGroent0 + nGroentSlots - 1)       ' AV
+    sWegF   = KolomLetter(cWeg0)                             ' AZ
+    sWegL   = KolomLetter(cWeg0 + nWegSlots - 1)             ' BK
+    sEenRng = "Blad2.A$100:" & KolomLetter(nGroentSlots - 1) & "$100"
+    sPwVal  = "pakketwaardes.$B$2:$E$" & (nPwRijen + 1)
+    sPwKey  = "pakketwaardes.$A$2:$A$" & (nPwRijen + 1)
+
+    ' Valuta-opmaak (opnieuw zetten op de herschreven bereiken)
+    Dim oFmtsA As Object : oFmtsA = oDoc.getNumberFormats()
+    Dim oLocA As New com.sun.star.lang.Locale
+    oLocA.Language = "nl" : oLocA.Country = "BE"
+    Dim nCur As Long, sCurFmt As String
+    sCurFmt = "#.##0,00"" " & Chr(8364) & """"
+    nCur = oFmtsA.queryKey(sCurFmt, oLocA, False)
+    If nCur = -1 Then nCur = oFmtsA.addNew(sCurFmt, oLocA)
+
+    oDoc.lockControllers()
+    oDoc.enableAutomaticCalculation(False)
+
+    ' --- 1. AFREKENING: elke rij spiegelt de datablad-rij met hetzelfde nummer ---
+    Dim ar As Integer, asr As Integer, g As Integer, wSlot As Integer
+    Dim sGuard As String, sCol As String, sFmtCol As String, sWegColA As String
+    For ar = 6 To nLaatsteForm - 1
+        asr = ar + 1                       ' 1-based rijnummer, identiek op beide bladen
+
+        sGuard = "OR(" & sData & ".A" & asr & "="""";" & _
+                 sData & "." & KolomLetter(cAfh) & asr & "=""afhaalpunt/dag"")"
+
+        ' A: naam/afhaalpunt spiegelen (leeg -> leeg, niet 0)
+        oAfr.getCellByPosition(cNaam, ar).setFormula( _
+            "=IF(" & sData & ".A" & asr & "="""";"""";" & sData & ".A" & asr & ")")
+        ' F: klant_id uit kolom P
+        oAfr.getCellByPosition(5, ar).setFormula( _
+            "=IF(" & sData & "." & KolomLetter(cWBest) & asr & "="""";"""";" & _
+            sData & "." & KolomLetter(cWBest) & asr & ")")
+        ' B: pakket-bedrag = pakkettype x pakketprijs-cel bovenaan
+        oAfr.getCellByPosition(1, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";" & _
+            sData & "." & KolomLetter(cKG)   & asr & "*$B$2+" & _
+            sData & "." & KolomLetter(cGG)   & asr & "*$B$3+" & _
+            sData & "." & KolomLetter(cEGG)  & asr & "*$B$4+" & _
+            sData & "." & KolomLetter(cMINI) & asr & "*$B$5)")
+        ' Y..AV: geleverde hoeveelheid x prijs/eenheid (rij 3)
+        For g = 0 To nGroentSlots - 1
+            sCol = KolomLetter(cGroent0 + g)
+            oAfr.getCellByPosition(cGroent0 + g, ar).setFormula( _
+                "=IF(" & sData & "." & sCol & asr & "="""";"""";" & _
+                sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3)")
+        Next g
+        ' C: losse-groenten-totaal
+        oAfr.getCellByPosition(2, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";SUM(" & sFG & asr & ":" & sLG & asr & "))")
+        ' W: detail losse groenten (matrixformule)
+        oAfr.getCellRangeByName(KolomLetter(cSamenv) & asr).setArrayFormula( _
+            "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sFG & asr & ":" & sLG & asr & "="""";"""";" & _
+            sData & "." & sFG & "$2:" & sLG & "$2&"": ""&" & sData & "." & sFG & asr & ":" & sLG & asr & _
+            "&"" ""&" & sEenRng & "&"" " & Chr(224) & " ""&" & _
+            "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
+            "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
+        ' AZ..BK: in-pakket-waarde van elke weglating, opgezocht in 'pakketwaardes'
+        sFmtCol = "IF(" & sData & "." & KolomLetter(cKG)   & asr & ">0;1;" & _
+                  "IF(" & sData & "." & KolomLetter(cGG)   & asr & ">0;2;" & _
+                  "IF(" & sData & "." & KolomLetter(cEGG)  & asr & ">0;3;" & _
+                  "IF(" & sData & "." & KolomLetter(cMINI) & asr & ">0;4;0))))"
+        For wSlot = 0 To nWegSlots - 1
+            sWegColA = KolomLetter(cWeg0 + wSlot)
+            oAfr.getCellByPosition(cWeg0 + wSlot, ar).setFormula( _
+                "=IF(" & sData & "." & sWegColA & asr & "="""";"""";" & _
+                "IFERROR(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
+                sFmtCol & ");0))")
+        Next wSlot
+        ' D: vast weglatingen-totaal
+        oAfr.getCellByPosition(3, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";SUM(" & sWegF & asr & ":" & sWegL & asr & "))")
+        ' AY: detail weglatingen als tekst (matrixformule)
+        oAfr.getCellRangeByName(KolomLetter(cGeen) & asr).setArrayFormula( _
+            "=TEXTJOIN(CHAR(10);1;IF(" & sData & "." & sWegF & asr & ":" & sWegL & asr & "="""";"""";" & _
+            """Geen ""&LOWER(" & sWegF & "$6:" & sWegL & "$6)&"": -""&" & _
+            "TEXT(" & sWegF & asr & ":" & sWegL & asr & ";""0,00"")&"" " & Chr(8364) & """))")
+        ' E: TOTAAL
+        oAfr.getCellByPosition(4, ar).setFormula( _
+            "=IF(" & sGuard & ";"""";B" & asr & "+C" & asr & "-D" & asr & ")")
+    Next ar
+
+    ' Weesrijen onder de spiegel wissen: een achtergebleven #VERW!-rij van een
+    ' verwijderde klant vervuilt anders H4 (weglatingen) en dus het WEEKTOTAAL.
+    Dim oCurA As Object
+    oCurA = oAfr.createCursor()
+    oCurA.gotoEndOfUsedArea(False)
+    Dim iEindAfr As Integer, nGewist As Integer
+    iEindAfr = oCurA.RangeAddress.EndRow + 1
+    nGewist = 0
+    If iEindAfr > nLaatsteForm Then
+        nGewist = iEindAfr - nLaatsteForm
+        oAfr.getCellRangeByName("A" & (nLaatsteForm + 1) & ":" & _
+            KolomLetter(cWeg0 + nWegSlots - 1) & iEindAfr).clearContents( _
+            com.sun.star.sheet.CellFlags.VALUE + com.sun.star.sheet.CellFlags.DATETIME + _
+            com.sun.star.sheet.CellFlags.STRING + com.sun.star.sheet.CellFlags.FORMULA)
+    End If
+
+    ' Valuta-opmaak op de herschreven bereiken
+    oAfr.getCellRangeByName("B7:E" & nLaatsteForm).NumberFormat = nCur
+    oAfr.getCellRangeByName(sFG & "7:" & sLG & nLaatsteForm).NumberFormat = nCur
+    oAfr.getCellRangeByName(sWegF & "7:" & sWegL & nLaatsteForm).NumberFormat = nCur
+
+    ' --- 2. DATABLAD: kolom W (samenvatting) + X (euro losse) per klantrij ---
+    Dim nKlant As Integer, nIdDubbel As Integer
+    Dim sNaamR As String, sAfhR As String, sFmlSv As String
+    Dim sgCol As String, swCol As String
+    Dim oCelSv As Object, oCelWa As Object
+    Dim sIds As String, sId As String, sDubbel As String
+    nKlant = 0 : nIdDubbel = 0 : sIds = "|" : sDubbel = ""
+    For iRij = 7 To iLaatste
+        sNaamR = Trim(oWk.getCellByPosition(cNaam, iRij - 1).getString())
+        sAfhR  = Trim(oWk.getCellByPosition(cAfh,  iRij - 1).getString())
+        If sNaamR <> "" And sAfhR <> "afhaalpunt/dag" Then
+            nKlant = nKlant + 1
+
+            ' W: levende samenvatting (naam, afhaalpunt, formaat, groenten,
+            '    ander/opmerking, weglatingen) — eenheid uit Blad2.I<slot>
+            sFmlSv = "=A" & iRij & "&"" (""&B" & iRij & "&""): ""&" & _
+                "IF(" & KolomLetter(cKG)   & iRij & ">0;""klein"";" & _
+                "IF(" & KolomLetter(cGG)   & iRij & ">0;""groot"";" & _
+                "IF(" & KolomLetter(cEGG)  & iRij & ">0;""extra groot"";" & _
+                "IF(" & KolomLetter(cMINI) & iRij & ">0;""mini"";""geen pakket""))))"
+            For g = 0 To nGroentSlots - 1
+                sgCol = KolomLetter(cGroent0 + g)
+                sFmlSv = sFmlSv & "&IF(" & sgCol & iRij & "="""";"""";CHAR(10)&" & _
+                    sgCol & "$2&"": ""&" & sgCol & iRij & "&"" ""&Blad2.I" & (g + 1) & ")"
+            Next g
+            sFmlSv = sFmlSv & "&IF(" & KolomLetter(cAnder) & iRij & "="""";"""";CHAR(10)&" & _
+                """ander/opmerking: ""&" & KolomLetter(cAnder) & iRij & ")"
+            For wSlot = 0 To nWegSlots - 1
+                swCol = KolomLetter(cWeg0 + wSlot)
+                sFmlSv = sFmlSv & "&IF(" & swCol & iRij & "="""";"""";CHAR(10)&""Geen: ""&" & swCol & "$3)"
+            Next wSlot
+            oCelSv = oWk.getCellByPosition(cSamenv, iRij - 1)
+            oCelSv.setFormula(sFmlSv)
+            oCelSv.IsTextWrapped = True
+
+            ' X: euro losse groenten = het losse-totaal uit de eigen afrekening-rij
+            oCelWa = oWk.getCellByPosition(cWaarde, iRij - 1)
+            oCelWa.setFormula("=afrekening.C" & iRij)
+            oCelWa.NumberFormat = nCur
+
+            ' Dubbel klant_id opsporen (een verplaatste rij die twee keer staat)
+            sId = Trim(oWk.getCellByPosition(cWBest, iRij - 1).getString())
+            If sId <> "" Then
+                If InStr(sIds, "|" & sId & "|") > 0 Then
+                    nIdDubbel = nIdDubbel + 1
+                    If Len(sDubbel) < 200 Then sDubbel = sDubbel & sId & " (rij " & iRij & "), "
+                Else
+                    sIds = sIds & sId & "|"
+                End If
+            End If
+        End If
+    Next iRij
+
+    oDoc.enableAutomaticCalculation(True)
+    oDoc.calculateAll()
+    oDoc.unlockControllers()
+
+    ' --- Rapport ---
+    Dim sMelding As String
+    sMelding = "Formules hersteld in " & oWk.Name & "." & Chr(10) & Chr(10) & _
+        "Datablad     : rij 7 t/m " & iLaatste & ", " & nKlant & " klantrijen" & Chr(10) & _
+        "               kolom W + X herschreven" & Chr(10) & _
+        "Afrekening   : rij 7 t/m " & nLaatsteForm & " herschreven" & Chr(10)
+    If nGewist > 0 Then
+        sMelding = sMelding & "               " & nGewist & " weesrij(en) eronder gewist" & Chr(10)
+    End If
+    sMelding = sMelding & Chr(10) & _
+        "Pakketten    : " & Format(oAfr.getCellByPosition(7, 1).getValue(), "#,##0.00") & " " & Chr(8364) & Chr(10) & _
+        "Bijbestelling: " & Format(oAfr.getCellByPosition(7, 2).getValue(), "#,##0.00") & " " & Chr(8364) & Chr(10) & _
+        "Weglatingen  : " & Format(oAfr.getCellByPosition(7, 3).getValue(), "#,##0.00") & " " & Chr(8364) & Chr(10) & _
+        "WEEKTOTAAL   : " & Format(oAfr.getCellByPosition(7, 4).getValue(), "#,##0.00") & " " & Chr(8364)
+    If nIdDubbel > 0 Then
+        sMelding = sMelding & Chr(10) & Chr(10) & _
+            "LET OP: " & nIdDubbel & " klant_id staat dubbel in het datablad — " & _
+            "die klant wordt twee keer aangerekend:" & Chr(10) & sDubbel
+    End If
+    sMelding = sMelding & Chr(10) & Chr(10) & "Vergeet niet op te slaan."
+    MsgBox sMelding, 64, "Formules herstellen"
+    Exit Sub
+
+Fout:
+    On Error Resume Next
+    oDoc.enableAutomaticCalculation(True)
+    oDoc.unlockControllers()
+    MsgBox "Fout bij het herstellen: " & Err & " - " & Error & Chr(10) & _
+           "(regel " & Erl & ")", 16, "Formules herstellen"
+End Sub
