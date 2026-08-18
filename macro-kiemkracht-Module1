@@ -3844,6 +3844,8 @@ End Function
 ' VPS-cron schakelt dat op de startweek om naar het echte type.
 ' Bestaande (klant_id, jaar, week) worden overgeslagen; de verwerkte
 ' cellen Q-X worden daarna leeggemaakt.
+' Elke annulatie-rij krijgt bron = 'macro' (annulaties.bron, migratie 23:
+'   formulier = klant via het bestelformulier, macro = hier, admin = klantfiche).
 ' =============================================
 Sub VerwerkStopStart()
 
@@ -4144,9 +4146,9 @@ Sub VerwerkStopStart()
                 Else
                     aSql(nItem) = "INSERT INTO annulaties " & _
                         "(voornaam, familienaam, klant_email, klant_id, datum, " & _
-                        "week_annulatie, week_stopzetten_abonnement, jaar) VALUES (" & _
+                        "week_annulatie, week_stopzetten_abonnement, jaar, bron) VALUES (" & _
                         sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & sDatum & "', " & _
-                        w & ", NULL, " & iJaar & ")"
+                        w & ", NULL, " & iJaar & ", 'macro')"
                     nItem = nItem + 1
                     sBestAnn = sBestAnn & sSleutel & "|"
                     nAnn = nAnn + 1
@@ -4215,9 +4217,9 @@ Sub VerwerkStopStart()
             If InStr(sBestAnn, "|" & sSleutel & "|") = 0 Then
                 aSql(nItem) = "INSERT INTO annulaties " & _
                     "(voornaam, familienaam, klant_email, klant_id, datum, " & _
-                    "week_annulatie, week_stopzetten_abonnement, jaar, stop_doel" & sHerstartColsN & ") VALUES (" & _
+                    "week_annulatie, week_stopzetten_abonnement, jaar, stop_doel, bron" & sHerstartColsN & ") VALUES (" & _
                     sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & sDatum & "', " & _
-                    w & ", " & sStopzCol & ", " & iJaar & ", '" & sDoelI & "'" & sHerstartColsV & ")"
+                    w & ", " & sStopzCol & ", " & iJaar & ", '" & sDoelI & "', 'macro'" & sHerstartColsV & ")"
                 nItem = nItem + 1
                 sBestAnn = sBestAnn & sSleutel & "|"
             End If
