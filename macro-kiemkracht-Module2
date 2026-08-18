@@ -2499,6 +2499,11 @@ Sub MaakMaandbestand()
     If sWeekLijst <> "" Then
         sMsgWeken = Chr(10) & Chr(10) & "Verwerkte weekbestanden (per week):" & Chr(10) & sWeekLijst
     End If
+    ' Bewust genegeerde spiegelcontrole: dat mag niet stil in het bestand belanden.
+    If sSpiegelLijst <> "" Then
+        sMsgWeken = sMsgWeken & Chr(10) & "!! Spiegelcontrole genegeerd — deze weken bevatten" & Chr(10) & _
+                    "   bekende foute bedragen:" & Chr(10) & sSpiegelLijst
+    End If
     ' Weekcontrole-blok + icoon: waarschuwing als maand en weekbestand afwijken.
     Dim sMsgCtrl As String, iIcon As Integer : iIcon = 64
     If sMsgControle <> "" Then
