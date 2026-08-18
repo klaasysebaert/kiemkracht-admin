@@ -5678,6 +5678,7 @@ VerbindingsFout:
            "Controleer of de SSH-tunnel actief is.", 16, "Fout"
     SluitSSHTunnels()
 End Sub
+
 ' =============================================
 ' Kiemkracht - Weekbestand: rij-koppeling herstellen
 ' ---------------------------------------------
@@ -5705,6 +5706,51 @@ End Sub
 ' Veilig om meermaals te draaien.
 ' =============================================
 Sub HerstelWeekbestandFormules()
+    Const cGroent0     = 24
+    Const nGroentSlots = 24
+
+    Dim oDoc As Object, oAfr As Object
+    oDoc = ThisComponent
+    If IsNull(oDoc) Then Exit Sub
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then
+        MsgBox "Geen rekenblad actief.", 16, "Formules herstellen"
+        Exit Sub
+    End If
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+        MsgBox "Geen rekenblad actief.", 16, "Formules herstellen"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName("Blad2") Or Not oDoc.Sheets.hasByName("afrekening") _
+       Or Not oDoc.Sheets.hasByName("pakketwaardes") Then
+        MsgBox "Dit lijkt geen weekbestand: tabblad Blad2, afrekening of " & _
+               "pakketwaardes ontbreekt. Open het weekbestand en start de " & _
+               "macro vanuit dat venster.", 16, "Formules herstellen"
+        Exit Sub
+    End If
+
+    ' Oude-structuur-controle: de 24-slot-versie zet een koprij-formule in AV6.
+    oAfr = oDoc.Sheets.getByName("afrekening")
+    If oAfr.getCellByPosition(cGroent0 + nGroentSlots - 1, 5).getFormula() = "" Then
+        If MsgBox("Dit weekbestand lijkt met een oudere versie gemaakt " & _
+            "(geen koprij-formule in afrekening!AV6)." & Chr(10) & Chr(10) & _
+            "Toch herstellen volgens de huidige structuur?", 4 + 48, _
+            "Formules herstellen") <> 6 Then Exit Sub
+    End If
+
+    Dim sVerslag As String
+    sVerslag = HerstelFormulesKern(oDoc)
+    If Left(sVerslag, 5) = "FOUT:" Then
+        MsgBox Mid(sVerslag, 6), 16, "Formules herstellen"
+    Else
+        MsgBox sVerslag & Chr(10) & Chr(10) & "Vergeet niet op te slaan.", 64, _
+               "Formules herstellen"
+    End If
+End Sub
+
+' Het eigenlijke herstelwerk, zonder één dialoogvenster: zo is de macro
+' headless te draaien (test/controle) en blijft de Sub hierboven de enige
+' plek met UI. Geeft het verslag terug, of een tekst die met "FOUT:" begint.
+Function HerstelFormulesKern(oDoc As Object) As String
     On Error GoTo Fout
 
     ' Kolomindices (0-based) — identiek aan MaakWeekbestand
@@ -5725,36 +5771,10 @@ Sub HerstelWeekbestandFormules()
     Const nWegSlots    = 12   ' AZ..BK
     Const nExtra       = 10   ' extra lege rijen met formules klaar
 
-    ' --- Actief weekbestand ophalen + controleren ---
-    Dim oDoc As Object, oWk As Object, oAfr As Object, oPW As Object
-    oDoc = ThisComponent
-    If IsNull(oDoc) Then Exit Sub
-    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then
-        MsgBox "Geen rekenblad actief.", 16, "Formules herstellen"
-        Exit Sub
-    End If
-    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
-        MsgBox "Geen rekenblad actief.", 16, "Formules herstellen"
-        Exit Sub
-    End If
-    If Not oDoc.Sheets.hasByName("Blad2") Or Not oDoc.Sheets.hasByName("afrekening") _
-       Or Not oDoc.Sheets.hasByName("pakketwaardes") Then
-        MsgBox "Dit lijkt geen weekbestand: tabblad Blad2, afrekening of " & _
-               "pakketwaardes ontbreekt. Open het weekbestand en start de " & _
-               "macro vanuit dat venster.", 16, "Formules herstellen"
-        Exit Sub
-    End If
+    Dim oWk As Object, oAfr As Object, oPW As Object
     oWk  = oDoc.Sheets.getByIndex(0)
     oAfr = oDoc.Sheets.getByName("afrekening")
     oPW  = oDoc.Sheets.getByName("pakketwaardes")
-
-    ' Oude-structuur-controle: de 24-slot-versie zet een koprij-formule in AV6.
-    If oAfr.getCellByPosition(cGroent0 + nGroentSlots - 1, 5).getFormula() = "" Then
-        If MsgBox("Dit weekbestand lijkt met een oudere versie gemaakt " & _
-            "(geen koprij-formule in afrekening!AV6)." & Chr(10) & Chr(10) & _
-            "Toch herstellen volgens de huidige structuur?", 4 + 48, _
-            "Formules herstellen") <> 6 Then Exit Sub
-    End If
 
     Dim sData As String
     sData = "'" & oWk.Name & "'"          ' bladnaam voor formules
@@ -5773,8 +5793,8 @@ Sub HerstelWeekbestandFormules()
         End If
     Next iRij
     If iLaatste < 7 Then
-        MsgBox "Geen klantrijen gevonden in het datablad.", 16, "Formules herstellen"
-        Exit Sub
+        HerstelFormulesKern = "FOUT:Geen klantrijen gevonden in het datablad."
+        Exit Function
     End If
 
     Dim nLaatsteForm As Integer
@@ -5955,7 +5975,7 @@ Sub HerstelWeekbestandFormules()
     oDoc.calculateAll()
     oDoc.unlockControllers()
 
-    ' --- Rapport ---
+    ' --- Verslag ---
     Dim sMelding As String
     sMelding = "Formules hersteld in " & oWk.Name & "." & Chr(10) & Chr(10) & _
         "Datablad     : rij 7 t/m " & iLaatste & ", " & nKlant & " klantrijen" & Chr(10) & _
@@ -5974,14 +5994,13 @@ Sub HerstelWeekbestandFormules()
             "LET OP: " & nIdDubbel & " klant_id staat dubbel in het datablad — " & _
             "die klant wordt twee keer aangerekend:" & Chr(10) & sDubbel
     End If
-    sMelding = sMelding & Chr(10) & Chr(10) & "Vergeet niet op te slaan."
-    MsgBox sMelding, 64, "Formules herstellen"
-    Exit Sub
+    HerstelFormulesKern = sMelding
+    Exit Function
 
 Fout:
     On Error Resume Next
     oDoc.enableAutomaticCalculation(True)
     oDoc.unlockControllers()
-    MsgBox "Fout bij het herstellen: " & Err & " - " & Error & Chr(10) & _
-           "(regel " & Erl & ")", 16, "Formules herstellen"
-End Sub
+    HerstelFormulesKern = "FOUT:Fout bij het herstellen: " & Err & " - " & Error & _
+                          Chr(10) & "(regel " & Erl & ")"
+End Function
