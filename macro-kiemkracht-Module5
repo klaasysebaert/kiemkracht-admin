@@ -2593,27 +2593,35 @@ End Function
 
 ' Omgeving van een samenstelling-document (bestandsnaam met/zonder -dev)
 Function SamDocOmgeving(oDoc As Object) As String
-    If InStr(LCase(oDoc.getURL()), "-dev.ods") > 0 Then
-        SamDocOmgeving = "dev"
-    Else
-        SamDocOmgeving = "prod"
-    End If
+    SamDocOmgeving = OmgevingUitNaam(oDoc.getURL())
 End Function
 
-' Guard: de omgeving van het document moet overeenkomen met BepaalOmgeving()
-' (die het open kiemkracht-data-bestand volgt; zonder data-bestand = dev),
-' anders zouden lezen/schrijven op de verkeerde database kunnen gebeuren.
+' Guard: de omgeving waarmee we gaan verbinden moet die van dit document zijn.
+' Sinds BepaalOmgeving() een samenstelling-bestand zijn eigen omgeving laat
+' bepalen (op bestandsnaam), klopt dat vanzelf en hoeft er géén
+' kiemkracht-data-bestand open te staan. Er blijft één geval over waarin dit
+' nog afgaat: een samenstelling-bestand dat HERNOEMD of gekopieerd is naar iets
+' dat niet meer op "samenstelling_" begint. Dan valt BepaalOmgeving() terug op
+' het open data-bestand (of op "dev") en zou je op de verkeerde database kunnen
+' lezen/schrijven — vandaar dat deze functie blijft staan.
 Function SamOmgevingOk(oDoc As Object) As Boolean
     Dim sDocOmg As String
+    Dim sEffOmg As String
     sDocOmg = SamDocOmgeving(oDoc)
-    If sDocOmg = BepaalOmgeving() Then
+    sEffOmg = BepaalOmgeving()
+    If sDocOmg = sEffOmg Then
         SamOmgevingOk = True
     Else
         SamOmgevingOk = False
-        MsgBox "Omgeving klopt niet: dit document is '" & sDocOmg & "', maar de " & _
-               "actieve omgeving is '" & BepaalOmgeving() & "' (bepaald door het open " & _
-               "kiemkracht-data-bestand; zonder data-bestand = dev)." & Chr(10) & _
-               "Open het juiste kiemkracht-data-bestand of sluit het verkeerde.", _
+        MsgBox "Omgeving klopt niet: volgens zijn bestandsnaam is dit document '" & _
+               sDocOmg & "', maar de macro zou verbinden met '" & sEffOmg & "'." & _
+               Chr(10) & Chr(10) & _
+               "Een samenstelling-bestand bepaalt zijn eigen omgeving via de " & _
+               "bestandsnaam: samenstelling_<week>_<jaar>.ods = prod, " & _
+               "samenstelling_<week>_<jaar>-dev.ods = dev. Deze naam wordt niet " & _
+               "herkend (hernoemd of gekopieerd?)." & Chr(10) & _
+               "Geef het bestand zijn oorspronkelijke naam terug, of open het " & _
+               "juiste kiemkracht-data-bestand.", _
                16, "Samenstelling"
     End If
 End Function
