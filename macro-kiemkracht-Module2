@@ -130,6 +130,15 @@ Sub BereidMailmergeVoor()
     Dim oRS   As Object
 
     ' --- Stap 1: klanten ophalen ---
+    ' De flip-cron (maandag 6:00) is hier NIET gedraaid als je op vr/za/zo
+    ' voorbereidt. Twee dingen vangen dat op, zodat de mailweek beslist en
+    ' niet het moment van voorbereiden:
+    '   - een toekomst-abonnement waarvan de startweek de mailweek al is,
+    '     telt als gewone abonnee (anders: 'uitnodiging-los' i.p.v. de
+    '     abonnee-uitnodiging, met de bevroren URL van dat moment);
+    '   - een klant wiens pauze tegen de mailweek afgelopen is, blijft in de
+    '     lijst ook al staat k.status nog op 'gepauzeerd' (anders viel die
+    '     klant volledig uit de mailing).
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT k.voornaam, k.familienaam, k.email1, " & _
@@ -145,7 +154,10 @@ Sub BereidMailmergeVoor()
         "  SELECT 'abonnee' " & _
         "      || CASE x.ritme WHEN 'pare-week' THEN '-pare-week' " & _
         "                      WHEN 'onpare-week' THEN '-onpare-week' ELSE '' END " & _
-        "      || CASE WHEN x.status = 'toekomst' THEN '-toekomst' ELSE '' END AS eff_type, " & _
+        "      || CASE WHEN x.status = 'toekomst' " & _
+        "                 AND (x.start_jaar IS NULL " & _
+        "                      OR (x.start_jaar * 100 + x.start_week) > " & iWeekNumMM & ") " & _
+        "            THEN '-toekomst' ELSE '' END AS eff_type, " & _
         "    x.formaat AS eff_formaat " & _
         "  FROM abonnementen x " & _
         "  WHERE x.klant_id = k.id AND x.status IN ('actief','toekomst') " & _
@@ -155,7 +167,9 @@ Sub BereidMailmergeVoor()
         "  ORDER BY (CASE WHEN x.ritme = 'wekelijks' OR x.ritme = '" & sParRitme & "' THEN 0 ELSE 1 END), x.id " & _
         "  LIMIT 1 " & _
         ") ab ON true " & _
-        "WHERE k.status NOT IN ('gepauzeerd', 'gestopt') " & _
+        "WHERE (k.status NOT IN ('gepauzeerd', 'gestopt') " & _
+        "       OR (k.pauze_tot_jaar IS NOT NULL " & _
+        "           AND (k.pauze_tot_jaar * 100 + k.pauze_tot_week) <= " & iWeekNumMM & ")) " & _
         " AND NOT (k.pauze_vanaf_jaar IS NOT NULL " & _
         "          AND (k.pauze_vanaf_jaar * 100 + k.pauze_vanaf_week) <= " & iWeekNumMM & _
         "          AND (k.pauze_tot_jaar IS NULL OR (k.pauze_tot_jaar * 100 + k.pauze_tot_week) > " & iWeekNumMM & ")) " & _
@@ -1023,6 +1037,15 @@ Sub BereidCombiMailmergeVoor()
     Dim oRS   As Object
 
     ' --- Stap 1: klanten ophalen (identiek aan BereidMailmergeVoor) ---
+    ' De flip-cron (maandag 6:00) is hier NIET gedraaid als je op vr/za/zo
+    ' voorbereidt. Twee dingen vangen dat op, zodat de mailweek beslist en
+    ' niet het moment van voorbereiden:
+    '   - een toekomst-abonnement waarvan de startweek de mailweek al is,
+    '     telt als gewone abonnee (anders: 'uitnodiging-los' i.p.v. de
+    '     abonnee-uitnodiging, met de bevroren URL van dat moment);
+    '   - een klant wiens pauze tegen de mailweek afgelopen is, blijft in de
+    '     lijst ook al staat k.status nog op 'gepauzeerd' (anders viel die
+    '     klant volledig uit de mailing).
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT k.voornaam, k.familienaam, k.email1, " & _
@@ -1038,7 +1061,10 @@ Sub BereidCombiMailmergeVoor()
         "  SELECT 'abonnee' " & _
         "      || CASE x.ritme WHEN 'pare-week' THEN '-pare-week' " & _
         "                      WHEN 'onpare-week' THEN '-onpare-week' ELSE '' END " & _
-        "      || CASE WHEN x.status = 'toekomst' THEN '-toekomst' ELSE '' END AS eff_type, " & _
+        "      || CASE WHEN x.status = 'toekomst' " & _
+        "                 AND (x.start_jaar IS NULL " & _
+        "                      OR (x.start_jaar * 100 + x.start_week) > " & iWeekNumMM & ") " & _
+        "            THEN '-toekomst' ELSE '' END AS eff_type, " & _
         "    x.formaat AS eff_formaat " & _
         "  FROM abonnementen x " & _
         "  WHERE x.klant_id = k.id AND x.status IN ('actief','toekomst') " & _
@@ -1048,7 +1074,9 @@ Sub BereidCombiMailmergeVoor()
         "  ORDER BY (CASE WHEN x.ritme = 'wekelijks' OR x.ritme = '" & sParRitme & "' THEN 0 ELSE 1 END), x.id " & _
         "  LIMIT 1 " & _
         ") ab ON true " & _
-        "WHERE k.status NOT IN ('gepauzeerd', 'gestopt') " & _
+        "WHERE (k.status NOT IN ('gepauzeerd', 'gestopt') " & _
+        "       OR (k.pauze_tot_jaar IS NOT NULL " & _
+        "           AND (k.pauze_tot_jaar * 100 + k.pauze_tot_week) <= " & iWeekNumMM & ")) " & _
         " AND NOT (k.pauze_vanaf_jaar IS NOT NULL " & _
         "          AND (k.pauze_vanaf_jaar * 100 + k.pauze_vanaf_week) <= " & iWeekNumMM & _
         "          AND (k.pauze_tot_jaar IS NULL OR (k.pauze_tot_jaar * 100 + k.pauze_tot_week) > " & iWeekNumMM & ")) " & _
