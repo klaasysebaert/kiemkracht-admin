@@ -407,12 +407,56 @@ Alle drie de bestanden zijn na herstel nagerekend: pakketten, bijbestellingen en
 weglatingen komen exact overeen met een onafhankelijke herberekening uit de ruwe
 datablad-cijfers, en er staat nergens nog een `#VERW!`.
 
-**Wat dit niet oplost.** De macro herstelt de koppeling *achteraf*; ze belet niet
-dat ze breekt. Zolang de afrekening een tweede tabblad is dat op rijnummer
-koppelt, blijft dit handwerk-gevoelig — het onderliggende punt hierboven (de
-afrekening als afgeleide van de bestelregels) blijft dus staan. Ook de stille
-terugval op rijnummer in `MaakMaandbestand` (~1786) staat er nog: geen match op
-klant_id of naam hoort een zichtbare waarschuwing te geven.
+##### De poort in MaakMaandbestand (2026-08-18)
+
+Bij het nakijken van de drie weken kwam de vraag boven of een controle op
+klant_id wel volstaat. Het antwoord: **nee, en om een structurele reden.** Zo'n
+controle vertrouwt precies de cel waarvan de uitlijning in vraag staat — kolom F
+is zelf een formule met dezelfde kwetsbaarheid als de bedragen ernaast. Ze vangt
+"klant heeft geen rij" en "klant staat dubbel", maar niet **"juist etiket, geld
+van iemand anders"**, en dat is net het geval dat niemand ooit opmerkt.
+
+Gemeten in de drie weekbestanden: 13 afrekening-rijen verwezen naar méér dan één
+datablad-rij, telkens doordat de matrixformules in W en AY (die naar een BEREIK
+verwijzen) `#VERW!` werden terwijl de losse-cel-verwijzingen gewoon meeschoven.
+In geen van die rijen liep F uit de pas met B/E — maar dat is een uitkomst, geen
+garantie: twee soorten verwijzing in dezelfde rij, met verschillend gedrag bij
+dezelfde ingreep.
+
+Daarom staat er nu een poort vooraan in `MaakMaandbestand`, meteen na
+`calculateAll()` per weekbestand: `ControleerWeekSpiegel(oWeek)` (Module1,
+dialoogvrij, geeft "" of een verslag). Ze controleert **twee dingen naast
+elkaar**, omdat elk vangt wat het andere niet ziet:
+
+1. **uitlijning** — staan op afrekening-rij r dezelfde naam én hetzelfde
+   klant_id als op datablad-rij r?
+2. **herrekening** — kloppen B (pakket), C (losse) en D (weglatingen) met wat je
+   uit de ruwe datablad-cijfers berekent? Dit is de enige die "juist etiket,
+   verkeerd geld" ziet.
+
+Plus de dubbele-klant_id-scan. Niet in orde → één melding met de week, de
+aantallen en zes voorbeeldrijen, en de macro stopt (doorgaan kan bewust; de
+eindpopup vermeldt dan welke weken de controle negeerden).
+
+**Discriminatieproef** (zelfde eis als `validate-macro.py`: een controle die niet
+kan falen bewijst niets):
+
+| bestand | uitkomst |
+|---|---|
+| week 31/32/33 vóór herstel | 129 / 124 / 75 foute koppelingen + dubbels gemeld |
+| week 31/32/33 ná herstel | schoon |
+| hersteld bestand, B/C/D gesaboteerd met een vast getal (naam + klant_id dus perfect) | 3 rijen aangewezen, met de juiste verwachte bedragen |
+
+Die laatste rij is de belangrijkste: het is exact het geval waar een
+klant_id-controle blind voor is.
+
+**Wat dit niet oplost.** De macro herstelt de koppeling *achteraf* en de poort
+meldt ze *vooraf*; samen beletten ze niet dat ze breekt. Zolang de afrekening een
+tweede tabblad is dat op rijnummer koppelt, blijft dit handwerk-gevoelig — het
+onderliggende punt hierboven (de afrekening als afgeleide van de bestelregels)
+blijft dus staan. De stille terugval op rijnummer in `MaakMaandbestand` (~1786)
+staat er ook nog; ze is nu wel onschadelijk zolang de poort ervóór staat, want
+bij een uitgelijnd bestand is rij N per definitie de juiste rij.
 
 ---
 
