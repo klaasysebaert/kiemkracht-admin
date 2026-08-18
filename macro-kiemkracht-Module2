@@ -1776,6 +1776,31 @@ Sub MaakMaandbestand()
         bBlad2 = oWeek.Sheets.hasByName("Blad2")
         If bBlad2 Then oBlad2 = oWeek.Sheets.getByName("Blad2")
 
+        ' --- POORT: klopt de spiegel nog? ---------------------------------
+        ' De koppeling hieronder zoekt de afrekening-rij op klant_id en valt
+        ' anders terug op het rijnummer. Die terugval is correct bij een
+        ' uitgelijnd bestand en gevaarlijk bij een verschoven bestand — dan
+        ' krijgt een klant het bedrag van zijn buur. Eén controle vooraf is
+        ' goedkoper dan dertig waarschuwingen achteraf: ControleerWeekSpiegel
+        ' kijkt of naam én klant_id per rij overeenkomen, en rekent pakket,
+        ' losse groenten en weglatingen na uit de RUWE datablad-cijfers.
+        ' Niet in orde -> stoppen, zodat je eerst kunt herstellen. Doorgaan kan,
+        ' maar dan lever je bewust een maandbestand met bekende fouten af.
+        sSpiegelFout = ControleerWeekSpiegel(oWeek)
+        If sSpiegelFout <> "" Then
+            If MsgBox("WEEK " & wkNr(wi) & " — " & Mid(sPad, Len(sWeekMap) + 1) & Chr(10) & Chr(10) & _
+                      sSpiegelFout & Chr(10) & _
+                      "Herstellen: open dit weekbestand en draai" & Chr(10) & _
+                      "StartHerstelWeekbestandFormules." & Chr(10) & Chr(10) & _
+                      "Nu stoppen? (Nee = toch doorgaan met foute bedragen)", _
+                      4 + 48 + 256, "Maandafrekening — controle") <> 7 Then
+                If bSluiten Then oWeek.close(True)
+                Exit Sub
+            End If
+            sSpiegelLijst = sSpiegelLijst & "  - week " & wkNr(wi) & ": controle GENEGEERD" & Chr(10)
+        End If
+        ' ------------------------------------------------------------------
+
         ' Groente-metadata
         nGroenten = 0
         Do While oData.getCellByPosition(cdGroent0 + nGroenten, 1).getString() <> "" And nGroenten < 80

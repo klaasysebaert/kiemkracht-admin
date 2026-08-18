@@ -6004,3 +6004,242 @@ Fout:
     HerstelFormulesKern = "FOUT:Fout bij het herstellen: " & Err & " - " & Error & _
                           Chr(10) & "(regel " & Erl & ")"
 End Function
+
+
+' =============================================
+' Kiemkracht - Weekbestand: spiegel controleren
+' ---------------------------------------------
+' Poort vóór MaakMaandbestand. Controleert per weekbestand of het contract
+' "afrekening-rij N = datablad-rij N" nog geldt, en of de bedragen kloppen.
+'
+' WAAROM NIET ENKEL OP klant_id CONTROLEREN
+' Een verschoven afrekening-rij is meestal intern consistent: álle cellen van
+' die rij wijzen naar dezelfde (verkeerde) datarij, kolom F inbegrepen. De
+' koppeling op klant_id in MaakMaandbestand vindt dan nog steeds het juiste
+' bedrag bij de juiste klant. Maar dat is een eigenschap van de schade, geen
+' garantie: kolom F is zelf een formule met precies dezelfde kwetsbaarheid als
+' de bedragen ernaast. Zodra F en de bedragkolommen uit elkaar lopen, krijg je
+' het juiste etiket op andermans geld — en dát ziet een klant_id-controle per
+' definitie niet, want ze vertrouwt net die cel.
+'
+' Daarom controleert deze functie twee dingen naast elkaar:
+'   1. UITLIJNING  - staat op afrekening-rij r dezelfde naam en hetzelfde
+'                    klant_id als op datablad-rij r?
+'   2. HERREKENING - kloppen pakket (B), losse groenten (C) en weglatingen (D)
+'                    met wat je uit de RUWE datablad-cijfers berekent?
+' De tweede vangt wat de eerste niet kan zien, en omgekeerd.
+'
+' Geeft "" terug als alles klopt, anders een leesbaar verslag.
+' Dialoogvrij, zodat de aanroeper beslist wat er met de melding gebeurt.
+' =============================================
+Function ControleerWeekSpiegel(oWeek As Object) As String
+    On Error GoTo Fout
+
+    Const cNaam        = 0    ' A
+    Const cAfh         = 1    ' B
+    Const cWBest       = 15   ' P klant_id
+    Const cKG          = 17   ' R
+    Const cGG          = 18   ' S
+    Const cEGG         = 19   ' T
+    Const cMINI        = 20   ' U
+    Const cGroent0     = 24   ' Y
+    Const nGroentSlots = 24   ' Y..AV
+    Const cWeg0        = 51   ' AZ
+    Const nWegSlots    = 12   ' AZ..BK
+    Const caPak        = 1    ' afrekening B
+    Const caLos        = 2    ' afrekening C
+    Const caWeg        = 3    ' afrekening D
+    Const caKid        = 5    ' afrekening F
+    Const dTol         = 0.005
+
+    If Not oWeek.Sheets.hasByName("afrekening") Then
+        ControleerWeekSpiegel = "Geen tabblad 'afrekening' in dit weekbestand."
+        Exit Function
+    End If
+
+    Dim oWk As Object, oAfr As Object
+    oWk  = oWeek.Sheets.getByIndex(0)
+    oAfr = oWeek.Sheets.getByName("afrekening")
+
+    ' --- Laatste klantrij ---
+    Dim oCur As Object
+    oCur = oWk.createCursor()
+    oCur.gotoEndOfUsedArea(False)
+    Dim iEind As Integer, iLaatste As Integer, r As Integer
+    iEind = oCur.RangeAddress.EndRow + 1
+    iLaatste = 0
+    For r = iEind To 7 Step -1
+        If Trim(oWk.getCellByPosition(cNaam, r - 1).getString()) <> "" Then
+            iLaatste = r
+            Exit For
+        End If
+    Next r
+    If iLaatste < 7 Then
+        ControleerWeekSpiegel = "Geen klantrijen gevonden in het datablad."
+        Exit Function
+    End If
+
+    ' --- Prijzen en waarden inlezen ---
+    Dim dPrijsPak(3) As Double, iP As Integer
+    For iP = 0 To 3
+        dPrijsPak(iP) = oAfr.getCellByPosition(1, iP + 1).getValue()   ' B2:B5
+    Next iP
+
+    Dim dPrijsGr(nGroentSlots) As Double, g As Integer
+    For g = 0 To nGroentSlots - 1
+        dPrijsGr(g) = oWk.getCellByPosition(cGroent0 + g, 2).getValue()  ' rij 3
+    Next g
+
+    ' pakketwaardes: naam -> waarde per formaat (KG/GG/EGG/MINI)
+    Dim bHeeftPW As Boolean : bHeeftPW = oWeek.Sheets.hasByName("pakketwaardes")
+    Dim pwNaam(200) As String, pwVal(200, 3) As Double, nPW As Integer
+    Dim oPW As Object, iPw As Integer, iK As Integer
+    nPW = 0
+    If bHeeftPW Then
+        oPW = oWeek.Sheets.getByName("pakketwaardes")
+        For iPw = 2 To 200
+            If Trim(oPW.getCellByPosition(0, iPw - 1).getString()) = "" Then Exit For
+            pwNaam(nPW) = Trim(oPW.getCellByPosition(0, iPw - 1).getString())
+            For iK = 0 To 3
+                pwVal(nPW, iK) = oPW.getCellByPosition(iK + 1, iPw - 1).getValue()
+            Next iK
+            nPW = nPW + 1
+        Next iPw
+    End If
+
+    ' weglating-namen uit rij 3 van het datablad
+    Dim sWegNaam(nWegSlots) As String, w As Integer
+    For w = 0 To nWegSlots - 1
+        sWegNaam(w) = Trim(oWk.getCellByPosition(cWeg0 + w, 2).getString())
+    Next w
+
+    ' --- Rij voor rij ---
+    Dim nKlant As Integer, nMisUit As Integer, nMisBedrag As Integer
+    Dim sVb As String, nVb As Integer
+    Dim sNaamD As String, sNaamA As String, sKidD As String, sKidA As String
+    Dim sAfhD As String
+    Dim dPak As Double, dLos As Double, dWeg As Double
+    Dim dPakA As Double, dLosA As Double, dWegA As Double
+    Dim iFmt As Integer, q As Double, iPwi As Integer
+    Dim sIds As String, sId As String, nDubbel As Integer, sDubbelLijst As String
+    nKlant = 0 : nMisUit = 0 : nMisBedrag = 0 : nVb = 0 : sVb = ""
+    nDubbel = 0 : sIds = "|" : sDubbelLijst = ""
+
+    For r = 7 To iLaatste
+        sNaamD = Trim(oWk.getCellByPosition(cNaam, r - 1).getString())
+        sAfhD  = Trim(oWk.getCellByPosition(cAfh,  r - 1).getString())
+        If sNaamD = "" Or sAfhD = "afhaalpunt/dag" Then GoTo VolgendeControleRij
+        nKlant = nKlant + 1
+
+        ' 1. UITLIJNING
+        sNaamA = Trim(oAfr.getCellByPosition(cNaam,  r - 1).getString())
+        sKidD  = Trim(oWk.getCellByPosition(cWBest,  r - 1).getString())
+        sKidA  = Trim(oAfr.getCellByPosition(caKid,  r - 1).getString())
+        If sNaamA <> sNaamD Or sKidA <> sKidD Then
+            nMisUit = nMisUit + 1
+            If nVb < 6 Then
+                nVb = nVb + 1
+                sVb = sVb & "   rij " & r & "  " & Left(sNaamD & Space(22), 22) & _
+                      " afrekening toont: " & sNaamA
+                If sKidA <> sKidD Then sVb = sVb & " (klant_id " & sKidA & " i.p.v. " & sKidD & ")"
+                sVb = sVb & Chr(10)
+            End If
+            GoTo VolgendeControleRij   ' bedrag vergelijken heeft hier geen zin meer
+        End If
+
+        ' 2. HERREKENING uit de ruwe datablad-cijfers
+        iFmt = -1
+        dPak = 0
+        If oWk.getCellByPosition(cKG,   r - 1).getValue() > 0 Then iFmt = 0
+        If oWk.getCellByPosition(cGG,   r - 1).getValue() > 0 And iFmt = -1 Then iFmt = 1
+        If oWk.getCellByPosition(cEGG,  r - 1).getValue() > 0 And iFmt = -1 Then iFmt = 2
+        If oWk.getCellByPosition(cMINI, r - 1).getValue() > 0 And iFmt = -1 Then iFmt = 3
+        dPak = oWk.getCellByPosition(cKG,   r - 1).getValue() * dPrijsPak(0) + _
+               oWk.getCellByPosition(cGG,   r - 1).getValue() * dPrijsPak(1) + _
+               oWk.getCellByPosition(cEGG,  r - 1).getValue() * dPrijsPak(2) + _
+               oWk.getCellByPosition(cMINI, r - 1).getValue() * dPrijsPak(3)
+
+        dLos = 0
+        For g = 0 To nGroentSlots - 1
+            q = oWk.getCellByPosition(cGroent0 + g, r - 1).getValue()
+            If q <> 0 Then dLos = dLos + q * dPrijsGr(g)
+        Next g
+
+        dWeg = 0
+        If bHeeftPW And iFmt >= 0 Then
+            For w = 0 To nWegSlots - 1
+                If Trim(oWk.getCellByPosition(cWeg0 + w, r - 1).getString()) = "" Then GoTo VolgendeWegSlot
+                If sWegNaam(w) = "" Then GoTo VolgendeWegSlot
+                For iPwi = 0 To nPW - 1
+                    If pwNaam(iPwi) = sWegNaam(w) Then
+                        dWeg = dWeg + pwVal(iPwi, iFmt)
+                        Exit For
+                    End If
+                Next iPwi
+                VolgendeWegSlot:
+            Next w
+        End If
+
+        dPakA = oAfr.getCellByPosition(caPak, r - 1).getValue()
+        dLosA = oAfr.getCellByPosition(caLos, r - 1).getValue()
+        dWegA = oAfr.getCellByPosition(caWeg, r - 1).getValue()
+
+        If Abs(dPakA - dPak) > dTol Or Abs(dLosA - dLos) > dTol Or _
+           (bHeeftPW And Abs(dWegA - dWeg) > dTol) Then
+            nMisBedrag = nMisBedrag + 1
+            If nVb < 6 Then
+                nVb = nVb + 1
+                sVb = sVb & "   rij " & r & "  " & Left(sNaamD & Space(22), 22)
+                If Abs(dPakA - dPak) > dTol Then _
+                    sVb = sVb & " pakket " & Format(dPakA, "0.00") & " i.p.v. " & Format(dPak, "0.00")
+                If Abs(dLosA - dLos) > dTol Then _
+                    sVb = sVb & " losse " & Format(dLosA, "0.00") & " i.p.v. " & Format(dLos, "0.00")
+                If bHeeftPW And Abs(dWegA - dWeg) > dTol Then _
+                    sVb = sVb & " weglating " & Format(dWegA, "0.00") & " i.p.v. " & Format(dWeg, "0.00")
+                sVb = sVb & Chr(10)
+            End If
+        End If
+
+        VolgendeControleRij:
+    Next r
+
+    ' --- Dubbele klant_id's in de spiegel (de andere stille fout) ---
+    Dim arB As Integer, ar2 As Integer
+    arB = 0 : ar2 = 7
+    Do While arB < 50 And ar2 < 5000
+        sId = Trim(oAfr.getCellByPosition(caKid, ar2 - 1).getString())
+        If sId = "" And Trim(oAfr.getCellByPosition(cNaam, ar2 - 1).getString()) = "" Then
+            arB = arB + 1
+        Else
+            arB = 0
+            If sId <> "" Then
+                If InStr(sIds, "|" & sId & "|") > 0 Then
+                    nDubbel = nDubbel + 1
+                    If Len(sDubbelLijst) < 120 Then sDubbelLijst = sDubbelLijst & sId & " (rij " & ar2 & "), "
+                Else
+                    sIds = sIds & sId & "|"
+                End If
+            End If
+        End If
+        ar2 = ar2 + 1
+    Loop
+
+    If nMisUit = 0 And nMisBedrag = 0 And nDubbel = 0 Then
+        ControleerWeekSpiegel = ""
+        Exit Function
+    End If
+
+    Dim sM As String
+    sM = "De afrekening klopt niet met het datablad (" & nKlant & " klantrijen nagekeken):" & Chr(10) & Chr(10)
+    If nMisUit > 0    Then sM = sM & "  " & nMisUit    & " rij(en) met een verkeerde koppeling" & Chr(10)
+    If nMisBedrag > 0 Then sM = sM & "  " & nMisBedrag & " rij(en) met een verkeerd bedrag" & Chr(10)
+    If nDubbel > 0    Then sM = sM & "  " & nDubbel    & " klant_id staat dubbel: " & sDubbelLijst & Chr(10)
+    If Not bHeeftPW   Then sM = sM & "  (geen tabblad 'pakketwaardes': weglatingen niet nagerekend)" & Chr(10)
+    If sVb <> "" Then sM = sM & Chr(10) & sVb
+    ControleerWeekSpiegel = sM
+    Exit Function
+
+Fout:
+    ControleerWeekSpiegel = "Controle kon niet worden uitgevoerd: " & Err & " - " & Error & _
+                            " (regel " & Erl & ")"
+End Function
