@@ -326,6 +326,54 @@ stil misloopt. Alternatief (of aanvullend): `MaakMaandbestand` mag **niet stil
 terugvallen op het rijnummer** — geen match op klant_id of naam moet een
 zichtbare waarschuwing geven, niet het bedrag van de buurman.
 
+#### Opgelost 2026-08-18 — `HerstelWeekbestandFormules` (Module1)
+
+De diagnose hierboven bleek nog te mild: het is niet enkel dat een **ingevoegde**
+rij geen spiegelrij krijgt. Bij het nakijken van `week_33_2026_definitief.ods`
+(na het verzetten/wissen/toevoegen van klanten, laatst Annemie Vanhee 3333) liep
+de spiegel over **acht aparte zones** uit de pas — LibreOffice verschuift de
+verwijzing mee met de **bron-cel**, niet met de rij, dus elke ingreep laat een
+eigen offset achter:
+
+| afrekening-rijen | offset naar het datablad |
+|---|---|
+| 7–17 | 0 (correct) |
+| 18–43 | +1 |
+| 44–45 | 0, met `#VERW!` |
+| 46–51 | −1, met `#VERW!` |
+| 52–135 | 0 (correct) |
+| 136 | volledig `#VERW!` (verwijderde rij) |
+| 137–151 | −1 |
+| 152–169 | +2, met uitschieters −14/−16 en `#VERW!` |
+| 170–181 | +1 |
+| 182–202 | +4 |
+
+Het gaat **beide richtingen** uit: ook datablad-kolom X (`=afrekening.C<rij>`)
+wees op 60 rijen naar de buurklant, en kolom W verloor op 6 rijen zijn
+`Blad2.I`-eenheidsverwijzingen. Gevolg voor week 33: 6 klanten zonder eigen
+afrekeningsrij, 3228 dubbel, WEEKTOTAAL 3.247,57 € i.p.v. 3.457,90 €
+(bijbestellingen 1.373,40 → 1.593,29; weglatingen 193,33 → 202,89).
+
+**De controle uit de vorige alinea is niet gebouwd — er is iets beters gekomen:
+een herstel.** Een controle zegt alleen *dát* het misloopt; `HerstelWeekbestandFormules`
+herschrijft het contract "afrekening-rij N = datablad-rij N" gewoon vanaf nul,
+voor de afrekening (A–F, W, Y–AV, AY, AZ–BK) én voor datablad-kolom W en X, wist
+weesrijen onder de spiegel, en meldt achteraf de totalen + dubbele klant_id's.
+Ze raakt geen enkele ingevulde waarde aan en is idempotent. Het herstelwerk zelf
+zit in `HerstelFormulesKern(oDoc)` — dialoogvrij, zodat het headless te draaien
+en te controleren is. Start-wrapper: `StartHerstelWeekbestandFormules`.
+
+Week 33 is ermee hersteld en nagerekend: pakketten, bijbestellingen en
+weglatingen komen alle drie exact overeen met een onafhankelijke herberekening
+uit de ruwe datablad-cijfers, en er staat geen `#VERW!` meer in het bestand.
+
+**Wat dit niet oplost.** De macro herstelt de koppeling *achteraf*; ze belet niet
+dat ze breekt. Zolang de afrekening een tweede tabblad is dat op rijnummer
+koppelt, blijft dit handwerk-gevoelig — het onderliggende punt hierboven (de
+afrekening als afgeleide van de bestelregels) blijft dus staan. Ook de stille
+terugval op rijnummer in `MaakMaandbestand` (~1786) staat er nog: geen match op
+klant_id of naam hoort een zichtbare waarschuwing te geven.
+
 ---
 
 <!--
