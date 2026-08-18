@@ -109,6 +109,7 @@ Sub BereidHeractivatieMailmergeVoor()
         kVoor2(nKlanten)  = oRS.getString(9)
         kFam2(nKlanten)   = oRS.getString(10)
         kUnsub(nKlanten)  = oRS.getString(11)
+        kLevdag(nKlanten) = oRS.getString(12)
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
