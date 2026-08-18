@@ -31,9 +31,13 @@
 '   %APPDATA%\LibreOffice\cockpit-wachtwoord-<omgeving>.txt
 ' (eerste run: InputBox + automatisch bewaren; enkel ASCII-tekens).
 '
-' NOG NIET OP PROD: de cockpit-migraties (06 t/m 12) en cockpit-api.php
-' draaien enkel op dev. MaakSamenstellingDoc blokkeert daarom prod tot de
-' cockpit-prod-rollout; daarna mag die guard weg.
+' Omgeving: een bestaand samenstelling-bestand bepaalt ZIJN EIGEN omgeving via
+' de bestandsnaam (zie BepaalOmgeving in Module1). Er hoeft dus géén
+' kiemkracht-data-bestand open te staan om te herladen, terug te schrijven of
+' de bestellijst te verversen — die macro's praten enkel met de database.
+' Uitzondering: MaakSamenstellingDoc maakt een NIEUW bestand, dus daar bestaat
+' die naam nog niet; die volgt wél het open kiemkracht-data-bestand (en zonder
+' data-bestand = dev).
 ' ===========================================================================
 
 ' --- Tab-namen -------------------------------------------------------------
