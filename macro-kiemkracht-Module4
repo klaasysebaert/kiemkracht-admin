@@ -93,6 +93,7 @@ Sub BereidHeractivatieMailmergeVoor()
     Dim kVoor2(500)  As String
     Dim kFam2(500)   As String
     Dim kUnsub(500)  As String
+    Dim kLevdag(500) As String
     Dim nKlanten      As Integer
     nKlanten = 0
 
