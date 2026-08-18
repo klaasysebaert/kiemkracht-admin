@@ -72,7 +72,8 @@ Sub BereidHeractivatieMailmergeVoor()
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
         "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
         "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,''), " & _
-        "COALESCE(k.unsub_token,'') " & _
+        "COALESCE(k.unsub_token,''), " & _
+        "COALESCE(a.dag_afhaling, '') AS leverdag " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "WHERE k.status = 'on_hold' " & _
