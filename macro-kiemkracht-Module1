@@ -57,16 +57,56 @@ Function IsDataDoc(oDoc As Object) As Boolean
     If InStr(LCase(oDoc.getURL()), "kiemkracht-data") > 0 Then IsDataDoc = True
 End Function
 
-' Geeft "dev" als het actieve bestand op "-dev.ods" eindigt, anders "prod".
-' Geen kiemkracht-data-bestand actief -> "dev" (veilig: raakt nooit prod).
+' True als oDoc een samenstelling-bestand is: samenstelling_<week>_<jaar>.ods
+' (tab-layout, Module5) of samenstelling_klassiek_<week>_<jaar>.ods (Module6),
+' met of zonder -dev.
+' Bewust op de BESTANDSNAAM en niet op de A1-marker (SamIsSamenstellingDoc):
+' tijdens MaakSamenstellingDoc bestaat die marker nog niet terwijl de omgeving
+' dan al moet kloppen. De naam is er wel meteen — die bouwt de macro zelf.
+' (InStrRev bestaat niet in native LO Basic, vandaar de test op "/samenstelling_"
+' in de volledige URL i.p.v. op de losse bestandsnaam.)
+Function IsSamenstellingDoc(oDoc As Object) As Boolean
+    IsSamenstellingDoc = False
+    If IsNull(oDoc) Then Exit Function
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then Exit Function
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then Exit Function
+    If InStr(LCase(oDoc.getURL()), "/samenstelling_") > 0 Then IsSamenstellingDoc = True
+End Function
+
+' "dev" als de bestandsnaam op -dev.ods eindigt, anders "prod".
+Function OmgevingUitNaam(sUrl As String) As String
+    If InStr(LCase(sUrl), "-dev.ods") > 0 Then
+        OmgevingUitNaam = "dev"
+    Else
+        OmgevingUitNaam = "prod"
+    End If
+End Function
+
+' Geeft "dev" of "prod". Twee bronnen, in deze volgorde:
+'
+'  1. Is het ACTIEVE document een samenstelling-bestand, dan bepaalt dat zijn
+'     EIGEN omgeving via zijn bestandsnaam. De Module5/6-macro's
+'     (Herlaad/Schrijf/VerversBestellijst/MaakStapels) lezen en schrijven enkel
+'     in de database, nooit in kiemkracht-data.ods — dat bestand hoeft er dus
+'     niet voor open te staan. Voordien moest dat wel, puur omdat het de enige
+'     omgevingsschakelaar was; een prod-samenstelling verversen zonder open
+'     data-bestand liep dan tegen de guard aan ("omgeving klopt niet").
+'
+'  2. Anders het open kiemkracht-data-bestand. Dat blijft de bron voor de
+'     weekbestand-macro's (Module1/2/4), die er wél echt in schrijven. Geen of
+'     meerdere data-bestanden open -> "dev" (veilig: raakt nooit prod).
 Function BepaalOmgeving() As String
     Dim oDoc As Object
     BepaalOmgeving = "dev"
+
+    If IsSamenstellingDoc(ThisComponent) Then
+        BepaalOmgeving = OmgevingUitNaam(ThisComponent.getURL())
+        Exit Function
+    End If
+
     oDoc = HuidigDataDocument()
     If Not IsNull(oDoc) Then
-        If InStr(LCase(oDoc.getURL()), "-dev.ods") = 0 Then
-            BepaalOmgeving = "prod"
-        End If
+        BepaalOmgeving = OmgevingUitNaam(oDoc.getURL())
     End If
 End Function
 
