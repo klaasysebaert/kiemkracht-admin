@@ -2609,6 +2609,12 @@ Sub MaakWeekbestand()
             "Check ook kolom F (vragen_opmerkingen) / AW (ander, op de stapellijsten) " & _
             "in het weekbestand."
     End If
+    If sReactRapport <> "" Then
+        sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
+            nReact & " slapende klant(en) kwamen deze week terug via de reddingsmail" & Chr(10) & _
+            "(was on_hold -> nu weekperweek, krijgt vanaf nu weer de wekelijkse " & _
+            "aanbodmail):" & Chr(10) & sReactRapport
+    End If
     ' Vangnet stap 1b: bestelde groenten die niet meer in het aanbod stonden.
     ' Altijd melden — zonder deze regels ziet niemand dat er iets afweek.
     If sHernoemRapport <> "" Then
