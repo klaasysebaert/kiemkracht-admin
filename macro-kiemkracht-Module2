@@ -1736,6 +1736,10 @@ Sub MaakMaandbestand()
     Dim sGeenKid As String : sGeenKid = ""
     Dim sGeenEmail As String : sGeenEmail = ""
     Dim sWeekLijst As String : sWeekLijst = ""   ' verwerkte/overgeslagen weekbestanden (voor eindpopup)
+    ' Spiegelcontrole (poort vóór elke week); sSpiegelLijst onthoudt de weken
+    ' waarvoor je de waarschuwing bewust genegeerd hebt, voor de eindpopup.
+    Dim sSpiegelFout As String
+    Dim sSpiegelLijst As String : sSpiegelLijst = ""
     ' Afrekening-voorkeuren: arrays + DB-objecten staan hoger gedeclareerd,
     ' vóór hun eerste gebruik (zie blok "afrekening-voorkeuren" bovenaan).
     Dim sAfrEmailKl As String, sAfrVoorKl As String, sAfrFamKl As String
