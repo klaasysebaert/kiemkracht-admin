@@ -3844,8 +3844,9 @@ End Function
 ' VPS-cron schakelt dat op de startweek om naar het echte type.
 ' Bestaande (klant_id, jaar, week) worden overgeslagen; de verwerkte
 ' cellen Q-X worden daarna leeggemaakt.
-' Elke annulatie-rij krijgt bron = 'macro' (annulaties.bron, migratie 23:
-'   formulier = klant via het bestelformulier, macro = hier, admin = klantfiche).
+' Elke rij die deze macro in annulaties/vooruitbestellingen schrijft krijgt
+' bron = 'macro' (kolom bron, migraties 23/24: formulier = klant via het
+' bestelformulier, macro = hier, admin = klantfiche).
 ' =============================================
 Sub VerwerkStopStart()
 
@@ -4325,9 +4326,9 @@ Sub VerwerkStopStart()
 
                     aSql(nItem) = "INSERT INTO vooruitbestellingen " & _
                         "(voornaam, familienaam, klant_email, klant_id, formaat, datum, " & _
-                        "week_bestelling, week_start_abonnement, jaar) VALUES (" & _
+                        "week_bestelling, week_start_abonnement, jaar, bron) VALUES (" & _
                         sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", " & sFmtVoorWeekQ & ", '" & _
-                        sDatum & "', " & w & ", NULL, " & iJaar & ")"
+                        sDatum & "', " & w & ", NULL, " & iJaar & ", 'macro')"
                     nItem = nItem + 1
                     sBestVb = sBestVb & sSleutel & "|"
                     nVb = nVb + 1
@@ -4361,9 +4362,9 @@ Sub VerwerkStopStart()
             Else
                 aSql(nItem) = "INSERT INTO vooruitbestellingen " & _
                     "(voornaam, familienaam, klant_email, klant_id, formaat, datum, " & _
-                    "week_bestelling, week_start_abonnement, jaar) VALUES (" & _
+                    "week_bestelling, week_start_abonnement, jaar, bron) VALUES (" & _
                     sVnQ & ", " & sFnQ & ", " & sMailQ & ", " & sKid & ", '" & riFmt(i) & "', '" & _
-                    sDatum & "', " & w & ", " & w & ", " & iJaar & ")"
+                    sDatum & "', " & w & ", " & w & ", " & iJaar & ", 'macro')"
                 nItem = nItem + 1
                 ' Klant in toekomst-toestand zetten; de VPS-cron schakelt om op de startweek
                 ' (legacy klanten.type blijft transitie-mirror tot Fase F). Een start
