@@ -224,6 +224,46 @@ niet, want `bestelling_wijzigen` weigert buiten het venster. Sluit aan bij het
 patroon van week 31 (Carmen): waar de DB het feit kan dragen, verdwijnt het
 weekbestand-handwerk vanzelf.
 
+### Gebeurtenis 2 — pakketgroente vervangen ná het bestelvenster
+
+*(nagenoteerd op 2026-08-22)*
+
+De **boterbonen** vielen uit het pakket en werden vervangen door **meloen, zoete
+maïs en courgette**. De wissel gebeurde ná het sluiten van het bestelvenster, dus
+op een moment dat geen enkele klant er nog iets aan kon doen via het formulier.
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 1 | alle klanten die boterbonen weglieten | Hun weglating sloeg nergens meer op — de groente zat niet in het pakket | **Kolom BB** (het weglating-slot met "Boterbonen" in de koprij) volledig gewist: alle gegevens weg |
+| 2 | alle pakketklanten | Wie meloen, zoete maïs of courgette niet lust, had die willen weglaten | **Niets** — er was geen tijd voor de communicatie over en weer; de drie vervangers waren deze week niet weg te laten |
+
+**DB-implicatie 1 — een wissing in het weekbestand heeft geen tegenhanger in de
+DB.** De weglating-rijen voor Boterbonen staan nog in `bestelling_weglatingen`;
+alleen het weekbestand is opgekuist. Voor de afrekening van week 32 pakt dat goed
+uit — er wordt niets afgetrokken voor een groente die niemand kreeg, terwijl het
+pakket wel vol was — maar de DB houdt een feit bij dat niet gebeurd is. Alles wat
+later op weglating-historiek stuurt (prijszetting, teeltplanning, "wie laat wat
+weg") leest daar een verkeerd beeld. Een DB-wereld heeft dus een expliciete notie
+nodig van *deze groente zat deze week niet in het pakket — alle weglatingen erop
+vervallen*, in plaats van een stille kolomwissing.
+
+**DB-implicatie 2 — weglaten moet ook ná het bestelvenster kunnen.** Theoretisch
+kán dit wél netjes: een last-minute oproep ("de boterbonen worden meloen, zoete
+maïs en courgette — wil je daar iets van niet?") levert gewone weglatingen op.
+Vandaag bestaat daar geen kanaal voor. Het formulier is dicht en
+`bestelling_wijzigen` weigert buiten het venster (zie gebeurtenis 1 hierboven),
+dus zouden de antwoorden opnieuw als handwerk in het weekbestand belanden — met
+exact dezelfde drift als hierboven. Nodig is een weglating per **(klant, week,
+groente)** die buiten het bestelformulier om geregistreerd wordt en achteraf naar
+de DB geschreven kan worden.
+
+**Verband met de mailing.** Dit is de *antwoord*-kant van de ad-hoc collectieve
+mailing (backlog-taak 19 fase 3, `kiemkracht-bestel/docs/ad-hoc-mailing.md`). Een
+oproep kunnen versturen zonder de antwoorden ergens te kunnen wegschrijven, is een
+halve oplossing: de mail is precies wat het handwerk veroorzaakt. Derde geval in
+drie weken trouwens, na de meloen (week 30, losse groente ingetrokken) en de
+kerstomaatjes (week 31, segment) — maar het eerste aan de **pakket**-kant.
+
 ---
 
 ## Week 33 / 2026
