@@ -1514,11 +1514,11 @@ Sub MaakWeekbestand()
     Dim   cAnder  As Integer
     cAnder  = cGroent0 + nGroentSlots  ' "ander" kolom (AW)
     Dim   cAangep As Integer
-    cAangep = cAnder  + 1              ' (leeg — vrij voor andere info)
+    cAangep = cAnder  + 1              ' (kolom AX — leeg, vrij voor andere info)
     Dim   cGeen   As Integer
-    cGeen   = cAangep + 1              ' synthese weglatingen (AU = 46)
+    cGeen   = cAangep + 1              ' synthese weglatingen (AY = 50)
     Dim   cWeg0   As Integer
-    cWeg0   = cGeen   + 1              ' eerste weglating-kolom (AV = 47)
+    cWeg0   = cGeen   + 1              ' eerste weglating-kolom (AZ = 51)
 
     ' Helper: cel ophalen
     ' (LibreOffice Basic heeft geen inline functies, werken met oSheet direct)
