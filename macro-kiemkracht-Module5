@@ -508,15 +508,16 @@ Sub SchrijfSamenstelling()
         iRij = NOT_RIJ0 + iSlot
         sNaam = Trim(oNot.getCellByPosition(0, iRij).getString())   ' de tekst
         If sNaam <> "" Then
-            sGid = Trim(oNot.getCellByPosition(7, iRij).getString())
+            sGid = Trim(oNot.getCellByPosition(8, iRij).getString())
             If sNotJson <> "" Then sNotJson = sNotJson & ","
             sNotJson = sNotJson & "{""tekst"":""" & SamJsonTekst(sNaam) & """," & _
                 "" & """voor_begeleidend"":" & SamJsBool(Trim(oNot.getCellByPosition(1, iRij).getString()) <> "") & "," & _
                 """voor_weekplanner"":" & SamJsBool(Trim(oNot.getCellByPosition(2, iRij).getString()) <> "") & "," & _
                 """voor_teeltplan"":" & SamJsBool(Trim(oNot.getCellByPosition(3, iRij).getString()) <> "") & "," & _
                 """voor_orderpicking"":" & SamJsBool(Trim(oNot.getCellByPosition(4, iRij).getString()) <> "") & "," & _
-                """geaccepteerd"":" & SamJsBool(Trim(oNot.getCellByPosition(5, iRij).getString()) <> "") & "," & _
-                """groente_naam"":""" & SamJsonTekst(Trim(oNot.getCellByPosition(6, iRij).getString())) & """"
+                """voor_winterwerk"":" & SamJsBool(Trim(oNot.getCellByPosition(5, iRij).getString()) <> "") & "," & _
+                """geaccepteerd"":" & SamJsBool(Trim(oNot.getCellByPosition(6, iRij).getString()) <> "") & "," & _
+                """groente_naam"":""" & SamJsonTekst(Trim(oNot.getCellByPosition(7, iRij).getString())) & """"
             If sGid <> "" And IsNumeric(sGid) Then
                 sNotJson = sNotJson & ",""groente_id"":" & CLng(sGid)
             End If
@@ -1011,7 +1012,7 @@ Sub SamBouwTabLos(oDoc As Object, oConn As Object, _
 End Sub
 
 ' ---------------------------------------------------------------------------
-' Tab Notities: week-notities (4 bestemmingen) + begeleidende tekst
+' Tab Notities: week-notities (5 bestemmingen) + begeleidende tekst
 ' (publiek: ook gebruikt door de klassieke layout in Module6)
 ' ---------------------------------------------------------------------------
 Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
@@ -1029,7 +1030,7 @@ Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
     clKop   = RGB(220, 233, 200)
 
     oSheet = SamZorgTab(oDoc, TAB_NOT)
-    oSheet.getCellRangeByPosition(0, 0, 8, NOT_RIJ_BEG + 1).clearContents(23)
+    oSheet.getCellRangeByPosition(0, 0, 9, NOT_RIJ_BEG + 1).clearContents(23)
 
     oSheet.getCellByPosition(0, 0).setString("Week-notities")
     oSheet.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
@@ -1043,28 +1044,29 @@ Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
     oSheet.getCellByPosition(2, NOT_RIJ_KOP).setString("Weekplanner (x)")
     oSheet.getCellByPosition(3, NOT_RIJ_KOP).setString("Teeltplan (x)")
     oSheet.getCellByPosition(4, NOT_RIJ_KOP).setString("Orderpicking (x)")
-    oSheet.getCellByPosition(5, NOT_RIJ_KOP).setString("Verwerkt (x)")
-    oSheet.getCellByPosition(6, NOT_RIJ_KOP).setString("Groente")
-    oSheet.getCellByPosition(7, NOT_RIJ_KOP).setString("groente_id")
-    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 7, NOT_RIJ_KOP).CellBackColor = clKop
-    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 7, NOT_RIJ_KOP).CharWeight = _
+    oSheet.getCellByPosition(5, NOT_RIJ_KOP).setString("Winterwerk (x)")
+    oSheet.getCellByPosition(6, NOT_RIJ_KOP).setString("Verwerkt (x)")
+    oSheet.getCellByPosition(7, NOT_RIJ_KOP).setString("Groente")
+    oSheet.getCellByPosition(8, NOT_RIJ_KOP).setString("groente_id")
+    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 8, NOT_RIJ_KOP).CellBackColor = clKop
+    oSheet.getCellRangeByPosition(0, NOT_RIJ_KOP, 8, NOT_RIJ_KOP).CharWeight = _
         com.sun.star.awt.FontWeight.BOLD
 
-    oSheet.getCellRangeByPosition(0, NOT_RIJ0, 7, NOT_RIJ0 + NOT_SLOTS - 1).CellBackColor = clInput
+    oSheet.getCellRangeByPosition(0, NOT_RIJ0, 8, NOT_RIJ0 + NOT_SLOTS - 1).CellBackColor = clInput
     oSheet.getCellRangeByPosition(0, NOT_RIJ0, 0, NOT_RIJ0 + NOT_SLOTS - 1).IsTextWrapped = True
 
     oSheet.Columns.getByIndex(0).Width = 12000
-    For iKol = 1 To 5
+    For iKol = 1 To 6
         oSheet.Columns.getByIndex(iKol).Width = 2800
     Next iKol
-    oSheet.Columns.getByIndex(6).Width = 3200
-    oSheet.Columns.getByIndex(7).Width = 2000
+    oSheet.Columns.getByIndex(7).Width = 3200
+    oSheet.Columns.getByIndex(8).Width = 2000
 
     nNot = 0
     oStmt = oConn.createStatement()
     oRS = oStmt.executeQuery( _
         "SELECT tekst, voor_begeleidend, voor_weekplanner, voor_teeltplan, " & _
-        "voor_orderpicking, geaccepteerd, " & _
+        "voor_orderpicking, voor_winterwerk, geaccepteerd, " & _
         "COALESCE(groente_naam,''), COALESCE(groente_id::text,'') " & _
         "FROM week_notitie WHERE jaar = " & iJaar & " AND weeknummer = " & iWeek & _
         " ORDER BY volgorde, id")
@@ -1077,9 +1079,10 @@ Sub SamBouwTabNotities(oDoc As Object, oConn As Object, _
             If oRS.getBoolean(4) Then oSheet.getCellByPosition(3, iRij).setString("x")
             If oRS.getBoolean(5) Then oSheet.getCellByPosition(4, iRij).setString("x")
             If oRS.getBoolean(6) Then oSheet.getCellByPosition(5, iRij).setString("x")
-            oSheet.getCellByPosition(6, iRij).setString(oRS.getString(7))
-            If oRS.getString(8) <> "" Then
-                oSheet.getCellByPosition(7, iRij).setValue(CLng(oRS.getString(8)))
+            If oRS.getBoolean(7) Then oSheet.getCellByPosition(6, iRij).setString("x")
+            oSheet.getCellByPosition(7, iRij).setString(oRS.getString(8))
+            If oRS.getString(9) <> "" Then
+                oSheet.getCellByPosition(8, iRij).setValue(CLng(oRS.getString(9)))
             End If
             nNot = nNot + 1
         End If
