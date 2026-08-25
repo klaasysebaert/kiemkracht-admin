@@ -450,9 +450,28 @@ End Sub
 '   4) besteld-tellers op de Los-tab
 ' Zelfde drie-takken-telling als MaakWeekbestand (bestellingen / ritme-
 ' abonnees / vooruitbestellers) — wijzigt die query in Module1, pas dan ook
-' dit aan. Het weekbestand blijft de gezaghebbende telling.
+' dit aan. Het weekbestand blijft de gezaghebbende telling: wie die telling
+' rechtstreeks wil, gebruikt VerversBestellijstUitWeekbestand (Module5), dat
+' dezelfde g*-arrays uit het weekbestand vult en hieronder binnenkomt bij
+' KlasSchrijfWeekcijfers.
 ' ---------------------------------------------------------------------------
 Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar As Integer)
+    ' --- 1+2. Aantal pakketten per maat per dag + weglatingen per (groente,
+    ' maat, dag): gedeelde loader in Module5, vult de g*-arrays ---
+    SamLaadDagcijfers(oConn, iWeek, iJaar)
+    KlasSchrijfWeekcijfers(oDoc, oConn, iWeek, iJaar, "database")
+End Sub
+
+' ---------------------------------------------------------------------------
+' KlasSchrijfWeekcijfers — de al gevulde g*-arrays wegschrijven (stap 1 t/m 4
+' hierboven). De arrays komen van SamLaadDagcijfers (database) of van
+' SamLaadDagcijfersUitWeek (weekbestand); sBron komt op de OogstBestel-tab te
+' staan zodat zichtbaar blijft waar de cijfers vandaan komen.
+' oConn wordt hier enkel nog gebruikt voor het losse-groentenaanbod (naam,
+' groothandelsprijs, eenheid) op de OogstBestel-tab.
+' ---------------------------------------------------------------------------
+Sub KlasSchrijfWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, _
+                           iJaar As Integer, sBron As String)
     Dim oSheet As Object
     Dim oOgb   As Object
     Dim iMaat  As Integer
@@ -464,10 +483,6 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
 
     oSheet = oDoc.Sheets.getByName(KLAS_TAB_SAM)
     oOgb   = SamZorgTab(oDoc, KLAS_TAB_OGB)
-
-    ' --- 1+2. Aantal pakketten per maat per dag + weglatingen per (groente,
-    ' maat, dag): gedeelde loader in Module5, vult de g*-arrays ---
-    SamLaadDagcijfers(oConn, iWeek, iJaar)
 
     For iMaat = 0 To 3
         oSheet.getCellByPosition(4 + iMaat, 2).setValue(gDgTot(iMaat))
@@ -500,9 +515,10 @@ Sub KlasVulWeekcijfers(oDoc As Object, oConn As Object, iWeek As Integer, iJaar 
     KlasVulOogstBestel(oDoc, oConn, iWeek, iJaar)
 
     ' --- 4. Besteld-tellers op de Los-tab ---
-    SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
+    SamVerversLosBesteld(oDoc)
 
-    oOgb.getCellByPosition(4, 0).setString("versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+    oOgb.getCellByPosition(4, 0).setString("versie: " & Format(Now(), "DD/MM/YYYY HH:MM") & _
+                                           " — bron: " & sBron)
 End Sub
 
 ' ---------------------------------------------------------------------------

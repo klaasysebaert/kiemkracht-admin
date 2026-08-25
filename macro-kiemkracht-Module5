@@ -636,6 +636,438 @@ SamVervFout:
 End Sub
 
 ' ===========================================================================
+' VerversBestellijstUitWeekbestand — dezelfde tabs verversen als
+' VerversBestellijst, maar met het WEEKBESTAND als bron van de weekcijfers
+' in plaats van de database.
+'
+' Waarom: het weekbestand is de gezaghebbende telling. Alles wat je daarin met
+' de hand corrigeert — een extra weglating, een omgezette dag klaarmaken, een
+' klant die je zelf toevoegt of schrapt — staat NIET in de database en valt dus
+' weg zodra je met StartVerversBestellijst uit de DB ververst. Dit is de
+' opvolger van de oude Google Sheets-koppeling (Module3, SyncMetSheets), die
+' precies hetzelfde deed: tellen in het weekbestand, wegschrijven in het
+' samenstellingsdocument — nu zonder Apps Script en zonder HTTP, want beide
+' documenten staan gewoon in dezelfde LibreOffice-sessie.
+'
+' WEL uit het weekbestand: aantal pakketten per maat en per dag, weglatingen
+' per (groente, maat, dag), besteld-aantallen van de losse groenten per dag.
+' Dus alles op de Oogstlijst, de twee afweeglijsten en de vier printbladen.
+' NIET aangeraakt: de samenstelling zelf (pakketgroenten, hoeveelheden,
+' groothandelsprijzen, losse aanbod, notities). Die blijft van de cockpit/DB
+' komen — herlaad ze met StartHerlaadSamenstelling of StartVerversBestellijst.
+'
+' In de tab-layout raakt deze macro de database NIET aan: geen ssh-tunnel, geen
+' wachtwoord, meteen klaar. De klassieke layout heeft wél een verbinding nodig,
+' maar enkel voor het aanbod (naam/prijs/eenheid) op de OogstBestel-tab.
+' ===========================================================================
+Sub VerversBestellijstUitWeekbestand()
+    Dim oDoc      As Object
+    Dim oWk       As Object
+    Dim oConn     As Object
+    Dim iWeek     As Integer
+    Dim iJaar     As Integer
+    Dim bKlassiek As Boolean
+    Dim sBron     As String
+    Dim sRapport  As String
+
+    oDoc = ThisComponent
+    bKlassiek = SamIsKlassiekDoc(oDoc)
+    If Not (bKlassiek Or SamIsSamenstellingDoc(oDoc)) Then
+        MsgBox "Het actieve document is geen samenstelling-bestand.", 48, "Bestellijst"
+        Exit Sub
+    End If
+
+    If bKlassiek Then
+        iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(9, 0).getValue())
+        iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(11, 0).getValue())
+    Else
+        iWeek = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(3, 0).getValue())
+        iJaar = CInt(oDoc.Sheets.getByName(TAB_SAM).getCellByPosition(5, 0).getValue())
+    End If
+
+    oWk = SamZoekWeekbestand(iWeek, iJaar, SamDocOmgeving(oDoc))
+    If IsNull(oWk) Then Exit Sub
+    sBron = SamBestandsnaam(oWk.getURL())
+
+    On Error GoTo SamWkFout
+    SamLaadDagcijfersUitWeek(oWk, sRapport)
+
+    If bKlassiek Then
+        ' Verbinding enkel voor het losse-groentenaanbod op de OogstBestel-tab;
+        ' de weekcijfers zelf zitten al in de g*-arrays.
+        If Not SamOmgevingOk(oDoc) Then Exit Sub
+        oConn = MaakDBVerbinding()
+        KlasSchrijfWeekcijfers(oDoc, oConn, iWeek, iJaar, sBron)
+        oConn.close()
+        SluitSSHTunnels()
+    Else
+        SamSchrijfWeekcijfers(oDoc, iWeek, iJaar, sBron)
+    End If
+    On Error GoTo 0
+
+    oDoc.calculateAll()
+    MsgBox "Week " & iWeek & "/" & iJaar & " — aantallen, weglatingen, afweeglijsten " & _
+           "en printbladen ververst UIT HET WEEKBESTAND." & Chr(10) & _
+           "Bron: " & sBron & Chr(10) & Chr(10) & _
+           sRapport & Chr(10) & Chr(10) & _
+           "De samenstelling zelf (pakketgroenten, hoeveelheden, losse aanbod, " & _
+           "notities) is niet aangeraakt — die blijft uit de database komen.", _
+           64, "Klaar"
+    Exit Sub
+
+SamWkFout:
+    MsgBox "Fout bij het verversen uit het weekbestand:" & Chr(10) & Error$, 16, "Bestellijst"
+    SluitSSHTunnels()
+End Sub
+
+' ---------------------------------------------------------------------------
+' SamZoekWeekbestand — het weekbestand van week/jaar terugvinden.
+'
+' Zoekt eerst tussen de OPEN documenten: zo tellen ook de wijzigingen mee die
+' je net getypt hebt en nog niet opgeslagen zijn — net dat is de bedoeling.
+' Een weekbestand herken je aan cel B1 ("Week <nummer>"), dezelfde toets als
+' MailSelectie gebruikt, en niet aan de bestandsnaam alleen: je werkt vaak in
+' een kopie zoals week_35_2026_definitief.ods.
+'
+' Staan er meerdere kandidaten open (het origineel én een _definitief-kopie),
+' dan kiest de macro NIET zelf maar vraagt ze welke. Staat er niets open, dan
+' biedt ze aan het standaardbestand te openen.
+'
+' Omgeving: een -dev-samenstelling telt enkel uit een -dev-weekbestand en
+' omgekeerd, zodat dev-cijfers nooit in een prod-document belanden.
+'
+' Geeft Null terug als er niets bruikbaars is (met melding aan de gebruiker).
+' ---------------------------------------------------------------------------
+Function SamZoekWeekbestand(iWeek As Integer, iJaar As Integer, sOmg As String) As Object
+    Dim oEnum      As Object
+    Dim oC         As Object
+    Dim oKand(19)  As Object
+    Dim sKandNaam(19) As String
+    Dim aLeeg()
+    Dim nKand      As Integer
+    Dim nAndereOmg As Integer
+    Dim sUrl       As String
+    Dim sKern      As String
+    Dim sLabel     As String
+    Dim sLijst     As String
+    Dim sKeuze     As String
+    Dim sPad       As String
+    Dim iK         As Integer
+
+    sKern  = "/week_" & iWeek & "_" & iJaar
+    sLabel = "Week " & iWeek
+    nKand = 0
+    nAndereOmg = 0
+
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oC = oEnum.nextElement()
+        If SamIsWeekbestandDoc(oC, sLabel) Then
+            sUrl = LCase(oC.getURL())
+            If InStr(sUrl, sKern) > 0 Then
+                If (InStr(sUrl, "-dev") > 0) = (sOmg = "dev") Then
+                    If nKand <= 19 Then
+                        oKand(nKand)     = oC
+                        sKandNaam(nKand) = SamBestandsnaam(oC.getURL())
+                        nKand = nKand + 1
+                    End If
+                Else
+                    nAndereOmg = nAndereOmg + 1
+                End If
+            End If
+        End If
+    Loop
+
+    If nKand = 1 Then
+        SamZoekWeekbestand = oKand(0)
+        Exit Function
+    End If
+
+    If nKand > 1 Then
+        ' Meerdere kandidaten open — laten kiezen, niet gokken: het origineel en
+        ' de werkkopie kunnen andere cijfers geven.
+        sLijst = ""
+        For iK = 0 To nKand - 1
+            sLijst = sLijst & (iK + 1) & " = " & sKandNaam(iK) & Chr(10)
+        Next iK
+        sKeuze = InputBox("Er staan meerdere weekbestanden van week " & iWeek & " open." & _
+                          Chr(10) & "Uit welk bestand moet ik tellen?" & Chr(10) & Chr(10) & _
+                          sLijst, "Weekbestand kiezen", "1")
+        If Trim(sKeuze) = "" Then Exit Function
+        If Not IsNumeric(Trim(sKeuze)) Then
+            MsgBox "Geen geldig nummer: '" & sKeuze & "'", 48, "Weekbestand"
+            Exit Function
+        End If
+        iK = CInt(Trim(sKeuze))
+        If iK < 1 Or iK > nKand Then
+            MsgBox "Nummer buiten de lijst: " & iK, 48, "Weekbestand"
+            Exit Function
+        End If
+        SamZoekWeekbestand = oKand(iK - 1)
+        Exit Function
+    End If
+
+    ' --- Niets open: het standaardbestand op schijf aanbieden ---
+    If nAndereOmg > 0 Then
+        MsgBox "Er staat wel een weekbestand van week " & iWeek & " open, maar van de " & _
+               "andere omgeving." & Chr(10) & _
+               "Dit samenstellingsdocument is '" & sOmg & "'; gebruik het weekbestand " & _
+               "van dezelfde omgeving (-dev hoort bij -dev).", 48, "Weekbestand"
+        Exit Function
+    End If
+
+    sPad = JaarMap(iJaar) & iJaar & "_week_" & iWeek & "\week_" & iWeek & "_" & iJaar
+    If sOmg = "dev" Then sPad = sPad & "-dev"
+    sPad = sPad & ".ods"
+    If Not FileExists(sPad) Then
+        MsgBox "Geen weekbestand van week " & iWeek & "/" & iJaar & " gevonden." & Chr(10) & _
+               "Open het weekbestand — of de kopie waarin je werkt — en probeer opnieuw." & _
+               Chr(10) & Chr(10) & "Gezocht naar: " & sPad, 48, "Weekbestand"
+        Exit Function
+    End If
+    If MsgBox("Er staat geen weekbestand van week " & iWeek & " open." & Chr(10) & Chr(10) & _
+              "Zal ik dit openen?" & Chr(10) & sPad & Chr(10) & Chr(10) & _
+              "Werk je in een kopie (bv. ..._definitief.ods), kies dan Nee, open die " & _
+              "zelf en start opnieuw — anders tellen je correcties niet mee.", _
+              36, "Weekbestand") <> 6 Then Exit Function
+
+    oKand(0) = StarDesktop.loadComponentFromURL(ConvertToURL(sPad), "_blank", 0, aLeeg())
+    If Not SamIsWeekbestandDoc(oKand(0), sLabel) Then
+        MsgBox "Het geopende bestand ziet er niet uit als een weekbestand " & _
+               "(cel B1 is niet '" & sLabel & "').", 48, "Weekbestand"
+        Exit Function
+    End If
+    SamZoekWeekbestand = oKand(0)
+End Function
+
+' True als oDoc een weekbestand van de gevraagde week is: een Calc-document
+' waarvan cel B1 van het eerste blad "Week <nummer>" bevat. Zelfde toets als
+' MailSelectie — die overleeft het hernoemen of kopiëren van het bestand.
+Function SamIsWeekbestandDoc(oDoc As Object, sLabel As String) As Boolean
+    SamIsWeekbestandDoc = False
+    If IsNull(oDoc) Then Exit Function
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then Exit Function
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then Exit Function
+    If oDoc.Sheets.Count < 1 Then Exit Function
+    If oDoc.Sheets.getByIndex(0).getCellByPosition(1, 0).getString() <> sLabel Then Exit Function
+    SamIsWeekbestandDoc = True
+End Function
+
+' Bestandsnaam zonder pad uit een document-URL (InStrRev bestaat niet in
+' native LO Basic). ConvertFromURL eerst, zodat %20 en co. leesbaar worden.
+Function SamBestandsnaam(sUrl As String) As String
+    Dim sPad As String
+    Dim i    As Integer
+    Dim sKar As String
+    sPad = ConvertFromURL(sUrl)
+    SamBestandsnaam = sPad
+    For i = Len(sPad) To 1 Step -1
+        sKar = Mid(sPad, i, 1)
+        If sKar = "\" Or sKar = "/" Then
+            SamBestandsnaam = Mid(sPad, i + 1)
+            Exit For
+        End If
+    Next i
+End Function
+
+' ---------------------------------------------------------------------------
+' SamLaadDagcijfersUitWeek — dezelfde g*-arrays als SamLaadDagcijfers, maar
+' geteld in het WEEKBESTAND in plaats van in de database. Eén rij-scan over de
+' klantrijen (vanaf rij 7 tot de laatste gebruikte rij):
+'
+'   dag        kolom C: "donderdag" / "vrijdag" (leeg = dag onbekend)
+'   pakket     kolom R/S/T/U (KG/GG/EGG/MINI) met een waarde > 0
+'   weglating  kolom AZ..: niet-lege cel. De GROENTENAAM komt uit de koprij
+'              (rij 3) van die kolom, niet uit de cel zelf — zo telt ook een
+'              "x" of een typfout mee, precies zoals de SUMPRODUCT-formules in
+'              de koprijen van het weekbestand zelf.
+'   los        kolom Y..AV met een waarde > 0; naam uit de kolomkop (rij 2)
+'
+' Overgeslagen rijen: blokkoppen (kolom B = "afhaalpunt/dag") en rijen zonder
+' naam (witregels, het Opmerkingen-blok) — dezelfde guard als MailSelectie en
+' MaakOverzichten. Weglating-slots worden ruim afgescand (40 i.p.v. 12) zodat
+' een handmatig toegevoegde groente in een niet-aansluitende kolom meetelt.
+'
+' Getest tegen week 35/2026: de telling reproduceert de totaalrijen van het
+' weekbestand zelf exact (161 pakketten = 86/33/7/35, 88 donderdag + 73 vrijdag;
+' weglatingen Zomerprei 7, Venkel 16, Paprika 5, Tomaten 7, Courgette 16,
+' Kropsla 16).
+'
+' sRapport krijgt een korte samenvatting + eventuele waarschuwingen.
+' ---------------------------------------------------------------------------
+Sub SamLaadDagcijfersUitWeek(oWk As Object, ByRef sRapport As String)
+    ' Kolomindices weekblad (moeten overeenkomen met MaakWeekbestand)
+    Const cNaam     = 0
+    Const cAfh      = 1
+    Const cKlaarDag = 2
+    Const cKG       = 17     ' KG/GG/EGG/MINI staan naast elkaar: 17..20
+    Const cGroent0  = 24     ' 24 losse-groenteslots (Y..AV)
+    Const cWeg0     = 51     ' 12 weglating-slots (AZ..BK), ruim afgescand
+    Const rKlant0   = 6      ' eerste rij onder de koprijen
+
+    Dim oSheet As Object
+    Dim oCur   As Object
+    Dim sWegNaam(39) As String
+    Dim sLosKop(23)  As String
+    Dim nLaatste As Long
+    Dim i        As Long
+    Dim iMaat    As Integer
+    Dim iM       As Integer
+    Dim iW       As Integer
+    Dim iG       As Integer
+    Dim iVind    As Integer
+    Dim iZoek    As Integer
+    Dim iDag     As Integer     ' 0 = donderdag, 1 = vrijdag, 2 = onbekend
+    Dim sDag     As String
+    Dim dAant    As Double
+    Dim nPakTot  As Long
+    Dim nDonTot  As Long
+    Dim nVrijTot As Long
+    Dim nGeenDag As Long
+    Dim nWegTot  As Long
+    Dim nWegZonderPakket As Long
+
+    oSheet = oWk.Sheets.getByIndex(0)
+
+    For iW = 0 To 39
+        sWegNaam(iW) = Trim(oSheet.getCellByPosition(cWeg0 + iW, 2).getString())
+    Next iW
+    For iG = 0 To 23
+        sLosKop(iG) = Trim(oSheet.getCellByPosition(cGroent0 + iG, 1).getString())
+    Next iG
+
+    For iM = 0 To 3
+        gDgTot(iM)     = 0
+        gDgAant(iM, 0) = 0
+        gDgAant(iM, 1) = 0
+    Next iM
+    gNWg  = 0
+    gNLos = 0
+    nPakTot = 0 : nGeenDag = 0 : nWegTot = 0 : nWegZonderPakket = 0
+
+    oCur = oSheet.createCursor()
+    oCur.gotoEndOfUsedArea(True)
+    nLaatste = oCur.getRangeAddress().EndRow
+
+    For i = rKlant0 To nLaatste
+        If oSheet.getCellByPosition(cNaam, i).getString() = "" Then GoTo VolgendeWkRij
+        If oSheet.getCellByPosition(cAfh, i).getString() = "afhaalpunt/dag" Then GoTo VolgendeWkRij
+
+        sDag = LCase(Trim(oSheet.getCellByPosition(cKlaarDag, i).getString()))
+        If sDag = "donderdag" Then
+            iDag = 0
+        ElseIf sDag = "vrijdag" Then
+            iDag = 1
+        Else
+            iDag = 2
+        End If
+
+        ' --- pakket van deze rij (hoogstens één maat, zoals MailSelectie) ---
+        iMaat = -1
+        dAant = 0
+        For iM = 0 To 3
+            If oSheet.getCellByPosition(cKG + iM, i).getValue() > 0 Then
+                iMaat = iM
+                dAant = oSheet.getCellByPosition(cKG + iM, i).getValue()
+                Exit For
+            End If
+        Next iM
+        If iMaat >= 0 Then
+            nPakTot = nPakTot + CLng(dAant)
+            gDgTot(iMaat) = gDgTot(iMaat) + CLng(dAant)
+            If iDag < 2 Then
+                gDgAant(iMaat, iDag) = gDgAant(iMaat, iDag) + CLng(dAant)
+            Else
+                nGeenDag = nGeenDag + 1
+            End If
+        End If
+
+        ' --- weglatingen van deze rij (enkel zinvol bij een pakket) ---
+        For iW = 0 To 39
+            If sWegNaam(iW) <> "" Then
+                If oSheet.getCellByPosition(cWeg0 + iW, i).getString() <> "" Then
+                    If iMaat < 0 Then
+                        nWegZonderPakket = nWegZonderPakket + 1
+                    Else
+                        iVind = -1
+                        For iZoek = 0 To gNWg - 1
+                            If gWgNaam(iZoek) = sWegNaam(iW) And gWgMaat(iZoek) = iMaat Then
+                                iVind = iZoek
+                                Exit For
+                            End If
+                        Next iZoek
+                        If iVind = -1 And gNWg < 200 Then
+                            iVind = gNWg
+                            gWgNaam(gNWg) = sWegNaam(iW)
+                            gWgMaat(gNWg) = iMaat
+                            gWgDon(gNWg) = 0 : gWgVrij(gNWg) = 0 : gWgOnb(gNWg) = 0
+                            gNWg = gNWg + 1
+                        End If
+                        If iVind >= 0 Then
+                            nWegTot = nWegTot + 1
+                            If iDag = 0 Then
+                                gWgDon(iVind) = gWgDon(iVind) + 1
+                            ElseIf iDag = 1 Then
+                                gWgVrij(iVind) = gWgVrij(iVind) + 1
+                            Else
+                                gWgOnb(iVind) = gWgOnb(iVind) + 1
+                            End If
+                        End If
+                    End If
+                End If
+            End If
+        Next iW
+
+        ' --- losse groenten van deze rij ---
+        For iG = 0 To 23
+            If sLosKop(iG) <> "" Then
+                dAant = oSheet.getCellByPosition(cGroent0 + iG, i).getValue()
+                If dAant > 0 Then
+                    iVind = -1
+                    For iZoek = 0 To gNLos - 1
+                        If gLosNaam(iZoek) = sLosKop(iG) Then
+                            iVind = iZoek
+                            Exit For
+                        End If
+                    Next iZoek
+                    If iVind = -1 And gNLos < 200 Then
+                        iVind = gNLos
+                        gLosNaam(gNLos) = sLosKop(iG)
+                        gLosDon(gNLos) = 0 : gLosVrij(gNLos) = 0 : gLosOnb(gNLos) = 0
+                        gNLos = gNLos + 1
+                    End If
+                    If iVind >= 0 Then
+                        If iDag = 0 Then
+                            gLosDon(iVind) = gLosDon(iVind) + dAant
+                        ElseIf iDag = 1 Then
+                            gLosVrij(iVind) = gLosVrij(iVind) + dAant
+                        Else
+                            gLosOnb(iVind) = gLosOnb(iVind) + dAant
+                        End If
+                    End If
+                End If
+            End If
+        Next iG
+
+        VolgendeWkRij:
+    Next i
+
+    nDonTot  = gDgAant(0, 0) + gDgAant(1, 0) + gDgAant(2, 0) + gDgAant(3, 0)
+    nVrijTot = gDgAant(0, 1) + gDgAant(1, 1) + gDgAant(2, 1) + gDgAant(3, 1)
+    sRapport = "Geteld: " & nPakTot & " pakketten (" & nDonTot & " donderdag, " & _
+               nVrijTot & " vrijdag), " & nWegTot & " weglatingen over " & gNWg & _
+               " (groente, maat)-combinaties, " & gNLos & " losse groenten besteld."
+    If nGeenDag > 0 Then
+        sRapport = sRapport & Chr(10) & "LET OP: " & nGeenDag & " pakket(ten) zonder " & _
+                   "dag klaarmaken (kolom C leeg) — die tellen enkel in het totaal mee."
+    End If
+    If nWegZonderPakket > 0 Then
+        sRapport = sRapport & Chr(10) & "LET OP: " & nWegZonderPakket & " weglating(en) op " & _
+                   "een rij zonder pakket — genegeerd (een weglating hoort bij een pakket)."
+    End If
+End Sub
+
+' ===========================================================================
 ' BouwEnVulSamenstelling — alle tabbladen (her)opbouwen en vullen uit de DB
 ' (idempotent: wist eerst de datazones, herschrijft koppen + formules)
 ' ===========================================================================
@@ -1459,12 +1891,28 @@ End Sub
 
 ' ---------------------------------------------------------------------------
 ' SamVulBestellijst — de Bestellijst-tab (TAB_BST) vullen met de momentopname
-' uit SamLaadDagcijfers: aantal pakketten per maat (totaal + donderdag/vrijdag),
-' weglatingen per (groente, maat), besteld-tellers per dag. Bouwt daarna de
-' Afweeglijst-tab opnieuw op.
+' uit de DATABASE: eerst laden in de g*-arrays, dan wegschrijven.
+' De twee helften staan bewust apart: SamSchrijfWeekcijfers is DB-vrij en wordt
+' ook gebruikt door VerversBestellijstUitWeekbestand, dat dezelfde arrays uit
+' het weekbestand vult.
 ' ---------------------------------------------------------------------------
 Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
                               iWeek As Integer, iJaar As Integer)
+    SamLaadDagcijfers(oConn, iWeek, iJaar)
+    SamSchrijfWeekcijfers(oDoc, iWeek, iJaar, "database")
+End Sub
+
+' ---------------------------------------------------------------------------
+' SamSchrijfWeekcijfers — de g*-arrays wegschrijven: aantal pakketten per maat
+' (totaal + donderdag/vrijdag), weglatingen per (groente, maat), besteld-tellers
+' per dag. Bouwt daarna de afweeglijsten en de printbladen opnieuw op.
+' Raakt de database NIET aan — de arrays moeten al gevuld zijn, door
+' SamLaadDagcijfers (uit de DB) of SamLaadDagcijfersUitWeek (uit het
+' weekbestand). sBron komt op de tab te staan zodat zichtbaar blijft waar de
+' cijfers vandaan komen.
+' ---------------------------------------------------------------------------
+Sub SamSchrijfWeekcijfers(oDoc As Object, iWeek As Integer, iJaar As Integer, _
+                          sBron As String)
     Dim oBst  As Object
     Dim oSam  As Object
     Dim oLos  As Object
@@ -1479,8 +1927,6 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
 
     oBst = oDoc.Sheets.getByName(TAB_BST)
     oSam = oDoc.Sheets.getByName(TAB_SAM)
-
-    SamLaadDagcijfers(oConn, iWeek, iJaar)
 
     ' --- 1. Aantal pakketten per maat: totaal + de opdeling donderdag/vrijdag ---
     nOnbDag = 0
@@ -1522,7 +1968,7 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     ' --- 3. Besteld-tellers verversen op de Los-tab (kolom I) + de dag-opdeling
     '        ervan op deze tab (kolom B/C; het totaal in D is een formule naar
     '        Los.I, dus die drie kloppen altijd samen). ---
-    SamVerversLosBesteld(oDoc, oConn, iWeek, iJaar)
+    SamVerversLosBesteld(oDoc)
     oLos = oDoc.Sheets.getByName(TAB_LOS)
     oBst.getCellRangeByPosition(1, BST_LOS0, 2, BST_LOS0 + LOS_SLOTS - 1).clearContents(7)
     For iSlot = 0 To LOS_SLOTS - 1
@@ -1545,6 +1991,7 @@ Private Sub SamVulBestellijst(oDoc As Object, oConn As Object, _
     ' Tijdstempel (kolom H, naast de matrix) + niet-gematchte weglating-groenten
     oBst.getCellByPosition(7, BST_RIJ_AANT).setString( _
         "versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+    oBst.getCellByPosition(7, BST_RIJ_DON).setString("bron: " & sBron)
     If sOnbekend <> "" Then
         oBst.getCellByPosition(0, BST_RIJ0 + SAM_SLOTS + 1).setString( _
             "Weglatingen voor groenten die niet in de samenstelling staan: " & _
@@ -2524,11 +2971,8 @@ End Sub
 ' Oogstlijst de kolommen "Besteld do" en "Besteld vrij" toont; anders zouden
 ' die twee niet optellen tot het totaal. Sindsdien vallen ook bestellingen van
 ' klanten die deze week geannuleerd hebben weg, net als in het weekbestand.
-' (oConn/iWeek/iJaar blijven in de signatuur staan voor de twee aanroepers —
-' Basic geeft anders een runtime-fout op het aantal parameters.)
 ' ---------------------------------------------------------------------------
-Sub SamVerversLosBesteld(oDoc As Object, oConn As Object, _
-                         iWeek As Integer, iJaar As Integer)
+Sub SamVerversLosBesteld(oDoc As Object)
     Dim oLos  As Object
     Dim iSlot As Integer
     Dim iLos  As Integer

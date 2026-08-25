@@ -49,6 +49,9 @@ PROBES = [
     ("Module4", "ProviderTip", ("onbekend.be",), ""),
     ("Module5", "SamMaatIdx", ("extra-groot",), 2),
     ("Module5", "SamBase64", ("lo:test",), "bG86dGVzdA=="),
+    ("Module5", "SamBestandsnaam",
+     ("file:///C:/x/2026_week_35/week_35_2026_definitief.ods",),
+     "week_35_2026_definitief.ods"),
     ("Module6", "KlasLaatsteStatus", (), ""),
     # Omgevingsbepaling: welke database een macro raakt hangt hiervan af, dus
     # de naamregel zelf ook echt aftoetsen en niet enkel laten compileren.
