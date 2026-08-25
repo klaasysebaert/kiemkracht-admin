@@ -701,6 +701,7 @@ Sub VerversBestellijstUitWeekbestand()
         oConn.close()
         SluitSSHTunnels()
     Else
+        SamMigreerTabnamen(oDoc)
         SamSchrijfWeekcijfers(oDoc, iWeek, iJaar, sBron)
     End If
     On Error GoTo 0
