@@ -2112,9 +2112,15 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     Next iG
 
     ' --- Titel ---
-    oAfw.getCellByPosition(0, 0).setString(sDagLbl)
+    ' "PAKKET" erbij: er bestaat ook een afweeglijst voor de losse groenten
+    ' (MaakOverzichten), en op papier moet je de twee uit elkaar houden.
+    ' sDagLbl zelf blijft ongemoeid — die levert verderop "donderdag nodig:".
+    oAfw.getCellByPosition(0, 0).setString(sDagLbl & " PAKKET")
     oAfw.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oAfw.getCellByPosition(4, 0).setString( _
+    ' Tijdstempel in G in plaats van E: de titel staat op lettergrootte 20 en
+    ' loopt over de lege buurcellen door. Stond de tekst in E, dan kapte ze de
+    ' titel af. Vanaf G (de rechterbladhelft) is er ruimte zat.
+    oAfw.getCellByPosition(AFW_KOL_R, 0).setString( _
         "week " & iWeek & "/" & iJaar & " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
 
     ' --- Blokken schrijven ---
@@ -2184,7 +2190,7 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     ' --- Opmaak: lettergrootte 20 zoals de Sheet (afweeglijst leest van ver) ---
     oAfw.getCellRangeByPosition(0, 0, 4, iEindL - 1).CharHeight = 20
     oAfw.getCellRangeByPosition(AFW_KOL_R, 0, AFW_KOL_R + 4, iEindR - 1).CharHeight = 20
-    oAfw.getCellByPosition(4, 0).CharHeight = 10   ' week/tijdstempel klein houden
+    oAfw.getCellByPosition(AFW_KOL_R, 0).CharHeight = 10   ' week/tijdstempel klein houden
 
     ' --- Kolombreedtes (1/100 mm, omgerekend uit de Sheet) ---
     For iKol = 0 To AFW_KOL_R Step AFW_KOL_R
