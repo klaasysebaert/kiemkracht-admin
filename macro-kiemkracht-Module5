@@ -249,9 +249,10 @@ Sub MaakSamenstellingDoc()
            "Week " & iWeek & "/" & iJaar & " — status in DB: " & mSamStatus & Chr(10) & Chr(10) & _
            "Terugschrijven naar de cockpit/DB: StartSchrijfSamenstelling." & Chr(10) & Chr(10) & _
            "Aantallen pakketten en weglatingen komen hier uit de database. Wat " & _
-           "alleen in het weekbestand staat — een extra weglating, een omgezette " & _
-           "dag klaarmaken, een klant die je zelf bijzette — telt pas mee na " & _
-           "StartVerversBestellijstUitWeekbestand.", 64, "Klaar"
+           "alleen in het weekbestand staat — een extra weglating, een klant die " & _
+           "je daar toegevoegd of van dag verzet hebt, een schrapping van een " & _
+           "pakket — telt pas mee na StartVerversBestellijstUitWeekbestand.", _
+           64, "Klaar"
     Exit Sub
 
 SamMaakFout:

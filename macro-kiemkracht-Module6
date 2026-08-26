@@ -145,9 +145,9 @@ Sub MaakSamenstellingKlassiek()
            "Terugschrijven: StartSchrijfSamenstelling. Aantallen/oogstlijst " & _
            "verversen: StartVerversBestellijst." & Chr(10) & Chr(10) & _
            "Die aantallen en weglatingen komen uit de database. Wat alleen in " & _
-           "het weekbestand staat — een extra weglating, een omgezette dag " & _
-           "klaarmaken, een klant die je zelf bijzette — telt pas mee na " & _
-           "StartVerversBestellijstUitWeekbestand.", 64, "Klaar"
+           "het weekbestand staat — een extra weglating, een klant die je daar " & _
+           "toegevoegd of van dag verzet hebt, een schrapping van een pakket — " & _
+           "telt pas mee na StartVerversBestellijstUitWeekbestand.", 64, "Klaar"
     Exit Sub
 
 KlasMaakFout:
