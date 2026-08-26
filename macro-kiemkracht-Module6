@@ -143,7 +143,11 @@ Sub MaakSamenstellingKlassiek()
     MsgBox "Klassiek samenstelling-bestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
            "Week " & iWeek & "/" & iJaar & " — status in DB: " & mKlasStatus & Chr(10) & Chr(10) & _
            "Terugschrijven: StartSchrijfSamenstelling. Aantallen/oogstlijst " & _
-           "verversen: StartVerversBestellijst.", 64, "Klaar"
+           "verversen: StartVerversBestellijst." & Chr(10) & Chr(10) & _
+           "Die aantallen en weglatingen komen uit de database. Wat alleen in " & _
+           "het weekbestand staat — een extra weglating, een omgezette dag " & _
+           "klaarmaken, een klant die je zelf bijzette — telt pas mee na " & _
+           "StartVerversBestellijstUitWeekbestand.", 64, "Klaar"
     Exit Sub
 
 KlasMaakFout:

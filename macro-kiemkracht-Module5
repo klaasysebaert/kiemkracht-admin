@@ -247,7 +247,11 @@ Sub MaakSamenstellingDoc()
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByName(TAB_SAM))
     MsgBox "Samenstelling-bestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
            "Week " & iWeek & "/" & iJaar & " — status in DB: " & mSamStatus & Chr(10) & Chr(10) & _
-           "Terugschrijven naar de cockpit/DB: StartSchrijfSamenstelling.", 64, "Klaar"
+           "Terugschrijven naar de cockpit/DB: StartSchrijfSamenstelling." & Chr(10) & Chr(10) & _
+           "Aantallen pakketten en weglatingen komen hier uit de database. Wat " & _
+           "alleen in het weekbestand staat — een extra weglating, een omgezette " & _
+           "dag klaarmaken, een klant die je zelf bijzette — telt pas mee na " & _
+           "StartVerversBestellijstUitWeekbestand.", 64, "Klaar"
     Exit Sub
 
 SamMaakFout:
