@@ -500,6 +500,115 @@ bij een uitgelijnd bestand is rij N per definitie de juiste rij.
 
 ---
 
+## Week 35 / 2026
+
+*(genoteerd op 2026-08-26, achteraf gereconstrueerd uit de cellen van
+`week_35_2026_definitief.ods` — de intentieregels hieronder zijn deels afgeleid,
+zie de ⚠ waar dat het geval is)*
+
+> **Belangrijke context: de premisse van deze log is deze week verschoven.**
+> Tot nu toe was het hoofdargument voor "de DB als enige bron" dat handwerk in
+> het weekbestand het samenstelling-document niet bereikte — dat telde uit de DB.
+> Sinds 2026-08-25 bestaat **`StartVerversBestellijstUitWeekbestand`** (Module5):
+> die telt de pakketten, weglatingen en bestelde losse groenten rechtstreeks uit
+> de weekbestand-rijen, zoals de oude `SyncMetSheets` deed. Oogstlijst,
+> afweeglijsten, printbladen en stapelkaarten kloppen dus **wél** met het
+> handwerk. Wat de handmatige weg nog steeds kost, staat per gebeurtenis
+> hieronder — en dat is nu de échte lijst van drivers.
+
+### Gebeurtenis 1 — klant zonder bestelling op de picklijst voor een koffielevering
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 1 | 3264 Maggie Dendoncker (Het Zonlicht, vrijdag) | Het koffiekistje van vorige maand — dat niet afgehaald werd en mee terugkwam — alsnog geleverd krijgen | **Rij ingevoegd** op rij 214 met naam, afhaalpunt, dag, e-mail en `klant_id`; **geen pakket** (R–U leeg), tekst in **kolom AW**: "Kistje koffie van vorige maand leveren". Dezelfde levering staat ook in het **Opmerkingen-blok** bovenaan. |
+
+**Wat dit kostte:** de rij-invoeging brak de afrekening-spiegel — **13 scheve
+koppelingen** vanaf rij 214, pas ontdekt bij een controle op 26/08 en rechtgezet
+met `HerstelWeekbestandFormules`. Zie [[reference_afrekening_spiegel]]: invoegen
+is de stille variant, want er verschijnt geen `#VERW!` en alle tellingen blijven
+kloppen.
+
+**DB-implicatie — mogelijk een nieuwe soort.** Dit is geen groentenbestelling: het
+is een **koffielevering die op de groenten-picklijst moet verschijnen**. Koffie
+leeft in een aparte database (`koffie`), en er is geen feit dat zegt "lever deze
+week dit koffiekistje aan deze klant bij dit afhaalpunt". De enige weg is vandaag
+een handmatige rij, en die rij is er alleen om op papier te komen. Verwant aan de
+6e soort (eenmalige klant, week 31) maar anders: de klant bestáát, er is niets te
+bestellen, en het gaat over een ander product dan groenten.
+
+### Gebeurtenis 2 — abonnee ruilt zijn pakket in voor losse groenten
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 2 | 3263 Ramses Dewachter (Het Zonlicht, vrijdag) | ⚠ *afgeleid uit de cellen:* deze week **geen pakket**, wel twee losse stuks | **Kolom R op 0** gezet (klein pakket geschrapt) en losse groenten ingevuld: **Venkel 1** en **Courgette 1** (kolom X = 3,60 €) |
+
+**Wat dit kostte:** niets aan de tellingen — mits je met de weekbestand-macro
+ververst. Draai je `StartVerversBestellijst` (DB-route), dan telt de database hem
+nog steeds als klein pakket: **86 tegen 85**, en je zet er vrijdag één te veel
+klaar. Dat verschil is deze week ook effectief nagemeten.
+
+**DB-implicatie: geen modelgat, twee ontbrekende deuren.** Ramses heeft een actief
+wekelijks abonnement (id 69) en géén annulatie voor week 35. Het feit valt uiteen
+in twee bestaande noties: (a) *annulatie* voor week 35 — tabel bestaat, sluit al
+uit in alle drie de takken, enkel admin-invoer ontbreekt; (b) *bestelling namens
+klant* voor de twee losse stuks — de al bekende deur uit de 7e soort (week 32).
+Nieuw is dat ze hier **als één handeling** binnenkomen: "geen pakket maar wel
+iets kleins" is één klantwens, geen twee.
+
+### Gebeurtenis 3 — weglating die via het opmerkingenveld binnenkomt, ná de lijsten
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 3 | 3032 Linda Boelaert (Schoolstraat, donderdag) | Geen venkel in haar pakket | Weglating **Venkel** met de hand bijgezet in het weglating-slot (kolom BA); in kolom AW: "vraagt om venkel weg te laten, dit staat nog niet bij de weglatingen op de papieren aan de andere kant van de muur, deze venkel is wel geoogst" |
+
+**Wat dit kostte:** in de database staat haar weglating niet — Venkel/klein telt
+daar **13**, in het weekbestand **14**. Met de weekbestand-macro klopt de
+afweeglijst wel ("8 niet!" bij Venkel/KG donderdag).
+
+**DB-implicatie: geen modelgat, wél dezelfde deur als de 8e soort.** Linda is
+weekperweek en heeft een bestelling, dus `bestelling_weglatingen` kan dit feit
+perfect dragen. Het probleem is het **kanaal**: ze vroeg het in
+`vragen_opmerkingen` ("Mini pakket zonder venkel a.u.b.") in plaats van via de
+weglating-keuzes van het formulier — exact het patroon van de 8e soort (week 33,
+afhaalpunt-wissel via het opmerkingenveld). Het feit stond dus al maandag in de
+DB, maar in een veld dat niemand als feit leest. ⚠ **Voor Klaas:** haar opmerking
+zegt "mini pakket", maar ze heeft een **klein** pakket (kolom R = 1) — de moeite
+om na te kijken.
+
+### Gebeurtenis 4 — te late bestelling per e-mail van iemand die geen klant is
+
+| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
+|---|---|---|---|
+| 4 | — Steffi Desmet (steffi.dsmt@gmail.com, 0474 76 59 20) | Te laat met het formulier: een pakket **zonder** zomerprei, paprika, tomaten en kropsla (dus enkel venkel en courgette), **plus** 1 komkommer, bladpeterselie en 1 gele meloen | **Niets** — op 26/08 nog niet ingevoerd |
+
+**DB-implicatie: 7e soort, maar zonder klant.** Ze staat niet in `klanten` (niet
+op e-mail, voornaam of telefoonnummer), dus dit is de 7e soort (bestelling per
+e-mail na sluiting) **plus** de klantaanmaak uit de 6e soort. De mail zegt "wij",
+dus mogelijk bestelt haar gezin onder een andere naam — dat is precies het soort
+identiteitsvraag dat een admin-invoerscherm zou moeten stellen en een handmatige
+rij niet stelt.
+
+### Wat week 35 verandert aan de bouwvolgorde
+
+De **telling** is geen driver meer: oogstlijst, afweeglijsten, printbladen en
+stapelkaarten kloppen nu met het handwerk, zonder DB-feit. Wat wél overblijft als
+reden om de deuren te bouwen:
+
+1. **Bestelgeschiedenis** — "wat bestelde die klant in week 35?" levert voor
+   Ramses' losse groenten en voor Maggie niets op. Sluit aan bij de twee gaten die
+   op 2026-08-22 gevonden werden (Yves week 32, Annemie week 33).
+2. **De afrekening-spiegel** — dit is de scherpste nieuwe: elke handmatige klant
+   kost een rij-invoeging, en elke rij-invoeging breekt stil de koppeling. Maggie
+   alleen al kostte 13 scheve rijen. Een admin-deur die een bestelling in de DB
+   zet en het weekbestand laat hergenereren, ruilt dat risico weg. (Het oude idee
+   van **reserverijen per afhaalpunt-blok** doet dat ook, en goedkoper.)
+3. **Notificatie en bevestiging** — een handmatige rij stuurt geen
+   bevestigingsmail.
+4. **Voorraadtellers** (`besteld` / `aantal_beschikbaar`) lopen mis.
+5. **De rij verdwijnt** bij een nieuwe `MaakWeekbestand`-run.
+
+---
+
 <!--
 Nieuwe week? Kopieer dit blok:
 
