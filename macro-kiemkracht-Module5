@@ -3245,3 +3245,165 @@ Function SamBase64(sTekst As String) As String
     Loop
     SamBase64 = sUit
 End Function
+
+' ===========================================================================
+' PRINTEN VAN DE SAMENSTELLING-TABBLADEN
+'
+' MaakPrint (Module3) drukt de Writer-overzichten naast het weekbestand af en
+' sinds 2026-08-26 ook acht tabbladen uit het samenstelling-document. Die
+' tabbladen staan verweven tussen de .odt's, dus het document gaat één keer
+' open en blijft open tot de hele rij geprint is.
+'
+' De helpers staan hier en niet in Module3 omdat de tabnamen (TAB_*) en de
+' herbouw-routines module-eigen zijn: een Const zonder Public is in Basic niet
+' zichtbaar buiten zijn module. Module3 spreekt de tabbladen daarom aan met
+' een korte sleutel ("oogst_do", "stap_vr", ...) via SamTabNaam.
+' ===========================================================================
+
+' Sleutel -> echte tabnaam. Onbekende sleutel geeft "" terug.
+Function SamTabNaam(sSleutel As String) As String
+    Select Case LCase(sSleutel)
+        Case "afw_do"   : SamTabNaam = TAB_AFW_DO
+        Case "afw_vr"   : SamTabNaam = TAB_AFW_VR
+        Case "oogst_do" : SamTabNaam = TAB_PR_OD
+        Case "oogst_vr" : SamTabNaam = TAB_PR_OV
+        Case "vul_do"   : SamTabNaam = TAB_PR_VD
+        Case "vul_vr"   : SamTabNaam = TAB_PR_VV
+        Case "stap_do"  : SamTabNaam = TAB_ST_D
+        Case "stap_vr"  : SamTabNaam = TAB_ST_V
+        Case Else       : SamTabNaam = ""
+    End Select
+End Function
+
+' ---------------------------------------------------------------------------
+' SamZoekPrintDoc — het samenstelling-document van week/jaar terugvinden.
+'
+' Eerst tussen de OPEN documenten (dan tellen niet-bewaarde wijzigingen mee),
+' anders het bestand naast het weekbestand openen — onzichtbaar, zodat er geen
+' venster openspringt tijdens het printen.
+'
+' Week en jaar worden nagerekend op rij 1 van de tab Samenstelling, niet op de
+' bestandsnaam: een kopie draagt makkelijk een naam die niet meer klopt.
+'
+' bAlOpen zegt of het document al openstond; de aanroeper mag enkel sluiten
+' wat hij zelf geopend heeft.
+' ---------------------------------------------------------------------------
+Function SamZoekPrintDoc(iWeek As Integer, iJaar As Integer, sOmg As String, _
+                         ByRef bAlOpen As Boolean) As Object
+    Dim oEnum   As Object
+    Dim oC      As Object
+    Dim oSam    As Object
+    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
+    Dim sSuffix As String
+    Dim sPad    As String
+    Dim sUrl    As String
+
+    bAlOpen = False
+    SamZoekPrintDoc = Nothing
+
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oC = oEnum.nextElement()
+        If SamIsSamenstellingDoc(oC) Then
+            If (InStr(LCase(oC.getURL()), "-dev") > 0) = (sOmg = "dev") Then
+                If SamPrintDocKlopt(oC, iWeek, iJaar) Then
+                    bAlOpen = True
+                    SamZoekPrintDoc = oC
+                    Exit Function
+                End If
+            End If
+        End If
+    Loop
+
+    If sOmg = "dev" Then sSuffix = "-dev" Else sSuffix = ""
+    sPad = JaarMap(iJaar) & iJaar & "_week_" & iWeek & "\" & _
+           "samenstelling_" & iWeek & "_" & iJaar & sSuffix & ".ods"
+    If Not FileExists(sPad) Then Exit Function
+
+    aArgs(0).Name  = "Hidden"
+    aArgs(0).Value = True
+    sUrl = ConvertToURL(sPad)
+    oSam = StarDesktop.loadComponentFromURL(sUrl, "_blank", 0, aArgs())
+    If IsNull(oSam) Then Exit Function
+
+    If Not SamIsSamenstellingDoc(oSam) Then
+        oSam.close(True)
+        Exit Function
+    End If
+    If Not SamPrintDocKlopt(oSam, iWeek, iJaar) Then
+        oSam.close(True)
+        Exit Function
+    End If
+
+    SamZoekPrintDoc = oSam
+End Function
+
+' Draagt dit samenstelling-document de gevraagde week en het gevraagde jaar?
+Function SamPrintDocKlopt(oSam As Object, iWeek As Integer, iJaar As Integer) As Boolean
+    Dim oTab As Object
+    SamPrintDocKlopt = False
+    If Not oSam.Sheets.hasByName(TAB_SAM) Then Exit Function
+    oTab = oSam.Sheets.getByName(TAB_SAM)
+    If CInt(oTab.getCellByPosition(3, 0).getValue()) <> iWeek Then Exit Function
+    If CInt(oTab.getCellByPosition(5, 0).getValue()) <> iJaar Then Exit Function
+    SamPrintDocKlopt = True
+End Function
+
+' ---------------------------------------------------------------------------
+' SamPrintTabblad — één tabblad afdrukken.
+'
+' Calc kent geen "print enkel dit blad": print() neemt het hele document. De
+' beproefde weg is daarom alle andere bladen even verbergen. De zichtbaarheid
+' wordt eerst bewaard en in ALLE gevallen teruggezet, ook bij een fout — anders
+' blijf je achter met een document waarin de helft van de tabs weg lijkt.
+' ---------------------------------------------------------------------------
+Function SamPrintTabblad(oSam As Object, sTab As String) As Boolean
+    Dim aZicht()   As Boolean
+    Dim aPrint(0)  As New com.sun.star.beans.PropertyValue
+    Dim oBladen    As Object
+    Dim iBlad      As Integer
+    Dim nBladen    As Integer
+
+    SamPrintTabblad = False
+    If sTab = "" Then Exit Function
+    If Not oSam.Sheets.hasByName(sTab) Then Exit Function
+
+    oBladen = oSam.Sheets
+    nBladen = oBladen.getCount()
+    ReDim aZicht(nBladen)
+    For iBlad = 0 To nBladen - 1
+        aZicht(iBlad) = oBladen.getByIndex(iBlad).IsVisible
+    Next iBlad
+
+    On Error GoTo HerstelZicht
+    For iBlad = 0 To nBladen - 1
+        oBladen.getByIndex(iBlad).IsVisible = (oBladen.getByIndex(iBlad).Name = sTab)
+    Next iBlad
+
+    aPrint(0).Name  = "Wait"
+    aPrint(0).Value = True
+    oSam.print(aPrint())
+    SamPrintTabblad = True
+
+HerstelZicht:
+    On Error Resume Next
+    For iBlad = 0 To nBladen - 1
+        oBladen.getByIndex(iBlad).IsVisible = aZicht(iBlad)
+    Next iBlad
+    On Error GoTo 0
+End Function
+
+' ---------------------------------------------------------------------------
+' SamVerversUitWeek — de afgeleide tabbladen herbouwen uit een weekbestand.
+'
+' Zelfde werk als VerversBestellijstUitWeekbestand, maar met beide documenten
+' als argument: die macro draait op ThisComponent en dat is tijdens het printen
+' het weekbestand, niet de samenstelling.
+' ---------------------------------------------------------------------------
+Sub SamVerversUitWeek(oSam As Object, oWk As Object, iWeek As Integer, iJaar As Integer)
+    Dim sRapport As String
+    SamLaadDagcijfersUitWeek(oWk, sRapport)
+    SamMigreerTabnamen(oSam)
+    SamSchrijfWeekcijfers(oSam, iWeek, iJaar, SamBestandsnaam(oWk.getURL()))
+    oSam.calculateAll()
+End Sub

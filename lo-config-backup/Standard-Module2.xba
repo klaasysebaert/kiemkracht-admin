@@ -207,6 +207,11 @@ Sub StartVerversBestellijst()
     VerversBestellijst()
 End Sub
 
+Sub StartVerversBestellijstUitWeekbestand()
+    ReloadKiemkracht()
+    VerversBestellijstUitWeekbestand()
+End Sub
+
 Sub StartMaakStapels()
     ReloadKiemkracht()
     MaakStapels()

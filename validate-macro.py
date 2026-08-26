@@ -53,6 +53,12 @@ PROBES = [
      ("file:///C:/x/2026_week_35/week_35_2026_definitief.ods",),
      "week_35_2026_definitief.ods"),
     ("Module6", "KlasLaatsteStatus", (), ""),
+    # Tabblad-sleutels die MaakPrint (Module3) gebruikt om de printbladen uit
+    # het samenstelling-document aan te spreken: een tikfout hierin laat een
+    # blad stil wegvallen uit de printrij.
+    ("Module5", "SamTabNaam", ("stap_vr",), "Stapels vrijdag"),
+    ("Module5", "SamTabNaam", ("oogst_do",), "Oogst donderdag"),
+    ("Module5", "SamTabNaam", ("bestaat_niet",), ""),
     # Omgevingsbepaling: welke database een macro raakt hangt hiervan af, dus
     # de naamregel zelf ook echt aftoetsen en niet enkel laten compileren.
     ("Module1", "OmgevingUitNaam",

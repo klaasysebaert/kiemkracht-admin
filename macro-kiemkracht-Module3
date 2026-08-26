@@ -1,5 +1,12 @@
 Option Explicit
 
+' --- Printrij voor MaakPrint (zie onderaan): soort, waarde, aantal ---
+Private mPrSoort(99)  As String    ' "odt" of "tab"
+Private mPrWaarde(99) As String    ' bestandspad, of tabblad-sleutel voor Module5
+Private mPrKopie(99)  As Integer   ' aantal exemplaren
+Private mPrN          As Integer   ' aantal rijen in de rij
+Private mPrSamOk      As Boolean   ' is er een bruikbaar samenstelling-document?
+
 ' =============================================
 ' Kiemkracht - Overzichten
 ' Maakt drie Writer-printdocumenten (.odt) aan
@@ -1902,138 +1909,403 @@ End Sub
 
 ' =============================================
 ' Kiemkracht - Alle overzichten afdrukken
-' Drukt alle gegenereerde .odt-bestanden af naast het weekbestand.
-' Afweeglijst per dag wordt 2x afgedrukt (dubbel exemplaar).
+' Drukt de Writer-overzichten naast het weekbestand af, de koffie-orderpicking
+' uit de zustermap, en acht tabbladen uit het samenstelling-document van
+' dezelfde week (Oogst / Afweeglijst / Vullen / Stapels, per klaarmaakdag).
+'
+' Volgorde (vastgelegd 2026-08-26): eerst oogsten — oogstlijst losse groenten
+' en het Oogst-blad per dag; dan afwegen en stapelen per dag; dan de
+' picklijsten; dan vullen met de weglatingen erbij; de koffie sluit af.
+' Overzichten van andere klaarmaakdagen dan donderdag/vrijdag komen achteraan,
+' zodat een uitzonderlijke dag nooit stil wegvalt.
+' De afweeglijst van de losse groenten gaat er dubbel uit.
+'
+' Vóór het eerste blad: het samenstelling-bestand zoeken (ontbreekt het, of
+' gaat het over een andere week, dan de vraag of enkel het weekbestand mag),
+' waarschuwen als het achterloopt, en de bevestiging over de kolom
+' "Stapelkaart" — die stuurt rechtstreeks welke stapelkaarten er komen.
 ' =============================================
+
+' De printrij. Module-eigen zodat PrVoegOdt/PrVoegTab er zonder
+
 Sub MaakPrint()
     On Error GoTo PrintFout
 
-    Dim oDoc As Object
-    oDoc = ThisComponent
+    Dim oDoc       As Object
+    Dim oSam       As Object
+    Dim sWkPath    As String
+    Dim sBase      As String
+    Dim sWkDir     As String
+    Dim sWkFile    As String
+    Dim aWkDelen() As String
+    Dim iWeek      As Integer
+    Dim iJaar      As Integer
+    Dim bZelf      As Boolean
 
-    Dim sWkPath As String
+    oDoc    = ThisComponent
     sWkPath = ConvertFromURL(oDoc.getURL())
-    Dim sBase As String
+    If sWkPath = "" Then
+        MsgBox "Bewaar het weekbestand eerst — de macro leidt alle bestandsnamen " & _
+               "af uit het pad van dit document.", 48, "Print"
+        Exit Sub
+    End If
     sBase = Left(sWkPath, Len(sWkPath) - 4)
 
-    Dim oDesktop As Object
-    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
-
-    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
-    aArgs(0).Name  = "Hidden"
-    aArgs(0).Value = True
-
-    Dim aPrintArgs(0) As New com.sun.star.beans.PropertyValue
-    aPrintArgs(0).Name  = "Wait"
-    aPrintArgs(0).Value = True
-
-    Dim sPaths(30) As String
-    Dim nPaths     As Integer
-    nPaths = 0
-
-    Dim aDagNamen(6) As String
-    aDagNamen(0) = "maandag"  : aDagNamen(1) = "dinsdag"
-    aDagNamen(2) = "woensdag" : aDagNamen(3) = "donderdag"
-    aDagNamen(4) = "vrijdag"  : aDagNamen(5) = "zaterdag"
-    aDagNamen(6) = "zondag"
-
-    Dim dd As Integer
-    Dim sOPad As String
-    For dd = 0 To 6
-        sOPad = sBase & "_losse_groenten_per_klant_afhaalpunt_" & aDagNamen(dd) & ".odt"
-        If FileExists(sOPad) Then
-            sPaths(nPaths) = sOPad : nPaths = nPaths + 1
-        End If
-    Next dd
-    For dd = 0 To 6
-        sOPad = sBase & "_losse_groenten_per_klant_formaat_" & aDagNamen(dd) & ".odt"
-        If FileExists(sOPad) Then
-            sPaths(nPaths) = sOPad : nPaths = nPaths + 1
-        End If
-    Next dd
-    Dim sGrPad As String
-    For dd = 0 To 6
-        sGrPad = sBase & "_losse_groenten_oogstlijst_" & aDagNamen(dd) & ".odt"
-        If FileExists(sGrPad) Then
-            sPaths(nPaths) = sGrPad : nPaths = nPaths + 1
-        End If
-    Next dd
-
-    Dim sWegPad As String
-    Dim sAfweeg As String
-    For dd = 0 To 6
-        sWegPad = sBase & "_weglatingen_" & aDagNamen(dd) & ".odt"
-        If FileExists(sWegPad) Then
-            sPaths(nPaths) = sWegPad : nPaths = nPaths + 1
-        End If
-    Next dd
-    For dd = 0 To 6
-        sAfweeg = sBase & "_losse_groenten_afweeglijst_" & aDagNamen(dd) & ".odt"
-        If FileExists(sAfweeg) Then
-            sPaths(nPaths) = sAfweeg : nPaths = nPaths + 1
-            sPaths(nPaths) = sAfweeg : nPaths = nPaths + 1
-        End If
-    Next dd
-
-    ' --- Koffie-orderpicking (indien die week aangemaakt) ---
-    ' De koffiebestanden staan in de zustermap "<jaar>_week_<wk>_koffie\" naast
-    ' het groenten-weekbestand. De groenten-bestandsnaam kan een suffix dragen
-    ' (bv. "_definitief"), dus we leiden enkel de MAP af en zoeken daar met een
-    ' wildcard naar de orderpicking-bestanden — ongeacht hun basisnaam.
-    ' (InStrRev bestaat niet in native LO Basic; vandaar Split voor het pad.)
-    Dim aWkDelen()   As String
-    Dim sWkDir       As String
-    Dim sWkFile      As String
-    Dim sKoffieMap   As String
-    Dim sKoffieNaam  As String
     aWkDelen = Split(sWkPath, "\")
     sWkFile  = aWkDelen(UBound(aWkDelen))
-    If Len(sWkPath) > Len(sWkFile) Then
-        sWkDir     = Left(sWkPath, Len(sWkPath) - Len(sWkFile) - 1)
-        sKoffieMap = sWkDir & "_koffie\"
-        If FileExists(sKoffieMap) Then
-            For dd = 0 To 6
-                sKoffieNaam = Dir(sKoffieMap & "*_orderpicking_afhaalpunt_" & aDagNamen(dd) & ".odt")
-                Do While sKoffieNaam <> ""
-                    sPaths(nPaths) = sKoffieMap & sKoffieNaam : nPaths = nPaths + 1
-                    sKoffieNaam = Dir()
-                Loop
-            Next dd
-            ' bestellingen zonder gekende klaarmaak-dag
-            sKoffieNaam = Dir(sKoffieMap & "*_orderpicking_afhaalpunt_zonder_dag.odt")
-            Do While sKoffieNaam <> ""
-                sPaths(nPaths) = sKoffieMap & sKoffieNaam : nPaths = nPaths + 1
-                sKoffieNaam = Dir()
-            Loop
-        End If
-    End If
+    sWkDir   = Left(sWkPath, Len(sWkPath) - Len(sWkFile) - 1)
 
-    If nPaths = 0 Then
+    If Not PrWeekUitDoc(oDoc, sWkFile, iWeek, iJaar) Then Exit Sub
+
+    ' --- Samenstelling-document zoeken en de vragen stellen ---
+    mPrSamOk = False
+    bZelf    = False
+    If Not PrBereidSamenstelling(oDoc, iWeek, iJaar, oSam, bZelf) Then Exit Sub
+
+    ' --- De printrij opbouwen ---
+    PrBouwRij(sBase, sWkDir, sWkFile)
+
+    If mPrN = 0 Then
         MsgBox "Geen documenten gevonden om af te drukken. " & _
                "Controleer of je de macro hebt uitgevoerd vanuit het weekbestand " & _
                "van waaruit je eerder de overzichten hebt aangemaakt.", 48, "Print"
+        PrSluitSam(oSam, bZelf)
         Exit Sub
     End If
 
-    Dim p        As Integer
-    Dim oPDoc    As Object
-    Dim nPrinted As Integer
-    nPrinted = 0
-    For p = 0 To nPaths - 1
-        If FileExists(sPaths(p)) Then
-            oPDoc = oDesktop.loadComponentFromURL(ConvertToURL(sPaths(p)), "_blank", 0, aArgs())
-            oPDoc.print(aPrintArgs())
-            oPDoc.close(True)
-            nPrinted = nPrinted + 1
-        End If
-    Next p
+    ' --- Afdrukken ---
+    Dim oDesktop     As Object
+    Dim oPDoc        As Object
+    Dim aArgs(0)     As New com.sun.star.beans.PropertyValue
+    Dim aPrintArgs(0)As New com.sun.star.beans.PropertyValue
+    Dim iRij         As Integer
+    Dim iKopie       As Integer
+    Dim nGeprint     As Integer
+    Dim sGemist      As String
+    Dim sTabNaam     As String
 
-    MsgBox nPrinted & " afdrukopdrachten verzonden.", 64, "Print klaar"
+    oDesktop = CreateUnoService("com.sun.star.frame.Desktop")
+    aArgs(0).Name       = "Hidden"
+    aArgs(0).Value      = True
+    aPrintArgs(0).Name  = "Wait"
+    aPrintArgs(0).Value = True
+
+    nGeprint = 0
+    sGemist  = ""
+
+    For iRij = 0 To mPrN - 1
+        If mPrSoort(iRij) = "odt" Then
+            oPDoc = oDesktop.loadComponentFromURL(ConvertToURL(mPrWaarde(iRij)), "_blank", 0, aArgs())
+            For iKopie = 1 To mPrKopie(iRij)
+                oPDoc.print(aPrintArgs())
+                nGeprint = nGeprint + 1
+            Next iKopie
+            oPDoc.close(True)
+        Else
+            sTabNaam = SamTabNaam(mPrWaarde(iRij))
+            If SamPrintTabblad(oSam, sTabNaam) Then
+                nGeprint = nGeprint + 1
+            Else
+                sGemist = sGemist & Chr(10) & "  - tabblad " & sTabNaam
+            End If
+        End If
+    Next iRij
+
+    PrSluitSam(oSam, bZelf)
+
+    Dim sSlot As String
+    sSlot = nGeprint & " afdrukopdrachten verzonden."
+    If sGemist <> "" Then
+        sSlot = sSlot & Chr(10) & Chr(10) & "Niet gevonden in het samenstelling-document:" & sGemist & _
+                Chr(10) & Chr(10) & "Draai StartVerversBestellijstUitWeekbestand om die bladen te maken."
+    End If
+    MsgBox sSlot, 64, "Print klaar"
     Exit Sub
 
 PrintFout:
-    MsgBox "Fout " & Err & ": " & Error, 16, "Fout bij afdrukken"
+    On Error Resume Next
+    PrSluitSam(oSam, bZelf)
+    MsgBox "Fout " & Err & ": " & Error & Chr(10) & "Regel: " & Erl, 16, "Fout bij afdrukken"
 End Sub
+
+' ---------------------------------------------------------------------------
+' Week en jaar van het weekbestand. De week staat in cel B1 ("Week 34"), het
+' jaar in de bestandsnaam (week_34_2026[...].ods) — de bestandsnaam alleen is
+' geen bewijs, want je werkt vaak in een kopie zoals ..._definitief.ods.
+' ---------------------------------------------------------------------------
+Function PrWeekUitDoc(oDoc As Object, sWkFile As String, _
+                      ByRef iWeek As Integer, ByRef iJaar As Integer) As Boolean
+    Dim sLabel As String
+    Dim sKern  As String
+    Dim iPos   As Integer
+
+    PrWeekUitDoc = False
+    sLabel = oDoc.Sheets.getByIndex(0).getCellByPosition(1, 0).getString()
+    If Left(sLabel, 5) <> "Week " Then
+        MsgBox "Het actieve document lijkt geen weekbestand (cel B1 bevat geen 'Week ...')." & Chr(10) & _
+               "Open eerst het weekbestand en probeer opnieuw.", 48, "Print"
+        Exit Function
+    End If
+    If Not IsNumeric(Trim(Mid(sLabel, 6))) Then
+        MsgBox "Kon het weeknummer niet lezen uit cel B1 (" & sLabel & ").", 48, "Print"
+        Exit Function
+    End If
+    iWeek = CInt(Trim(Mid(sLabel, 6)))
+
+    sKern = "week_" & iWeek & "_"
+    iPos  = InStr(LCase(sWkFile), sKern)
+    If iPos > 0 Then
+        If IsNumeric(Mid(sWkFile, iPos + Len(sKern), 4)) Then
+            iJaar = CInt(Mid(sWkFile, iPos + Len(sKern), 4))
+            PrWeekUitDoc = True
+            Exit Function
+        End If
+    End If
+
+    MsgBox "Kon het jaar niet afleiden uit de bestandsnaam (" & sWkFile & ")." & Chr(10) & _
+           "Verwacht wordt iets als week_" & iWeek & "_2026.ods.", 48, "Print"
+End Function
+
+' ---------------------------------------------------------------------------
+' PrBereidSamenstelling — het samenstelling-document zoeken en de vragen
+' stellen die vóór het printen horen. Geeft False als er niets geprint mag
+' worden; mPrSamOk zegt of de acht tabbladen mee mogen.
+'
+' Drie vragen, en nooit twee na elkaar over hetzelfde:
+'   1. geen bruikbaar bestand           -> enkel het weekbestand printen?
+'   2. openstaand met onbewaarde tikken -> verversen / zo printen / stoppen
+'      (staat het zo open, dan zegt de bestandsdatum niets meer en vervalt 3)
+'   3. bestand ouder dan het weekbestand-> eerst verversen?
+' Daarna altijd de bevestiging over de kolom "Stapelkaart", gevolgd door een
+' herbouw van de stapelbladen zodat die kolom ook echt meetelt.
+' ---------------------------------------------------------------------------
+Function PrBereidSamenstelling(oWk As Object, iWeek As Integer, iJaar As Integer, _
+                               ByRef oSam As Object, ByRef bZelf As Boolean) As Boolean
+    Dim bAlOpen  As Boolean
+    Dim nAntw    As Integer
+    Dim sSamPad  As String
+    Dim dSam     As Date
+    Dim dWk      As Date
+    Dim bOuder   As Boolean
+
+    PrBereidSamenstelling = False
+    mPrSamOk = False
+
+    oSam = SamZoekPrintDoc(iWeek, iJaar, BepaalOmgeving(), bAlOpen)
+    bZelf = Not bAlOpen
+
+    If IsNull(oSam) Then
+        bZelf = False
+        nAntw = MsgBox("Geen samenstelling-bestand gevonden voor week " & iWeek & "/" & iJaar & _
+                       ", of het bestand gaat over een andere week." & Chr(10) & Chr(10) & _
+                       "De acht tabbladen (Oogst, Afweeglijst, Vullen, Stapels) vallen dan weg." & Chr(10) & _
+                       "Enkel de overzichten van het weekbestand printen?", _
+                       4 + 48, "Print")
+        If nAntw <> 6 Then Exit Function
+        PrBereidSamenstelling = True
+        Exit Function
+    End If
+
+    mPrSamOk = True
+
+    If bAlOpen And oSam.isModified() Then
+        nAntw = MsgBox("Het samenstelling-document staat open met wijzigingen die nog niet " & _
+                       "bewaard zijn." & Chr(10) & _
+                       "De tabbladen Oogst, Vullen, Afweeglijst en Stapels volgen die pas na " & _
+                       "een verversing." & Chr(10) & Chr(10) & _
+                       "Ja = eerst verversen uit dit weekbestand, dan printen" & Chr(10) & _
+                       "Nee = printen zoals het nu op het scherm staat" & Chr(10) & _
+                       "Annuleren = niets printen", _
+                       3 + 48, "Print")
+        If nAntw = 2 Then Exit Function
+        If nAntw = 6 Then SamVerversUitWeek(oSam, oWk, iWeek, iJaar)
+    Else
+        ' Bestandsdatums vergelijken: is het weekbestand ná de samenstelling
+        ' bewaard, dan zijn de afgeleide bladen ouder dan de cijfers waarop ze
+        ' steunen. (Een weekbestand met onbewaarde wijzigingen draagt een oude
+        ' datum; dan blijft de waarschuwing terecht achterwege.)
+        bOuder  = False
+        sSamPad = ConvertFromURL(oSam.getURL())
+        On Error Resume Next
+        dSam = CDate(FileDateTime(sSamPad))
+        dWk  = CDate(FileDateTime(ConvertFromURL(oWk.getURL())))
+        If dSam > 0 And dWk > dSam Then bOuder = True
+        On Error GoTo 0
+
+        If bOuder Then
+            nAntw = MsgBox("Het samenstelling-bestand is voor het laatst bijgewerkt op " & _
+                           Format(dSam, "dddd D/MM") & " om " & Format(dSam, "HH:MM") & _
+                           ", het weekbestand daarna nog (" & _
+                           Format(dWk, "dddd D/MM") & " om " & Format(dWk, "HH:MM") & ")." & Chr(10) & _
+                           "De tabbladen Oogst, Vullen, Afweeglijst en Stapels zijn afgeleid en " & _
+                           "lopen dus mogelijk achter." & Chr(10) & Chr(10) & _
+                           "Eerst verversen uit dit weekbestand?", _
+                           4 + 48, "Print")
+            If nAntw = 6 Then SamVerversUitWeek(oSam, oWk, iWeek, iJaar)
+        End If
+    End If
+
+    ' --- Bevestiging over de kolom Stapelkaart ---
+    nAntw = MsgBox("Heb je in het samenstelling-document de kolom ""Stapelkaart"" nagekeken?" & Chr(10) & _
+                   "(tabblad Samenstelling, kolom M — leeg of ""ja"" = kaarten maken)" & Chr(10) & Chr(10) & _
+                   "Ja = stapelbladen herbouwen en printen" & Chr(10) & _
+                   "Nee = niets printen", _
+                   4 + 32, "Stapelkaarten")
+    If nAntw <> 6 Then Exit Function
+
+    SamVulStapels(oSam)
+    PrBereidSamenstelling = True
+End Function
+
+' Het samenstelling-document loslaten: enkel sluiten wat we zelf openden, en
+' dan wat we eraan herbouwd hebben eerst bewaren — anders print je bladen die
+' meteen daarna weer van de schijf verdwijnen.
+Sub PrSluitSam(ByRef oSam As Object, bZelf As Boolean)
+    If IsNull(oSam) Then Exit Sub
+    If Not bZelf Then Exit Sub
+    On Error Resume Next
+    If oSam.isModified() Then oSam.store()
+    oSam.close(True)
+    oSam = Nothing
+    On Error GoTo 0
+End Sub
+
+' Eén .odt aan de printrij toevoegen (stil overslaan als het bestand er niet is)
+Sub PrVoegOdt(sPad As String, nAantal As Integer)
+    If sPad = "" Then Exit Sub
+    If Not FileExists(sPad) Then Exit Sub
+    If mPrN > UBound(mPrSoort) Then Exit Sub
+    mPrSoort(mPrN)  = "odt"
+    mPrWaarde(mPrN) = sPad
+    mPrKopie(mPrN)  = nAantal
+    mPrN = mPrN + 1
+End Sub
+
+' Eén tabblad uit het samenstelling-document toevoegen
+Sub PrVoegTab(sSleutel As String)
+    If Not mPrSamOk Then Exit Sub
+    If mPrN > UBound(mPrSoort) Then Exit Sub
+    mPrSoort(mPrN)  = "tab"
+    mPrWaarde(mPrN) = sSleutel
+    mPrKopie(mPrN)  = 1
+    mPrN = mPrN + 1
+End Sub
+
+' ---------------------------------------------------------------------------
+' PrBouwRij — de volgorde van 2026-08-26.
+' ---------------------------------------------------------------------------
+Sub PrBouwRij(sBase As String, sWkDir As String, sWkFile As String)
+    Dim aKoffie(9)  As String     ' koffiepaden donderdag
+    Dim nKoffieDo   As Integer
+    Dim aKoffieVr(9)As String
+    Dim nKoffieVr   As Integer
+    Dim aRest(29)   As String     ' koffie van overige/onbekende dagen
+    Dim nRest       As Integer
+    Dim iK          As Integer
+
+    mPrN = 0
+    PrZoekKoffie(sWkDir, sWkFile, aKoffie(), nKoffieDo, aKoffieVr(), nKoffieVr, aRest(), nRest)
+
+    ' 1-4  oogsten: losse oogstlijst en het Oogst-blad, per dag
+    PrVoegOdt(sBase & "_losse_groenten_oogstlijst_donderdag.odt", 1)
+    PrVoegTab("oogst_do")
+    PrVoegOdt(sBase & "_losse_groenten_oogstlijst_vrijdag.odt", 1)
+    PrVoegTab("oogst_vr")
+
+    ' 5-10 afwegen en stapelen, per dag (losse afweeglijst dubbel)
+    PrVoegOdt(sBase & "_losse_groenten_afweeglijst_donderdag.odt", 2)
+    PrVoegTab("afw_do")
+    PrVoegTab("stap_do")
+    PrVoegOdt(sBase & "_losse_groenten_afweeglijst_vrijdag.odt", 2)
+    PrVoegTab("afw_vr")
+    PrVoegTab("stap_vr")
+
+    ' 11-14 picklijsten
+    PrVoegOdt(sBase & "_losse_groenten_per_klant_formaat_donderdag.odt", 1)
+    PrVoegOdt(sBase & "_losse_groenten_per_klant_afhaalpunt_donderdag.odt", 1)
+    PrVoegOdt(sBase & "_losse_groenten_per_klant_formaat_vrijdag.odt", 1)
+    PrVoegOdt(sBase & "_losse_groenten_per_klant_afhaalpunt_vrijdag.odt", 1)
+
+    ' 15-18 vullen, met de weglatingen van diezelfde dag erachter
+    PrVoegTab("vul_do")
+    PrVoegOdt(sBase & "_weglatingen_donderdag.odt", 1)
+    PrVoegTab("vul_vr")
+    PrVoegOdt(sBase & "_weglatingen_vrijdag.odt", 1)
+
+    ' 19-20 koffie
+    For iK = 0 To nKoffieDo - 1
+        PrVoegOdt(aKoffie(iK), 1)
+    Next iK
+    For iK = 0 To nKoffieVr - 1
+        PrVoegOdt(aKoffieVr(iK), 1)
+    Next iK
+
+    ' Overige klaarmaakdagen sluiten achteraan aan, in de oude groepsvolgorde.
+    PrVoegRestDagen(sBase)
+    For iK = 0 To nRest - 1
+        PrVoegOdt(aRest(iK), 1)
+    Next iK
+End Sub
+
+' Documenten van andere dagen dan donderdag/vrijdag (uitzonderingsweken)
+Sub PrVoegRestDagen(sBase As String)
+    Dim aDag(4) As String
+    Dim iD      As Integer
+    aDag(0) = "maandag" : aDag(1) = "dinsdag" : aDag(2) = "woensdag"
+    aDag(3) = "zaterdag": aDag(4) = "zondag"
+
+    For iD = 0 To 4
+        PrVoegOdt(sBase & "_losse_groenten_oogstlijst_" & aDag(iD) & ".odt", 1)
+        PrVoegOdt(sBase & "_losse_groenten_afweeglijst_" & aDag(iD) & ".odt", 2)
+        PrVoegOdt(sBase & "_losse_groenten_per_klant_formaat_" & aDag(iD) & ".odt", 1)
+        PrVoegOdt(sBase & "_losse_groenten_per_klant_afhaalpunt_" & aDag(iD) & ".odt", 1)
+        PrVoegOdt(sBase & "_weglatingen_" & aDag(iD) & ".odt", 1)
+    Next iD
+End Sub
+
+' ---------------------------------------------------------------------------
+' De koffie-orderpicking staat in de zustermap "<weekmap>_koffie\" en draagt
+' een eigen basisnaam, dus zoeken met een jokerteken. Alles wordt vooraf
+' verzameld: Dir() houdt maar één zoekopdracht tegelijk bij.
+' ---------------------------------------------------------------------------
+Sub PrZoekKoffie(sWkDir As String, sWkFile As String, _
+                 ByRef aDo() As String, ByRef nDo As Integer, _
+                 ByRef aVr() As String, ByRef nVr As Integer, _
+                 ByRef aRest() As String, ByRef nRest As Integer)
+    Dim sMap  As String
+    Dim sNaam As String
+
+    nDo   = 0
+    nVr   = 0
+    nRest = 0
+    sMap  = sWkDir & "_koffie\"
+    If Not FileExists(sMap) Then Exit Sub
+
+    sNaam = Dir(sMap & "*_orderpicking_afhaalpunt_donderdag.odt")
+    Do While sNaam <> ""
+        If nDo <= UBound(aDo) Then : aDo(nDo) = sMap & sNaam : nDo = nDo + 1 : End If
+        sNaam = Dir()
+    Loop
+
+    sNaam = Dir(sMap & "*_orderpicking_afhaalpunt_vrijdag.odt")
+    Do While sNaam <> ""
+        If nVr <= UBound(aVr) Then : aVr(nVr) = sMap & sNaam : nVr = nVr + 1 : End If
+        sNaam = Dir()
+    Loop
+
+    Dim aDag(5) As String
+    Dim iD      As Integer
+    aDag(0) = "maandag" : aDag(1) = "dinsdag"  : aDag(2) = "woensdag"
+    aDag(3) = "zaterdag": aDag(4) = "zondag"   : aDag(5) = "zonder_dag"
+    For iD = 0 To 5
+        sNaam = Dir(sMap & "*_orderpicking_afhaalpunt_" & aDag(iD) & ".odt")
+        Do While sNaam <> ""
+            If nRest <= UBound(aRest) Then : aRest(nRest) = sMap & sNaam : nRest = nRest + 1 : End If
+            sNaam = Dir()
+        Loop
+    Next iD
+End Sub
+
 
 ' =============================================
 ' Kiemkracht - Etiketten groentenpakketten
