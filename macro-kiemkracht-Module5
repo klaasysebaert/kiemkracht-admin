@@ -55,6 +55,7 @@ Const TAB_PR_VD   = "Vullen donderdag"
 Const TAB_PR_VV   = "Vullen vrijdag"
 Const TAB_ST_D    = "Stapels donderdag"
 Const TAB_ST_V    = "Stapels vrijdag"
+Const TAB_BIJ     = "Bijbestellen (losse groenten)"
 
 Const SAM_MARKER = "Kiemkracht samenstelling"
 
@@ -2249,6 +2250,8 @@ Private Sub SamVulPrintbladen(oDoc As Object, iWeek As Integer, iJaar As Integer
     SamVulPrintOogst(oDoc, 1, iWeek, iJaar)
     SamVulPrintVullen(oDoc, 0, iWeek, iJaar)
     SamVulPrintVullen(oDoc, 1, iWeek, iJaar)
+    ' dagloos, dus één keer voor de hele week (geen printblad)
+    SamVulBijbestellen(oDoc, iWeek, iJaar)
     ' de stapelkaarten lezen de Vullen-bladen, dus pas hierna
     SamVulStapels(oDoc)
 End Sub
@@ -2272,7 +2275,6 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
                              iWeek As Integer, iJaar As Integer)
     Dim oPr    As Object
     Dim oSam   As Object
-    Dim oLos   As Object
     Dim iSlot  As Integer
     Dim iMaat  As Integer
     Dim iRij   As Integer
@@ -2306,7 +2308,6 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
 
     oPr  = SamZorgTab(oDoc, sTab)
     oSam = oDoc.Sheets.getByName(TAB_SAM)
-    oLos = oDoc.Sheets.getByName(TAB_LOS)
     oPr.getCellRangeByPosition(0, 0, 7, PR_MAX_RIJ).clearContents(55)
 
     ' --- Pakketgroenten inlezen ---
@@ -2448,40 +2449,9 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
         End If
     Next iG
 
-    ' --- Bijbestellijst losse groenten (besteld = teller van de hele week) ---
-    iRij = iRij + 2
-    oPr.getCellByPosition(0, iRij).setString("BIJBESTELLEN — losse groenten (besteld: hele week)")
-    oPr.getCellByPosition(0, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    iRij = iRij + 1
-    oPr.getCellByPosition(0, iRij).setString("Losse groente")
-    oPr.getCellByPosition(2, iRij).setString("Besteld")
-    oPr.getCellByPosition(3, iRij).setString("Eenheid")
-    oPr.getCellByPosition(4, iRij).setString("Grooth.")
-    oPr.getCellByPosition(5, iRij).setString("Kost")
-    oPr.getCellRangeByPosition(0, iRij, 5, iRij).CellBackColor = clKop
-    oPr.getCellRangeByPosition(0, iRij, 5, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    iRij = iRij + 1
-    Dim dBesteld As Double
-    Dim dGrooth  As Double
-    For iSlot = 0 To LOS_SLOTS - 1
-        sNaam = oLos.getCellByPosition(0, LOS_RIJ0 + iSlot).getString()
-        If sNaam <> "" Then
-            dBesteld = oLos.getCellByPosition(8, LOS_RIJ0 + iSlot).getValue()
-            dGrooth  = oLos.getCellByPosition(2, LOS_RIJ0 + iSlot).getValue()
-            If dBesteld > 0 Then
-                oPr.getCellByPosition(0, iRij).setString(sNaam)
-                oPr.getCellByPosition(2, iRij).setString(Format(dBesteld, "0.00"))
-                oPr.getCellByPosition(3, iRij).setString( _
-                    oLos.getCellByPosition(3, LOS_RIJ0 + iSlot).getString())
-                If dGrooth > 0 Then
-                    oPr.getCellByPosition(4, iRij).setString(Format(dGrooth, "0.00"))
-                    oPr.getCellByPosition(5, iRij).setString( _
-                        Format(Int(dBesteld * dGrooth * 100 + 0.5) / 100, "0.00"))
-                End If
-                iRij = iRij + 1
-            End If
-        End If
-    Next iSlot
+    ' De bijbestellijst van de losse groenten stond hier vroeger onder; ze
+    ' staat nu op een eigen tabblad (SamVulBijbestellen) omdat ze op beide
+    ' oogstbladen identiek was en niet meegeprint wordt.
 
     ' --- Opmaak: enkel de getalkolommen rechts uitlijnen (kolom A/B links,
     ' anders kappen lange groentenamen en sectietitels links af) ---
@@ -2497,6 +2467,83 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     oPr.Columns.getByIndex(7).Width = 1900
 
     SamZetPrintPagina(oDoc, oPr)
+End Sub
+
+
+' ---------------------------------------------------------------------------
+' SamVulBijbestellen — de bijbestellijst van de losse groenten op een eigen
+' tabblad.
+'
+' Stond vroeger onderaan ALLEBEI de oogstbladen, twee keer exact dezelfde
+' tabel: "besteld" is een teller van de hele week en kent geen dagopdeling.
+' Het hoort ook niet op een printblad thuis — dit stuk wordt niet meegeprint
+' (daarvoor dient het overzicht uit het weekbestand), en het maakte de
+' oogstbladen onnodig lang.
+' Zelfde kolomindeling als voordien, zodat het er hetzelfde uitziet.
+' ---------------------------------------------------------------------------
+Private Sub SamVulBijbestellen(oDoc As Object, iWeek As Integer, iJaar As Integer)
+    Dim oBij     As Object
+    Dim oLos     As Object
+    Dim iSlot    As Integer
+    Dim iRij     As Integer
+    Dim iKol     As Integer
+    Dim sNaam    As String
+    Dim dBesteld As Double
+    Dim dGrooth  As Double
+    Dim clKop    As Long
+
+    clKop = RGB(220, 233, 200)
+    oBij = SamZorgTab(oDoc, TAB_BIJ)
+    oLos = oDoc.Sheets.getByName(TAB_LOS)
+    oBij.getCellRangeByPosition(0, 0, 7, PR_MAX_RIJ).clearContents(55)
+
+    oBij.getCellByPosition(0, 0).setString("BIJBESTELLEN — losse groenten")
+    oBij.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oBij.getCellByPosition(0, 0).CharHeight = 16
+    oBij.getCellByPosition(0, 1).setString("week " & iWeek & "/" & iJaar & _
+        " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM") & _
+        " — besteld = de hele week, niet per dag")
+
+    iRij = 3
+    oBij.getCellByPosition(0, iRij).setString("Losse groente")
+    oBij.getCellByPosition(2, iRij).setString("Besteld")
+    oBij.getCellByPosition(3, iRij).setString("Eenheid")
+    oBij.getCellByPosition(4, iRij).setString("Grooth.")
+    oBij.getCellByPosition(5, iRij).setString("Kost")
+    oBij.getCellRangeByPosition(0, iRij, 5, iRij).CellBackColor = clKop
+    oBij.getCellRangeByPosition(0, iRij, 5, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    iRij = iRij + 1
+
+    For iSlot = 0 To LOS_SLOTS - 1
+        sNaam = oLos.getCellByPosition(0, LOS_RIJ0 + iSlot).getString()
+        If sNaam <> "" Then
+            dBesteld = oLos.getCellByPosition(8, LOS_RIJ0 + iSlot).getValue()
+            dGrooth  = oLos.getCellByPosition(2, LOS_RIJ0 + iSlot).getValue()
+            If dBesteld > 0 Then
+                oBij.getCellByPosition(0, iRij).setString(sNaam)
+                oBij.getCellByPosition(2, iRij).setString(Format(dBesteld, "0.00"))
+                oBij.getCellByPosition(3, iRij).setString( _
+                    oLos.getCellByPosition(3, LOS_RIJ0 + iSlot).getString())
+                If dGrooth > 0 Then
+                    oBij.getCellByPosition(4, iRij).setString(Format(dGrooth, "0.00"))
+                    oBij.getCellByPosition(5, iRij).setString( _
+                        Format(Int(dBesteld * dGrooth * 100 + 0.5) / 100, "0.00"))
+                End If
+                iRij = iRij + 1
+            End If
+        End If
+    Next iSlot
+
+    oBij.getCellRangeByPosition(2, 3, 5, iRij).HoriJustify = _
+        com.sun.star.table.CellHoriJustify.RIGHT
+
+    oBij.Columns.getByIndex(0).Width = 1500
+    oBij.Columns.getByIndex(1).Width = 4200
+    For iKol = 2 To 5
+        oBij.Columns.getByIndex(iKol).Width = 2000
+    Next iKol
+
+    SamZetPrintPagina(oDoc, oBij)
 End Sub
 
 ' ---------------------------------------------------------------------------
