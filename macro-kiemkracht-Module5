@@ -2344,9 +2344,15 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     oPr.getCellByPosition(1, 3).setString("don en vrij")
     oPr.getCellByPosition(1, 4).setString("don")
     oPr.getCellByPosition(1, 5).setString("vrij")
-    oPr.getCellRangeByPosition(1, 2, 5, 2).CellBackColor = clKop
-    oPr.getCellRangeByPosition(1, 2, 5, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oPr.getCellRangeByPosition(1, 4 + iDag, 5, 4 + iDag).CharWeight = _
+    ' Totaal-kolom (G) als formule, net als de kolom "Samen" op de Oogstlijst:
+    ' stel je op het blad een aantal met de hand bij, dan volgt het totaal mee.
+    oPr.getCellByPosition(6, 2).setString("Totaal")
+    oPr.getCellByPosition(6, 3).setFormula("=SUM(C4:F4)")
+    oPr.getCellByPosition(6, 4).setFormula("=SUM(C5:F5)")
+    oPr.getCellByPosition(6, 5).setFormula("=SUM(C6:F6)")
+    oPr.getCellRangeByPosition(1, 2, 6, 2).CellBackColor = clKop
+    oPr.getCellRangeByPosition(1, 2, 6, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oPr.getCellRangeByPosition(1, 4 + iDag, 6, 4 + iDag).CharWeight = _
         com.sun.star.awt.FontWeight.BOLD
 
     ' --- Kolomkoppen ---
