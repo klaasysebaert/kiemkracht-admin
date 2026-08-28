@@ -7,6 +7,12 @@ Private mPrKopie(99)  As Integer   ' aantal exemplaren
 Private mPrN          As Integer   ' aantal rijen in de rij
 Private mPrSamOk      As Boolean   ' is er een bruikbaar samenstelling-document?
 
+' --- Slotmelding van de etiketten-macro's ---
+' MaakAlleEtiketten draait beide macro's na elkaar; dan houdt EtMeld de
+' meldingen op zodat je één venster krijgt in plaats van twee.
+Private mEtStil    As Boolean
+Private mEtVerslag As String
+
 ' =============================================
 ' Kiemkracht - Overzichten
 ' Maakt drie Writer-printdocumenten (.odt) aan
@@ -2381,7 +2387,7 @@ Sub MaakEtiketten()
     Next i
 
     If nEt = 0 Then
-        MsgBox "Geen groentenpakketten gevonden.", 48, "Etiketten"
+        EtMeld("Geen groentenpakketten gevonden.", 48, "Etiketten")
         Exit Sub
     End If
 
@@ -2536,7 +2542,7 @@ Sub MaakEtiketten()
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
     oCalc.close(True)
 
-    MsgBox nEt & " etiketten aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar"
+    EtMeld(nEt & " etiketten pakketten aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar")
 
 End Sub
 
@@ -2624,7 +2630,7 @@ Sub MaakEtikettenBijbestelling()
     Next i
 
     If nEt = 0 Then
-        MsgBox "Geen bijbestellingen losse groenten gevonden.", 48, "Etiketten bijbestelling"
+        EtMeld("Geen bijbestellingen losse groenten gevonden.", 48, "Etiketten bijbestelling")
         Exit Sub
     End If
 
@@ -2767,7 +2773,7 @@ Sub MaakEtikettenBijbestelling()
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
     oCalc.close(True)
 
-    MsgBox nEt & " etiketten bijbestelling aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar"
+    EtMeld(nEt & " etiketten bijbestelling aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar")
 
 End Sub
 
@@ -3623,4 +3629,43 @@ EtFout:
     EtSluit(oPak, bPakZelf)
     EtSluit(oBij, bBijZelf)
     MsgBox "Fout " & Err & ": " & Error & Chr(10) & "Regel: " & Erl, 16, "Fout bij etiketten printen"
+End Sub
+
+' ---------------------------------------------------------------------------
+' Kiemkracht - Beide soorten etiketten in één keer aanmaken
+'
+' Draait MaakEtiketten en MaakEtikettenBijbestelling na elkaar en toont hun
+' meldingen samen in één venster. De twee macro's blijven ook los bruikbaar;
+' dan meldt elk zichzelf zoals vroeger.
+' ---------------------------------------------------------------------------
+Sub MaakAlleEtiketten()
+    On Error GoTo AlleEtFout
+
+    mEtStil    = True
+    mEtVerslag = ""
+
+    MaakEtiketten()
+    MaakEtikettenBijbestelling()
+
+    mEtStil = False
+    If mEtVerslag = "" Then mEtVerslag = "Geen etiketten aangemaakt."
+    MsgBox mEtVerslag & Chr(10) & Chr(10) & _
+           "Printen doe je met StartPrintEtiketten; die telt de vellen samen.", _
+           64, "Etiketten klaar"
+    Exit Sub
+
+AlleEtFout:
+    mEtStil = False
+    MsgBox "Fout " & Err & ": " & Error & Chr(10) & "Regel: " & Erl & Chr(10) & Chr(10) & _
+           mEtVerslag, 16, "Fout bij etiketten aanmaken"
+End Sub
+
+' Melding tonen, of opsparen wanneer MaakAlleEtiketten aan het woord is.
+Sub EtMeld(sTekst As String, nSoort As Integer, sTitel As String)
+    If mEtStil Then
+        If mEtVerslag <> "" Then mEtVerslag = mEtVerslag & Chr(10) & Chr(10)
+        mEtVerslag = mEtVerslag & sTekst
+    Else
+        MsgBox sTekst, nSoort, sTitel
+    End If
 End Sub
