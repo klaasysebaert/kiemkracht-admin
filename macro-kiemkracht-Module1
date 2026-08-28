@@ -104,6 +104,15 @@ Function BepaalOmgeving() As String
         Exit Function
     End If
 
+    ' Een weekbestand bepaalt óók zijn eigen omgeving. Zonder deze tak viel een
+    ' macro die je in het weekbestand start terug op het open data-bestand — of,
+    ' als dat niet openstond, stilzwijgend op dev. Dat is precies het soort
+    ' stille vergissing dat je pas merkt aan lege of vreemde gegevens.
+    If IsWeekbestandDoc(ThisComponent) Then
+        BepaalOmgeving = OmgevingUitNaam(ThisComponent.getURL())
+        Exit Function
+    End If
+
     oDoc = HuidigDataDocument()
     If Not IsNull(oDoc) Then
         BepaalOmgeving = OmgevingUitNaam(oDoc.getURL())
