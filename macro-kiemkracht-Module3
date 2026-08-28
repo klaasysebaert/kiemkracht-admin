@@ -3469,15 +3469,19 @@ Function EtBereidBlad(oCalc As Object) As Integer
         oSheet.Columns.getByIndex(iK).OptimalWidth = False
     Next iK
 
-    ReDim aBereik(nVel - 1) As New com.sun.star.table.CellRangeAddress
+    ' Struct-array via CreateUnoStruct: "ReDim ... As New <struct>" bestaat niet
+    ' in Basic en breekt de compilatie van de hele bibliotheek.
+    ReDim aBereik(nVel - 1)
     For iG = 0 To nVel - 1
         oSheet.getCellRangeByPosition(iG * ET_KOL_VEL, 0, _
                                       iG * ET_KOL_VEL + ET_KOL_VEL - 1, 0).merge(True)
-        aBereik(iG).Sheet       = 0
-        aBereik(iG).StartColumn = iG * ET_KOL_VEL
-        aBereik(iG).EndColumn   = iG * ET_KOL_VEL + ET_KOL_VEL - 1
-        aBereik(iG).StartRow    = 0
-        aBereik(iG).EndRow      = ET_PER_KOL     ' rij 9 (0-based 8)
+        oAdres = CreateUnoStruct("com.sun.star.table.CellRangeAddress")
+        oAdres.Sheet       = 0
+        oAdres.StartColumn = iG * ET_KOL_VEL
+        oAdres.EndColumn   = iG * ET_KOL_VEL + ET_KOL_VEL - 1
+        oAdres.StartRow    = 0
+        oAdres.EndRow      = ET_PER_KOL          ' rij 9 (0-based 8)
+        aBereik(iG)        = oAdres
     Next iG
     oSheet.setPrintAreas(aBereik())
 End Function
