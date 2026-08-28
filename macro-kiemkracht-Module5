@@ -251,7 +251,7 @@ Sub MaakSamenstellingDoc()
            "Aantallen pakketten en weglatingen komen hier uit de database. Wat " & _
            "alleen in het weekbestand staat — een extra weglating, een klant die " & _
            "je daar toegevoegd of van dag verzet hebt, een schrapping van een " & _
-           "pakket — telt pas mee na ""Uitwisseling weekbestand en samenstelling"".", _
+           "pakket — telt pas mee na ""Uitwisselen weekbestand met samenstelling"".", _
            64, "Klaar"
     Exit Sub
 
@@ -1569,7 +1569,7 @@ Private Sub SamBouwTabBestellijst(oDoc As Object)
     oSheet.getCellByPosition(0, 0).setString("Bestellijst groothandel")
     oSheet.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oSheet.getCellByPosition(3, 0).setString( _
-        "Momentopname — ververs via ""Ververs OogstBestel"" (vlak voor het bestellen).")
+        "Momentopname — ververs via ""Herlaad uit databank"" (vlak voor het bestellen).")
 
     ' --- Pakketten-matrix: maten in de kolommen, dagen in de rijen ---
     For iKol = 0 To 3
@@ -2736,7 +2736,7 @@ Sub MaakStapels()
     End If
     If Not oDoc.Sheets.hasByName(TAB_PR_VD) Then
         MsgBox "De Vullen-bladen bestaan nog niet. Draai eerst " & _
-               """Ververs OogstBestel"".", 48, "Stapelkaarten"
+               """Herlaad uit databank"".", 48, "Stapelkaarten"
         Exit Sub
     End If
     SamVulStapels(oDoc)

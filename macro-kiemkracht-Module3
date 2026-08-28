@@ -2023,7 +2023,7 @@ Sub MaakPrint()
     sSlot = nGeprint & " afdrukopdrachten verzonden."
     If sGemist <> "" Then
         sSlot = sSlot & Chr(10) & Chr(10) & "Niet gevonden in het samenstelling-document:" & sGemist & _
-                Chr(10) & Chr(10) & "Draai ""Uitwisseling weekbestand en samenstelling"" om die bladen te maken."
+                Chr(10) & Chr(10) & "Draai ""Uitwisselen weekbestand met samenstelling"" om die bladen te maken."
     End If
     MsgBox sSlot, 64, "Print klaar"
     Exit Sub

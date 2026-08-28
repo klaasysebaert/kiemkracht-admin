@@ -143,11 +143,11 @@ Sub MaakSamenstellingKlassiek()
     MsgBox "Klassiek samenstelling-bestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
            "Week " & iWeek & "/" & iJaar & " — status in DB: " & mKlasStatus & Chr(10) & Chr(10) & _
            "Terugschrijven: ""Schrijf Samenstelling"". Aantallen/oogstlijst " & _
-           "verversen: ""Ververs OogstBestel""." & Chr(10) & Chr(10) & _
+           "verversen: ""Herlaad uit databank""." & Chr(10) & Chr(10) & _
            "Die aantallen en weglatingen komen uit de database. Wat alleen in " & _
            "het weekbestand staat — een extra weglating, een klant die je daar " & _
            "toegevoegd of van dag verzet hebt, een schrapping van een pakket — " & _
-           "telt pas mee na ""Uitwisseling weekbestand en samenstelling"".", 64, "Klaar"
+           "telt pas mee na ""Uitwisselen weekbestand met samenstelling"".", 64, "Klaar"
     Exit Sub
 
 KlasMaakFout:
@@ -346,7 +346,7 @@ Private Sub KlasBouwHoofdblad(oDoc As Object, oConn As Object, _
 
     oSheet.getCellByPosition(0, KLAS_BLOK0 + 4 * KLAS_BLOKH + 1).setString( _
         "Invulvelden = lichtblauw. Weglatingen (TOT/DON/VRIJ) en aantallen: " & _
-        """Ververs OogstBestel"". Terugschrijven: ""Schrijf Samenstelling"".")
+        """Herlaad uit databank"". Terugschrijven: ""Schrijf Samenstelling"".")
 
     ' Kolombreedtes
     oSheet.Columns.getByIndex(0).Width = 1400
