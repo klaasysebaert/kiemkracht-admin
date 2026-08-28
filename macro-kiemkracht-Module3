@@ -3613,7 +3613,9 @@ Sub PrintEtiketten()
     EtSluit(oPak, bPakZelf)
     EtSluit(oBij, bBijZelf)
 
-    MsgBox (nVelPak + nVelBij) & " vellen verzonden naar de printer.", 64, "Etiketten klaar"
+    ' Geen haakjes vooraan: "MsgBox (a + b) & ..." leest Basic als argumentenlijst
+    ' en breekt de compilatie van de hele bibliotheek.
+    MsgBox CStr(nVelPak + nVelBij) & " vellen verzonden naar de printer.", 64, "Etiketten klaar"
     Exit Sub
 
 EtFout:
