@@ -2530,6 +2530,9 @@ Sub MaakEtiketten()
     Dim sCalcPath As String
     sWkPath   = ConvertFromURL(oDoc.getURL())
     sCalcPath = Left(sWkPath, Len(sWkPath) - 4) & "_etiketten.ods"
+    ' Printbereiken per vel + samengevoegde rij-1-cellen (zie ETIKETTEN PRINTEN)
+    EtBereidBlad(oCalc)
+
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
     oCalc.close(True)
 
@@ -2758,6 +2761,9 @@ Sub MaakEtikettenBijbestelling()
     Dim sCalcPath As String
     sWkPath   = ConvertFromURL(oDoc.getURL())
     sCalcPath = Left(sWkPath, Len(sWkPath) - 4) & "_etiketten_bijbestelling.ods"
+    ' Printbereiken per vel + samengevoegde rij-1-cellen (zie ETIKETTEN PRINTEN)
+    EtBereidBlad(oCalc)
+
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
     oCalc.close(True)
 
@@ -3397,3 +3403,218 @@ DebugFout:
 End Sub
 
 
+
+' ===========================================================================
+' ETIKETTEN PRINTEN
+'
+' Een etikettenvel draagt 24 etiketten: 3 kolommen van 8. Het document zet ze
+' in kolom A onder elkaar; kolom B, C, ... halen ze met een formule op, acht per
+' kolom (rijen 2-9). Eén vel is dus drie kolommen breed, en het printbereik
+' loopt van rij 1 (de lege uitlijnrij van 8 mm) tot en met rij 9.
+'
+' EtBereidBlad legt die bereiken vast — één per vel, en Calc begint bij elk
+' printbereik een nieuwe bladzijde — en voegt in rij 1 telkens drie cellen
+' samen, zodat je met de pijltjestoetsen van vel naar vel springt bij handmatig
+' printen. Zowel de twee aanmaak-macro's als PrintEtiketten roepen ze aan, dus
+' een bestand van vóór deze wijziging krijgt ze zodra je het print.
+' ===========================================================================
+
+Const ET_PER_KOL = 8      ' etiketten per kolom (rijen 2-9)
+Const ET_KOL_VEL = 3      ' kolommen per vel
+Const ET_BREEDTE = 6900   ' kolombreedte in 1/100 mm
+
+' Aantal vellen voor n etiketten (elk deel begint op een nieuw vel)
+Function EtVellen(nEtiketten As Integer) As Integer
+    If nEtiketten <= 0 Then
+        EtVellen = 0
+    Else
+        EtVellen = Int((nEtiketten - 1) / (ET_PER_KOL * ET_KOL_VEL)) + 1
+    End If
+End Function
+
+' Printbereiken, kolombreedtes en de samengevoegde rij-1-cellen zetten.
+' Geeft het aantal etiketten terug (geteld in kolom A).
+Function EtBereidBlad(oCalc As Object) As Integer
+    Dim oSheet    As Object
+    Dim oCur      As Object
+    Dim oAdres    As Object
+    Dim aBereik()
+    Dim nLaatste  As Long
+    Dim iR        As Long
+    Dim nEt       As Integer
+    Dim nKol      As Integer
+    Dim nVel      As Integer
+    Dim iG        As Integer
+    Dim iK        As Integer
+
+    oSheet = oCalc.Sheets.getByIndex(0)
+    oCur   = oSheet.createCursor()
+    oCur.gotoEndOfUsedArea(True)
+    nLaatste = oCur.getRangeAddress().EndRow
+
+    nEt = 0
+    For iR = 1 To nLaatste
+        If Trim(oSheet.getCellByPosition(0, iR).getString()) <> "" Then nEt = nEt + 1
+    Next iR
+    EtBereidBlad = nEt
+    If nEt = 0 Then Exit Function
+
+    nKol = Int((nEt - 1) / ET_PER_KOL) + 1       ' kolommen met etiketten
+    nVel = Int((nKol - 1) / ET_KOL_VEL) + 1      ' vellen
+
+    ' Ook de lege kolommen van het laatste vel krijgen de etiketbreedte, anders
+    ' klopt het printbereik van dat vel niet.
+    For iK = 0 To nVel * ET_KOL_VEL - 1
+        oSheet.Columns.getByIndex(iK).Width        = ET_BREEDTE
+        oSheet.Columns.getByIndex(iK).OptimalWidth = False
+    Next iK
+
+    ReDim aBereik(nVel - 1) As New com.sun.star.table.CellRangeAddress
+    For iG = 0 To nVel - 1
+        oSheet.getCellRangeByPosition(iG * ET_KOL_VEL, 0, _
+                                      iG * ET_KOL_VEL + ET_KOL_VEL - 1, 0).merge(True)
+        aBereik(iG).Sheet       = 0
+        aBereik(iG).StartColumn = iG * ET_KOL_VEL
+        aBereik(iG).EndColumn   = iG * ET_KOL_VEL + ET_KOL_VEL - 1
+        aBereik(iG).StartRow    = 0
+        aBereik(iG).EndRow      = ET_PER_KOL     ' rij 9 (0-based 8)
+    Next iG
+    oSheet.setPrintAreas(aBereik())
+End Function
+
+' Een etikettenbestand openen: staat het al open, gebruik dan dat venster.
+Function EtOpen(sPad As String, ByRef bZelf As Boolean) As Object
+    Dim oEnum    As Object
+    Dim oC       As Object
+    Dim oNieuw   As Object
+    Dim aArgs(0) As New com.sun.star.beans.PropertyValue
+    Dim sUrl     As String
+
+    bZelf  = False
+    EtOpen = Nothing
+    If Not FileExists(sPad) Then Exit Function
+
+    sUrl  = ConvertToURL(sPad)
+    oEnum = StarDesktop.Components.createEnumeration()
+    Do While oEnum.hasMoreElements()
+        oC = oEnum.nextElement()
+        If HasUnoInterfaces(oC, "com.sun.star.frame.XModel") Then
+            If oC.getURL() = sUrl Then
+                EtOpen = oC
+                Exit Function
+            End If
+        End If
+    Loop
+
+    aArgs(0).Name  = "Hidden"
+    aArgs(0).Value = True
+    oNieuw = StarDesktop.loadComponentFromURL(sUrl, "_blank", 0, aArgs())
+    bZelf  = Not IsNull(oNieuw)
+    EtOpen = oNieuw
+End Function
+
+' Zelf geopend? Dan de printbereiken en samenvoegingen bewaren en sluiten.
+' Stond het venster al open, dan blijft het staan zoals de gebruiker het had.
+Sub EtSluit(ByRef oCalc As Object, bZelf As Boolean)
+    If IsNull(oCalc) Then Exit Sub
+    If Not bZelf Then Exit Sub
+    On Error Resume Next
+    If oCalc.isModified() Then oCalc.store()
+    oCalc.close(True)
+    oCalc = Nothing
+    On Error GoTo 0
+End Sub
+
+' ---------------------------------------------------------------------------
+' Kiemkracht - Etiketten printen (pakketten + bijbestellingen in één keer)
+'
+' Meldt eerst hoeveel vellen er in de printer moeten. Elk deel begint op een
+' nieuw vel, dus het laatste vel van elk deel wordt meestal niet volgeprint —
+' die witruimte zit in de telling.
+' ---------------------------------------------------------------------------
+Sub PrintEtiketten()
+    On Error GoTo EtFout
+
+    Dim oDoc      As Object
+    Dim oPak      As Object
+    Dim oBij      As Object
+    Dim bPakZelf  As Boolean
+    Dim bBijZelf  As Boolean
+    Dim sWkPath   As String
+    Dim sBase     As String
+    Dim nPak      As Integer
+    Dim nBij      As Integer
+    Dim nVelPak   As Integer
+    Dim nVelBij   As Integer
+    Dim sMelding  As String
+    Dim nAntw     As Integer
+    Dim aPrint(0) As New com.sun.star.beans.PropertyValue
+
+    oDoc    = ThisComponent
+    sWkPath = ConvertFromURL(oDoc.getURL())
+    If sWkPath = "" Then
+        MsgBox "Bewaar het weekbestand eerst — de macro leidt de bestandsnamen " & _
+               "af uit het pad van dit document.", 48, "Etiketten printen"
+        Exit Sub
+    End If
+    sBase = Left(sWkPath, Len(sWkPath) - 4)
+
+    nPak = 0
+    nBij = 0
+    oPak = EtOpen(sBase & "_etiketten.ods", bPakZelf)
+    oBij = EtOpen(sBase & "_etiketten_bijbestelling.ods", bBijZelf)
+
+    If IsNull(oPak) And IsNull(oBij) Then
+        MsgBox "Geen etikettenbestanden gevonden naast dit weekbestand." & Chr(10) & _
+               "Draai eerst StartMaakEtiketten en StartMaakEtikettenBijbestelling.", _
+               48, "Etiketten printen"
+        Exit Sub
+    End If
+
+    If Not IsNull(oPak) Then nPak = EtBereidBlad(oPak)
+    If Not IsNull(oBij) Then nBij = EtBereidBlad(oBij)
+    nVelPak = EtVellen(nPak)
+    nVelBij = EtVellen(nBij)
+
+    sMelding = "Leg " & (nVelPak + nVelBij) & " vellen etiketten in de printer " & _
+               "(24 etiketten per vel):" & Chr(10) & Chr(10)
+    If nVelPak > 0 Then
+        sMelding = sMelding & "   pakketten:       " & nVelPak & " vel voor " & nPak & _
+                   " etiketten (" & (nVelPak * 24 - nPak) & " blijven leeg)" & Chr(10)
+    Else
+        sMelding = sMelding & "   pakketten:       geen bestand gevonden" & Chr(10)
+    End If
+    If nVelBij > 0 Then
+        sMelding = sMelding & "   bijbestellingen: " & nVelBij & " vel voor " & nBij & _
+                   " etiketten (" & (nVelBij * 24 - nBij) & " blijven leeg)" & Chr(10)
+    Else
+        sMelding = sMelding & "   bijbestellingen: geen bestand gevonden" & Chr(10)
+    End If
+    sMelding = sMelding & Chr(10) & "De bijbestellingen beginnen op een nieuw vel, dus " & _
+               "het laatste vel van de pakketten wordt niet volgeprint." & Chr(10) & Chr(10) & _
+               "Printen?"
+
+    nAntw = MsgBox(sMelding, 4 + 32, "Etiketten printen")
+    If nAntw <> 6 Then
+        EtSluit(oPak, bPakZelf)
+        EtSluit(oBij, bBijZelf)
+        Exit Sub
+    End If
+
+    aPrint(0).Name  = "Wait"
+    aPrint(0).Value = True
+    If Not IsNull(oPak) Then oPak.print(aPrint())
+    If Not IsNull(oBij) Then oBij.print(aPrint())
+
+    EtSluit(oPak, bPakZelf)
+    EtSluit(oBij, bBijZelf)
+
+    MsgBox (nVelPak + nVelBij) & " vellen verzonden naar de printer.", 64, "Etiketten klaar"
+    Exit Sub
+
+EtFout:
+    On Error Resume Next
+    EtSluit(oPak, bPakZelf)
+    EtSluit(oBij, bBijZelf)
+    MsgBox "Fout " & Err & ": " & Error & Chr(10) & "Regel: " & Erl, 16, "Fout bij etiketten printen"
+End Sub

@@ -159,6 +159,11 @@ Sub StartMaakEtikettenBijbestelling()
     MaakEtikettenBijbestelling()
 End Sub
 
+Sub StartPrintEtiketten()
+    ReloadKiemkracht()
+    PrintEtiketten()
+End Sub
+
 Sub StartVulWeglatingen()
     ReloadKiemkracht()
     If Not LeesUitSheets() Then Exit Sub
