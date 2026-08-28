@@ -3649,8 +3649,9 @@ Sub MaakAlleEtiketten()
 
     mEtStil = False
     If mEtVerslag = "" Then mEtVerslag = "Geen etiketten aangemaakt."
+    ' Menubalk-naam, niet de macronaam: dat is wat de gebruiker aanklikt.
     MsgBox mEtVerslag & Chr(10) & Chr(10) & _
-           "Printen doe je met StartPrintEtiketten; die telt de vellen samen.", _
+           "Printen doe je met één opdracht: Print Etiketten", _
            64, "Etiketten klaar"
     Exit Sub
 
