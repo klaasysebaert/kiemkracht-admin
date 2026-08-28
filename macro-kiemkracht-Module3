@@ -3576,7 +3576,7 @@ Sub PrintEtiketten()
 
     If IsNull(oPak) And IsNull(oBij) Then
         MsgBox "Geen etikettenbestanden gevonden naast dit weekbestand." & Chr(10) & _
-               "Draai eerst StartMaakEtiketten en StartMaakEtikettenBijbestelling.", _
+               "Draai eerst ""Maak Etiketten"".", _
                48, "Etiketten printen"
         Exit Sub
     End If
