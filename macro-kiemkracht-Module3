@@ -1961,7 +1961,7 @@ Sub MaakPrint()
     sWkFile  = aWkDelen(UBound(aWkDelen))
     sWkDir   = Left(sWkPath, Len(sWkPath) - Len(sWkFile) - 1)
 
-    If Not PrWeekUitDoc(oDoc, sWkFile, iWeek, iJaar) Then Exit Sub
+    If Not PrWeekUitDoc(oDoc, sWkFile, "Print", iWeek, iJaar) Then Exit Sub
 
     ' --- Samenstelling-document zoeken en de vragen stellen ---
     mPrSamOk = False
@@ -2023,7 +2023,7 @@ Sub MaakPrint()
     sSlot = nGeprint & " afdrukopdrachten verzonden."
     If sGemist <> "" Then
         sSlot = sSlot & Chr(10) & Chr(10) & "Niet gevonden in het samenstelling-document:" & sGemist & _
-                Chr(10) & Chr(10) & "Draai ""Uitwisseling met weekbestand"" om die bladen te maken."
+                Chr(10) & Chr(10) & "Draai ""Uitwisseling weekbestand en samenstelling"" om die bladen te maken."
     End If
     MsgBox sSlot, 64, "Print klaar"
     Exit Sub
@@ -2039,7 +2039,7 @@ End Sub
 ' jaar in de bestandsnaam (week_34_2026[...].ods) — de bestandsnaam alleen is
 ' geen bewijs, want je werkt vaak in een kopie zoals ..._definitief.ods.
 ' ---------------------------------------------------------------------------
-Function PrWeekUitDoc(oDoc As Object, sWkFile As String, _
+Function PrWeekUitDoc(oDoc As Object, sWkFile As String, sTitel As String, _
                       ByRef iWeek As Integer, ByRef iJaar As Integer) As Boolean
     Dim sLabel As String
     Dim sKern  As String
@@ -2049,11 +2049,11 @@ Function PrWeekUitDoc(oDoc As Object, sWkFile As String, _
     sLabel = oDoc.Sheets.getByIndex(0).getCellByPosition(1, 0).getString()
     If Left(sLabel, 5) <> "Week " Then
         MsgBox "Het actieve document lijkt geen weekbestand (cel B1 bevat geen 'Week ...')." & Chr(10) & _
-               "Open eerst het weekbestand en probeer opnieuw.", 48, "Print"
+               "Open eerst het weekbestand en probeer opnieuw.", 48, sTitel
         Exit Function
     End If
     If Not IsNumeric(Trim(Mid(sLabel, 6))) Then
-        MsgBox "Kon het weeknummer niet lezen uit cel B1 (" & sLabel & ").", 48, "Print"
+        MsgBox "Kon het weeknummer niet lezen uit cel B1 (" & sLabel & ").", 48, sTitel
         Exit Function
     End If
     iWeek = CInt(Trim(Mid(sLabel, 6)))
@@ -2069,7 +2069,7 @@ Function PrWeekUitDoc(oDoc As Object, sWkFile As String, _
     End If
 
     MsgBox "Kon het jaar niet afleiden uit de bestandsnaam (" & sWkFile & ")." & Chr(10) & _
-           "Verwacht wordt iets als week_" & iWeek & "_2026.ods.", 48, "Print"
+           "Verwacht wordt iets als week_" & iWeek & "_2026.ods.", 48, sTitel
 End Function
 
 ' ---------------------------------------------------------------------------

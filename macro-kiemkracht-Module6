@@ -110,7 +110,7 @@ Sub MaakSamenstellingKlassiek()
             If oComp.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
                 If oComp.getURL() = sUrl Then
                     If oComp Is ThisComponent Then
-                        MsgBox "Dit bestand is al open. Gebruik StartHerlaadSamenstelling " & _
+                        MsgBox "Dit bestand is al open. Gebruik ""Herlaad Samenstelling"" " & _
                                "om het te verversen uit de DB.", 48, "Samenstelling"
                         Exit Sub
                     End If
@@ -142,12 +142,12 @@ Sub MaakSamenstellingKlassiek()
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByName(KLAS_TAB_SAM))
     MsgBox "Klassiek samenstelling-bestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
            "Week " & iWeek & "/" & iJaar & " — status in DB: " & mKlasStatus & Chr(10) & Chr(10) & _
-           "Terugschrijven: StartSchrijfSamenstelling. Aantallen/oogstlijst " & _
-           "verversen: StartVerversBestellijst." & Chr(10) & Chr(10) & _
+           "Terugschrijven: ""Schrijf Samenstelling"". Aantallen/oogstlijst " & _
+           "verversen: ""Ververs OogstBestel""." & Chr(10) & Chr(10) & _
            "Die aantallen en weglatingen komen uit de database. Wat alleen in " & _
            "het weekbestand staat — een extra weglating, een klant die je daar " & _
            "toegevoegd of van dag verzet hebt, een schrapping van een pakket — " & _
-           "telt pas mee na StartVerversBestellijstUitWeekbestand.", 64, "Klaar"
+           "telt pas mee na ""Uitwisseling weekbestand en samenstelling"".", 64, "Klaar"
     Exit Sub
 
 KlasMaakFout:
@@ -346,7 +346,7 @@ Private Sub KlasBouwHoofdblad(oDoc As Object, oConn As Object, _
 
     oSheet.getCellByPosition(0, KLAS_BLOK0 + 4 * KLAS_BLOKH + 1).setString( _
         "Invulvelden = lichtblauw. Weglatingen (TOT/DON/VRIJ) en aantallen: " & _
-        "StartVerversBestellijst. Terugschrijven: StartSchrijfSamenstelling.")
+        """Ververs OogstBestel"". Terugschrijven: ""Schrijf Samenstelling"".")
 
     ' Kolombreedtes
     oSheet.Columns.getByIndex(0).Width = 1400

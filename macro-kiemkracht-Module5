@@ -205,7 +205,7 @@ Sub MaakSamenstellingDoc()
                 If oComp.getURL() = sUrl Then
                     If oComp Is ThisComponent Then
                         MsgBox "Dit samenstelling-bestand is al open. Gebruik " & _
-                               "StartHerlaadSamenstelling om het te verversen uit de DB.", _
+                               """Herlaad Samenstelling"" om het te verversen uit de DB.", _
                                48, "Samenstelling"
                         Exit Sub
                     End If
@@ -247,11 +247,11 @@ Sub MaakSamenstellingDoc()
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByName(TAB_SAM))
     MsgBox "Samenstelling-bestand aangemaakt:" & Chr(10) & sBestand & Chr(10) & Chr(10) & _
            "Week " & iWeek & "/" & iJaar & " — status in DB: " & mSamStatus & Chr(10) & Chr(10) & _
-           "Terugschrijven naar de cockpit/DB: StartSchrijfSamenstelling." & Chr(10) & Chr(10) & _
+           "Terugschrijven naar de cockpit/DB: ""Schrijf Samenstelling""." & Chr(10) & Chr(10) & _
            "Aantallen pakketten en weglatingen komen hier uit de database. Wat " & _
            "alleen in het weekbestand staat — een extra weglating, een klant die " & _
            "je daar toegevoegd of van dag verzet hebt, een schrapping van een " & _
-           "pakket — telt pas mee na StartVerversBestellijstUitWeekbestand.", _
+           "pakket — telt pas mee na ""Uitwisseling weekbestand en samenstelling"".", _
            64, "Klaar"
     Exit Sub
 
@@ -679,7 +679,13 @@ Sub VerversBestellijstUitWeekbestand()
     oDoc = ThisComponent
     bKlassiek = SamIsKlassiekDoc(oDoc)
     If Not (bKlassiek Or SamIsSamenstellingDoc(oDoc)) Then
-        MsgBox "Het actieve document is geen samenstelling-bestand.", 48, "Bestellijst"
+        ' Sta je in het weekbestand, dan gaat de uitwisseling de andere kant op:
+        ' daar is het weekbestand de bron en zoeken we de samenstelling erbij.
+        If SamVerversVanuitWeekbestand(oDoc) Then Exit Sub
+        MsgBox "Het actieve document is geen samenstelling-bestand en ook geen " & _
+               "weekbestand." & Chr(10) & _
+               "Zet het venster vooraan waarin je wil werken en probeer opnieuw.", _
+               48, "Uitwisseling"
         Exit Sub
     End If
 
@@ -1563,7 +1569,7 @@ Private Sub SamBouwTabBestellijst(oDoc As Object)
     oSheet.getCellByPosition(0, 0).setString("Bestellijst groothandel")
     oSheet.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oSheet.getCellByPosition(3, 0).setString( _
-        "Momentopname — ververs via StartVerversBestellijst (vlak voor het bestellen).")
+        "Momentopname — ververs via ""Ververs OogstBestel"" (vlak voor het bestellen).")
 
     ' --- Pakketten-matrix: maten in de kolommen, dagen in de rijen ---
     For iKol = 0 To 3
@@ -2730,7 +2736,7 @@ Sub MaakStapels()
     End If
     If Not oDoc.Sheets.hasByName(TAB_PR_VD) Then
         MsgBox "De Vullen-bladen bestaan nog niet. Draai eerst " & _
-               "StartVerversBestellijst.", 48, "Stapelkaarten"
+               """Ververs OogstBestel"".", 48, "Stapelkaarten"
         Exit Sub
     End If
     SamVulStapels(oDoc)
@@ -3407,3 +3413,68 @@ Sub SamVerversUitWeek(oSam As Object, oWk As Object, iWeek As Integer, iJaar As 
     SamSchrijfWeekcijfers(oSam, iWeek, iJaar, SamBestandsnaam(oWk.getURL()))
     oSam.calculateAll()
 End Sub
+
+' ---------------------------------------------------------------------------
+' SamVerversVanuitWeekbestand — de uitwisseling vanuit het weekbestand.
+'
+' Dezelfde beweging als VerversBestellijstUitWeekbestand, maar met de rollen
+' omgedraaid: het actieve venster is het weekbestand en het samenstelling-
+' bestand wordt erbij gezocht. Zo hoef je niet te onthouden welk van de twee
+' vooraan moet staan — één menu-item werkt vanuit allebei.
+'
+' Geeft False als dit géén weekbestand is; dan meldt de aanroeper het zelf.
+' Stond het samenstelling-bestand niet open, dan wordt het na het verversen
+' bewaard en weer gesloten — anders was het werk meteen weer weg.
+' ---------------------------------------------------------------------------
+Function SamVerversVanuitWeekbestand(oWk As Object) As Boolean
+    Dim oSam    As Object
+    Dim bAlOpen As Boolean
+    Dim iWeek   As Integer
+    Dim iJaar   As Integer
+    Dim sBron   As String
+    Dim sSlot   As String
+
+    SamVerversVanuitWeekbestand = False
+    If IsNull(oWk) Then Exit Function
+    If Not HasUnoInterfaces(oWk, "com.sun.star.lang.XServiceInfo") Then Exit Function
+    If Not oWk.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then Exit Function
+    If Left(oWk.Sheets.getByIndex(0).getCellByPosition(1, 0).getString(), 5) <> "Week " Then Exit Function
+
+    ' Vanaf hier staat vast dat dit een weekbestand is: wat er ook misloopt, de
+    ' aanroeper hoeft zijn eigen "dit is geen samenstelling-bestand" niet meer
+    ' te tonen.
+    SamVerversVanuitWeekbestand = True
+
+    sBron = SamBestandsnaam(oWk.getURL())
+    If Not PrWeekUitDoc(oWk, sBron, "Uitwisseling", iWeek, iJaar) Then Exit Function
+
+    oSam = SamZoekPrintDoc(iWeek, iJaar, OmgevingUitNaam(oWk.getURL()), bAlOpen)
+    If IsNull(oSam) Then
+        MsgBox "Geen samenstelling-bestand (tab-layout) gevonden voor week " & _
+               iWeek & "/" & iJaar & ", of het gevonden bestand gaat over een " & _
+               "andere week.", 48, "Uitwisseling"
+        Exit Function
+    End If
+
+    On Error GoTo VanWkFout
+    SamVerversUitWeek(oSam, oWk, iWeek, iJaar)
+    On Error GoTo 0
+
+    sSlot = "Week " & iWeek & "/" & iJaar & " — aantallen, weglatingen, afweeglijsten " & _
+            "en printbladen ververst IN HET SAMENSTELLING-BESTAND." & Chr(10) & _
+            "Bron: " & sBron
+    If bAlOpen Then
+        sSlot = sSlot & Chr(10) & Chr(10) & "Het bestand staat open; bewaar het zelf " & _
+                "als de cijfers kloppen."
+    Else
+        oSam.store()
+        sSlot = sSlot & Chr(10) & Chr(10) & "Bewaard in " & SamBestandsnaam(oSam.getURL()) & "."
+        oSam.close(True)
+    End If
+    MsgBox sSlot, 64, "Klaar"
+    Exit Function
+
+VanWkFout:
+    MsgBox "Fout bij het verversen van het samenstelling-bestand:" & Chr(10) & Error$, _
+           16, "Uitwisseling"
+End Function

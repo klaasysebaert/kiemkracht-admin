@@ -1823,7 +1823,7 @@ Sub MaakMaandbestand()
             If MsgBox("WEEK " & wkNr(wi) & " — " & Mid(sPad, Len(sWeekMap) + 1) & Chr(10) & Chr(10) & _
                       sSpiegelFout & Chr(10) & _
                       "Herstellen: open dit weekbestand en draai" & Chr(10) & _
-                      "StartHerstelWeekbestandFormules." & Chr(10) & Chr(10) & _
+                      """Herstel Weekbestand Formules""." & Chr(10) & Chr(10) & _
                       "Nu stoppen? (Nee = toch doorgaan met foute bedragen)", _
                       4 + 48 + 256, "Maandafrekening — controle") <> 7 Then
                 If bSluiten Then oWeek.close(True)

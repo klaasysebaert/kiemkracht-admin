@@ -129,7 +129,22 @@ if (-not $loOpen) {
         Copy-Item "$basicDir\Standard\Module3.xba" "$backupDir\Standard-Module3.xba"  -Force
     }
     Copy-Item "$basicDir\Kiemkracht\script.xlb"    "$backupDir\Kiemkracht-script.xlb" -Force
-    Write-Output "Back-up opgeslagen in lo-config-backup\"
+
+    # Menubalk en werkbalken: die staan NIET in de basic-map maar in soffice.cfg,
+    # en worden door niets anders bijgehouden. Zonder deze back-up moet je op een
+    # nieuwe pc de twee Kiemkracht-menu's met de hand heropbouwen, item per item.
+    # (Herstellen: .\herstel-lo-config.ps1, uiteraard ook met LO gesloten.)
+    $cfgDir = "$env:APPDATA\LibreOffice\4\user\config\soffice.cfg\modules"
+    foreach ($item in @(
+        @{ Van = "$cfgDir\scalc\menubar\menubar.xml";      Naar = "scalc-menubar.xml" },
+        @{ Van = "$cfgDir\scalc\toolbar\standardbar.xml";  Naar = "scalc-standardbar.xml" },
+        @{ Van = "$cfgDir\swriter\toolbar\standardbar.xml"; Naar = "swriter-standardbar.xml" }
+    )) {
+        if (Test-Path $item.Van) {
+            Copy-Item $item.Van "$backupDir\$($item.Naar)" -Force
+        }
+    }
+    Write-Output "Back-up opgeslagen in lo-config-backup\ (macro's + menubalk)"
 }
 
 # Hot-reload in de draaiende LO-instantie (leest de .bas die we net schreven)
