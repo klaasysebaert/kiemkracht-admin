@@ -151,6 +151,11 @@ Sub StartVoegNieuweKlantToe()
     VoegNieuweKlantToe()
 End Sub
 
+Sub StartMaakAlleEtiketten()
+    ReloadKiemkracht()
+    MaakAlleEtiketten()
+End Sub
+
 Sub StartMaakEtiketten()
     ReloadKiemkracht()
     MaakEtiketten()
