@@ -59,6 +59,12 @@ PROBES = [
     ("Module5", "SamTabNaam", ("stap_vr",), "Stapels vrijdag"),
     ("Module5", "SamTabNaam", ("oogst_do",), "Oogst donderdag"),
     ("Module5", "SamTabNaam", ("bestaat_niet",), ""),
+    # Etikettenvellen: 24 per vel, elk deel begint op een nieuw vel. Fout
+    # afronden hier betekent te weinig vellen in de printer leggen.
+    ("Module3", "EtVellen", (162,), 7),
+    ("Module3", "EtVellen", (24,), 1),
+    ("Module3", "EtVellen", (25,), 2),
+    ("Module3", "EtVellen", (0,), 0),
     # Omgevingsbepaling: welke database een macro raakt hangt hiervan af, dus
     # de naamregel zelf ook echt aftoetsen en niet enkel laten compileren.
     ("Module1", "OmgevingUitNaam",
