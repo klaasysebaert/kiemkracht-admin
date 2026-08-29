@@ -2751,31 +2751,46 @@ End Function
 ' =============================================
 ' Kiemkracht - Mailmergebestanden uit het maandbestand
 ' ---------------------------------------------
-' Twee macro's die het afgewerkte maandbestand opdelen in verzendklare
-' Calc-documenten. Elk bestand heeft de mailmergerijen in het EERSTE tabblad:
-' koprij op rij 1, gegevens vanaf rij 2, geen lege tussenrijen -- zodat je het
-' rechtstreeks als bron kunt aanspreken.
+' Twee commando's, op twee momenten in de maand.
 '
-'   MaakMailmergeBlokken - de gewone afrekeningmails: klanten met een
-'       bestelling deze maand en niets openstaand van vorige maand.
-'       Gesorteerd van hoog naar laag saldo, in blokken van 100 adressen.
+' 1. MaakMailmergeBlokken - meteen na het maandbestand. Maakt in een keer de
+'    DRIE soorten mails die er dan uitgaan, elk in zijn eigen bestand(en):
 '
-'   MaakHerinneringen    - de betalingsherinneringen, gebaseerd op "Nog te
-'       betalen" uit het tabblad 'opvolgen betalingen' en dus MET de
-'       betalingen die je intussen ingevoerd hebt. Twee bestanden: met
-'       bestelling deze maand en zonder (Besteld in maand = 0). Zonder
-'       bestelling en minder dan 1 EUR wordt overgeslagen; dat bedrag reist
-'       vanzelf mee naar de afrekening van volgende maand.
+'      a. afrekening               bestelling deze maand, vorige maand betaald
+'         "afrekening groenten augustus"
+'      b. afrekening + herinnering bestelling deze maand, vorige maand nog
+'         niet (volledig) betaald -- een mail voor allebei
+'         "afrekening groenten juli + augustus"
+'      c. herinnering              geen bestelling deze maand, vorige maand
+'         nog open
+'         "herinnering: afrekening groenten juli"
 '
-' De groepen sluiten elkaar uit: een klant zit in hoogstens een bestand.
-' De uitvoer komt naast het bronbestand te staan, met zijn naam als basis:
-'   afrekening_augustus_2026_definitief.ods
-'     -> afrekening_augustus_2026_mailmerge_1.ods (_2, _3, ...)
-'     -> afrekening_augustus_2026_herinnering_met_bestelling.ods
-'     -> afrekening_augustus_2026_herinnering_zonder_bestelling.ods
+'    Groep c slaat bedragen onder 1 EUR over: voor 30 cent stuur je geen aparte
+'    mail. Dat bedrag reist mee naar de afrekening van volgende maand. Bij b
+'    geldt die drempel niet -- die mail vertrekt toch al.
+'
+' 2. MaakHerinneringen - halverwege de maand. Wie de afrekening dan nog niet
+'    (volledig) betaald heeft, op basis van "Nog te betalen" in het tabblad
+'    'opvolgen betalingen' (dus met jouw ingevoerde betalingen verrekend).
+'      "herinnering: afrekening groenten augustus"
+'    Ook hier: onder 1 EUR geen mail.
+'
+' Elk bestand heeft de rijen in het EERSTE tabblad: koprij op rij 1, gegevens
+' vanaf rij 2, geen lege tussenrijen. Achteraan staat een kolom "Onderwerp"
+' met de mailtitel voor dat bestand; de herinneringen van commando 2 krijgen
+' ook "Totaal betaald" en "Nog te betalen". Blokken van 100 adressen,
+' gesorteerd van hoog naar laag bedrag. Formules komen als WAARDE mee, dus de
+' bestanden staan los van het maandbestand.
 '
 ' Klanten zonder e-mailadres worden niet opgenomen (een mailmerge struikelt
 ' erover) maar wel bij naam gemeld in de eindpopup.
+'
+' Bestandsnamen, naast het maandbestand in dezelfde maandmap:
+'   afrekening_augustus_2026_definitief.ods
+'     -> ..._mailmerge_afrekening_1.ods (_2, _3, ...)
+'     -> ..._mailmerge_afrekening_plus_herinnering.ods
+'     -> ..._mailmerge_herinnering_zonder_bestelling.ods
+'     -> ..._mailmerge_herinnering_onbetaald.ods   (commando 2)
 ' =============================================
 
 ' True als oDoc een maandbestand is. "Besteld in maand" bestaat enkel daar --
@@ -2818,15 +2833,39 @@ Function MailmergeBasis(sUrl As String) As String
     MailmergeBasis = sNaam
 End Function
 
+' Maandnaam van de maand ervoor ("augustus" -> "juli"). Voor de mailtitels:
+' de openstaande schuld in het maandbestand is die van de vorige maand.
+' Onbekende invoer -> "vorige maand", zodat er iets leesbaars staat.
+Function VorigeMaand(sMaand As String) As String
+    Dim saM(12) As String, i As Integer
+    saM(1)="januari"  : saM(2)="februari" : saM(3)="maart"
+    saM(4)="april"    : saM(5)="mei"      : saM(6)="juni"
+    saM(7)="juli"     : saM(8)="augustus" : saM(9)="september"
+    saM(10)="oktober" : saM(11)="november": saM(12)="december"
+    VorigeMaand = "vorige maand"
+    For i = 1 To 12
+        If LCase(Trim(sMaand)) = saM(i) Then
+            If i = 1 Then
+                VorigeMaand = saM(12)
+            Else
+                VorigeMaand = saM(i - 1)
+            End If
+            Exit For
+        End If
+    Next i
+End Function
+
 ' Schrijft de geselecteerde rijen van het afrekening-tab weg in blokken van
 ' maximaal 100 adressen, elk in een eigen Calc-document naast het bronbestand.
-' iRij()  = rijindexen in oBron, al gesorteerd op bedrag (hoog -> laag)
-' bExtra  = twee kolommen "Totaal betaald" / "Nog te betalen" toevoegen
-'           (de herinneringen; dBetaald/dOpen lopen parallel met iRij)
+' iRij()      = rijindexen in oBron, al gesorteerd op bedrag (hoog -> laag)
+' sOnderwerp  = mailtitel; komt als kolom "Onderwerp" achteraan elke rij
+' bExtra      = ook "Totaal betaald" / "Nog te betalen" toevoegen
+'               (dBetaald/dOpenst lopen dan parallel met iRij)
 ' Geeft een regel per geschreven bestand terug voor de eindpopup.
 Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As String, _
-                                 iRij() As Integer, nRij As Integer, nKolMax As Integer, _
-                                 bExtra As Boolean, dBetaald() As Double, dOpenst() As Double) As String
+                                 sOnderwerp As String, iRij() As Integer, nRij As Integer, _
+                                 nKolMax As Integer, bExtra As Boolean, _
+                                 dBetaald() As Double, dOpenst() As Double) As String
     ' De constante mag niet nBlok heten: LO Basic is hoofdletterongevoelig, dus
     ' die en de teller nBlok hieronder zouden dezelfde naam zijn -- "variabele
     ' reeds gedefinieerd", en dat sloopt de compilatie van de HELE bibliotheek.
@@ -2836,7 +2875,7 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
     Dim aSave(1) As New com.sun.star.beans.PropertyValue
     Dim oLoc As New com.sun.star.lang.Locale
     Dim nBlok As Integer, b As Integer, i As Integer, r As Integer, ro As Integer
-    Dim nKopMax As Integer, c As Integer
+    Dim nKopMax As Integer, cOnd As Integer, c As Integer
     Dim sNaam As String, sRapport As String
     Dim aKop As Variant, aRij As Variant
     Dim nFmt As Long
@@ -2849,8 +2888,13 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
     aSave(0).Name = "FilterName" : aSave(0).Value = "calc8"
     aSave(1).Name = "Overwrite"  : aSave(1).Value = True
     oLoc.Language = "nl" : oLoc.Country = "BE"
-    nKopMax = nKolMax
-    If bExtra Then nKopMax = nKolMax + 2
+    ' Kolomindeling achteraan: [Totaal betaald] [Nog te betalen] Onderwerp
+    If bExtra Then
+        cOnd = nKolMax + 3
+    Else
+        cOnd = nKolMax + 1
+    End If
+    nKopMax = cOnd
 
     sRapport = ""
     nBlok = Int((nRij + PERBLOK - 1) / PERBLOK)
@@ -2867,6 +2911,7 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
             oS.getCellByPosition(nKolMax + 1, 0).setString("Totaal betaald")
             oS.getCellByPosition(nKolMax + 2, 0).setString("Nog te betalen")
         End If
+        oS.getCellByPosition(cOnd, 0).setString("Onderwerp")
 
         ' Rijen: formules van de bron komen als WAARDE mee (getDataArray lost ze
         ' op), dus de kopie blijft leesbaar zonder verwijzing naar het origineel.
@@ -2880,6 +2925,7 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
                 oS.getCellByPosition(nKolMax + 1, ro).setValue(dBetaald(i))
                 oS.getCellByPosition(nKolMax + 2, ro).setValue(dOpenst(i))
             End If
+            oS.getCellByPosition(cOnd, ro).setString(sOnderwerp)
             ro = ro + 1
         Next i
 
@@ -2898,6 +2944,7 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
             oS.Columns.getByIndex(nKolMax + 1).Width = 2700
             oS.Columns.getByIndex(nKolMax + 2).Width = 2700
         End If
+        oS.Columns.getByIndex(cOnd).Width = 8000
 
         If nBlok = 1 Then
             sNaam = sBasis & ".ods"
@@ -2929,29 +2976,40 @@ Sub SorteerAflopend(iRij() As Integer, dVal() As Double, n As Integer)
 End Sub
 
 ' =============================================
-' De gewone afrekeningmails: bestelling deze maand, niets openstaand.
+' Commando 1: alle mails van bij het versturen van de afrekening.
+' Drie groepen, op basis van Besteld in maand (K) en Verschil (J).
 ' =============================================
 Sub MaakMailmergeBlokken()
-    Const dCent = 0.0099
+    Const dCent      = 0.0099
+    Const dMinAlleen = 1.0     ' enkel-een-herinnering: onder 1 EUR niet mailen
 
     Dim oDoc As Object, oAfr As Object, oCur As Object
-    Dim sUrl As String, sMapUrl As String, sBasis As String, sRapport As String
-    Dim nKolMax As Integer, rEind As Integer, r As Integer, n As Integer
-    Dim cSaldo As Integer, cVersch As Integer, cBesteld As Integer, cEmail As Integer
-    Dim iRij(2000) As Integer, dSort(2000) As Double, dLeeg(1) As Double
-    Dim sGeenMail As String, nGeenMail As Integer, sMsg As String
+    Dim sUrl As String, sMapUrl As String, sBasis As String
+    Dim sMaand As String, sVorige As String
+    Dim sRapA As String, sRapB As String, sRapC As String
+    Dim nKolMax As Integer, rEind As Integer, r As Integer
+    Dim cSaldo As Integer, cVersch As Integer, cBesteld As Integer
+    Dim cEmail As Integer, cMaand As Integer
+    Dim iA(2000) As Integer, dA(2000) As Double, nA As Integer
+    Dim iB(2000) As Integer, dB(2000) As Double, nB As Integer
+    Dim iC(2000) As Integer, dC(2000) As Double, nC As Integer
+    Dim dLeeg(1) As Double
+    Dim dBesteld As Double, dVersch As Double, dSaldo As Double
+    Dim sNaam As String, sMsg As String
+    Dim sKlein As String, nKlein As Integer
+    Dim sGeenMail As String, nGeenMail As Integer
 
     oDoc = ThisComponent
     If Not IsMaandbestandDoc(oDoc) Then
         MsgBox "Zet eerst het maandbestand voorop." & Chr(10) & Chr(10) & _
                "Deze macro werkt op het venster waarin je staat, en dat moet" & Chr(10) & _
                "een afrekening_<maand>_<jaar>[_definitief].ods zijn.", _
-               48, "Mailmergeblokken"
+               48, "Mailmergebestanden"
         Exit Sub
     End If
     sUrl = oDoc.getURL()
     If sUrl = "" Then
-        MsgBox "Bewaar het maandbestand eerst; de blokken komen ernaast te staan.", 48, "Mailmergeblokken"
+        MsgBox "Bewaar het maandbestand eerst; de bestanden komen ernaast te staan.", 48, "Mailmergebestanden"
         Exit Sub
     End If
 
@@ -2961,9 +3019,10 @@ Sub MaakMailmergeBlokken()
     cVersch  = ZoekKolomKop(oAfr, "Verschil")
     cBesteld = ZoekKolomKop(oAfr, "Besteld in maand")
     cEmail   = ZoekKolomKop(oAfr, "Email")
-    If cSaldo < 0 Or cVersch < 0 Or cBesteld < 0 Or cEmail < 0 Then
-        MsgBox "Kolomkoppen niet herkend (Saldo / Verschil / Besteld in maand / Email).", _
-               16, "Mailmergeblokken"
+    cMaand   = ZoekKolomKop(oAfr, "Maand")
+    If cSaldo < 0 Or cVersch < 0 Or cBesteld < 0 Or cEmail < 0 Or cMaand < 0 Then
+        MsgBox "Kolomkoppen niet herkend (Saldo / Verschil / Besteld in maand / Email / Maand).", _
+               16, "Mailmergebestanden"
         Exit Sub
     End If
 
@@ -2972,62 +3031,110 @@ Sub MaakMailmergeBlokken()
     nKolMax = oCur.RangeAddress.EndColumn
     rEind   = oCur.RangeAddress.EndRow
 
-    n = 0 : nGeenMail = 0 : sGeenMail = ""
+    nA = 0 : nB = 0 : nC = 0 : nKlein = 0 : sKlein = "" : nGeenMail = 0 : sGeenMail = ""
+    sMaand = ""
     For r = 6 To rEind
-        If Trim(oAfr.getCellByPosition(0, r).getString()) = "" Then GoTo VolgendeMmRij
-        ' bestelling deze maand?
-        If oAfr.getCellByPosition(cBesteld, r).getValue() < dCent Then GoTo VolgendeMmRij
-        ' nog iets openstaand van vorige maand? -> die gaan naar de herinneringen
-        If oAfr.getCellByPosition(cVersch, r).getValue() >= dCent Then GoTo VolgendeMmRij
-        If Trim(oAfr.getCellByPosition(cEmail, r).getString()) = "" Then
-            nGeenMail = nGeenMail + 1
-            sGeenMail = sGeenMail & "  - " & oAfr.getCellByPosition(0, r).getString() & Chr(10)
+        sNaam = Trim(oAfr.getCellByPosition(0, r).getString())
+        If sNaam = "" Then GoTo VolgendeMmRij
+        If sMaand = "" Then sMaand = Trim(oAfr.getCellByPosition(cMaand, r).getString())
+        dBesteld = oAfr.getCellByPosition(cBesteld, r).getValue()
+        dVersch  = oAfr.getCellByPosition(cVersch,  r).getValue()
+        dSaldo   = oAfr.getCellByPosition(cSaldo,   r).getValue()
+        ' Niets te melden: geen bestelling en niets open (of alles vereffend)
+        If dBesteld < dCent And dVersch < dCent Then GoTo VolgendeMmRij
+        ' Enkel een herinnering, en het gaat om kleingeld -> volgende maand
+        If dBesteld < dCent And dVersch < dMinAlleen Then
+            nKlein = nKlein + 1
+            sKlein = sKlein & "  - " & sNaam & " (" & FmtNum2(dVersch) & " " & Chr(8364) & ")" & Chr(10)
             GoTo VolgendeMmRij
         End If
-        If n <= UBound(iRij) Then
-            iRij(n)  = r
-            dSort(n) = oAfr.getCellByPosition(cSaldo, r).getValue()
-            n = n + 1
+        If Trim(oAfr.getCellByPosition(cEmail, r).getString()) = "" Then
+            nGeenMail = nGeenMail + 1
+            sGeenMail = sGeenMail & "  - " & sNaam & Chr(10)
+            GoTo VolgendeMmRij
+        End If
+        If dBesteld >= dCent And dVersch < dCent Then
+            If nA <= UBound(iA) Then
+                iA(nA) = r : dA(nA) = dSaldo : nA = nA + 1
+            End If
+        ElseIf dBesteld >= dCent Then
+            If nB <= UBound(iB) Then
+                iB(nB) = r : dB(nB) = dSaldo : nB = nB + 1
+            End If
+        Else
+            If nC <= UBound(iC) Then
+                iC(nC) = r : dC(nC) = dSaldo : nC = nC + 1
+            End If
         End If
         VolgendeMmRij:
     Next r
 
-    If n = 0 Then
-        MsgBox "Geen klanten gevonden met een bestelling en niets openstaand.", 48, "Mailmergeblokken"
+    If nA + nB + nC = 0 Then
+        MsgBox "Niemand om te mailen gevonden in dit maandbestand.", 48, "Mailmergebestanden"
         Exit Sub
     End If
 
-    SorteerAflopend(iRij(), dSort(), n)
-    sMapUrl  = MapUitUrl(sUrl)
-    sBasis   = MailmergeBasis(sUrl) & "_mailmerge"
-    sRapport = SchrijfMailmergeBlokken(oAfr, sMapUrl, sBasis, iRij(), n, nKolMax, _
-                                       False, dLeeg(), dLeeg())
+    If sMaand = "" Then sMaand = "deze maand"
+    sVorige = VorigeMaand(sMaand)
+    sMapUrl = MapUitUrl(sUrl)
+    sBasis  = MailmergeBasis(sUrl) & "_mailmerge"
+    sRapA = "" : sRapB = "" : sRapC = ""
+    If nA > 0 Then
+        SorteerAflopend(iA(), dA(), nA)
+        sRapA = SchrijfMailmergeBlokken(oAfr, sMapUrl, sBasis & "_afrekening", _
+                                        "afrekening groenten " & sMaand, _
+                                        iA(), nA, nKolMax, False, dLeeg(), dLeeg())
+    End If
+    If nB > 0 Then
+        SorteerAflopend(iB(), dB(), nB)
+        sRapB = SchrijfMailmergeBlokken(oAfr, sMapUrl, sBasis & "_afrekening_plus_herinnering", _
+                                        "afrekening groenten " & sVorige & " + " & sMaand, _
+                                        iB(), nB, nKolMax, False, dLeeg(), dLeeg())
+    End If
+    If nC > 0 Then
+        SorteerAflopend(iC(), dC(), nC)
+        sRapC = SchrijfMailmergeBlokken(oAfr, sMapUrl, sBasis & "_herinnering_zonder_bestelling", _
+                                        "herinnering: afrekening groenten " & sVorige, _
+                                        iC(), nC, nKolMax, False, dLeeg(), dLeeg())
+    End If
 
-    sMsg = n & " adressen in blokken van 100, gesorteerd van hoog naar laag saldo:" & _
-           Chr(10) & Chr(10) & sRapport & Chr(10) & _
-           "Map: " & ConvertFromURL(sMapUrl)
+    sMsg = "Mailmergebestanden voor " & sMaand & ", gesorteerd van hoog naar laag saldo," & Chr(10) & _
+           "in blokken van 100 adressen." & Chr(10) & Chr(10)
+    sMsg = sMsg & "1. AFREKENING (" & nA & ")   onderwerp: afrekening groenten " & sMaand & Chr(10)
+    If nA > 0 Then sMsg = sMsg & sRapA
+    sMsg = sMsg & Chr(10) & "2. AFREKENING + HERINNERING (" & nB & ")   onderwerp: afrekening groenten " & _
+           sVorige & " + " & sMaand & Chr(10)
+    If nB > 0 Then sMsg = sMsg & sRapB Else sMsg = sMsg & "  (niemand)" & Chr(10)
+    sMsg = sMsg & Chr(10) & "3. ENKEL HERINNERING (" & nC & ")   onderwerp: herinnering: afrekening groenten " & _
+           sVorige & Chr(10)
+    If nC > 0 Then sMsg = sMsg & sRapC Else sMsg = sMsg & "  (niemand)" & Chr(10)
+    sMsg = sMsg & Chr(10) & "Map: " & ConvertFromURL(sMapUrl)
+    If nKlein > 0 Then
+        sMsg = sMsg & Chr(10) & Chr(10) & nKlein & " klant(en) zonder bestelling onder " & _
+               FmtNum2(dMinAlleen) & " " & Chr(8364) & " overgeslagen" & Chr(10) & _
+               "(gaat mee naar de afrekening van volgende maand):" & Chr(10) & sKlein
+    End If
     If nGeenMail > 0 Then
         sMsg = sMsg & Chr(10) & Chr(10) & nGeenMail & " klant(en) zonder e-mailadres NIET opgenomen:" & _
                Chr(10) & sGeenMail
     End If
-    sMsg = sMsg & Chr(10) & Chr(10) & _
-           "Klanten met een openstaand bedrag zitten hier bewust niet bij;" & Chr(10) & _
-           "die haal je later op met Maak Herinneringen."
-    MsgBox sMsg, 64, "Mailmergeblokken"
+    MsgBox sMsg, 64, "Mailmergebestanden"
 End Sub
 
 ' =============================================
-' De betalingsherinneringen, op "Nog te betalen" uit 'opvolgen betalingen'.
+' Commando 2: de herinnering halverwege de maand.
+' Wie de afrekening nog niet (volledig) betaald heeft, op basis van
+' "Nog te betalen" in het tabblad 'opvolgen betalingen'.
 ' =============================================
 Sub MaakHerinneringen()
-    Const dCent      = 0.0099
-    Const dMinZonder = 1.0     ' zonder bestelling: onder 1 EUR niet mailen
+    Const dCent = 0.0099
+    Const dMinBedrag = 1.0     ' onder 1 EUR geen herinnering
 
     Dim oDoc As Object, oAfr As Object, oOp As Object, oCur As Object
     Dim sUrl As String, sMapUrl As String, sBasis As String
-    Dim sRapMet As String, sRapZonder As String
+    Dim sMaand As String, sRapport As String
     Dim nKolMax As Integer, rEind As Integer, r As Integer
-    Dim cSaldo As Integer, cBesteld As Integer, cEmail As Integer, cKid As Integer
+    Dim cEmail As Integer, cKid As Integer, cMaand As Integer
     Dim cOKid As Integer, cONaam As Integer, cOEmail As Integer
     Dim cOBet As Integer, cOOpen As Integer
     Dim opKey(2000) As String, opBet(2000) As Double, opOpen(2000) As Double
@@ -3035,10 +3142,8 @@ Sub MaakHerinneringen()
     Dim dTotBet As Double
     Dim sKey As String, sKid As String, sEmail As String, sNaam As String
     Dim dBet As Double, dOpenst As Double
-    Dim iMet(2000) As Integer, dMetSort(2000) As Double
-    Dim dMetBet(2000) As Double, dMetOpen(2000) As Double, nMet As Integer
-    Dim iZon(2000) As Integer, dZonSort(2000) As Double
-    Dim dZonBet(2000) As Double, dZonOpen(2000) As Double, nZon As Integer
+    Dim iSel(2000) As Integer, dSel(2000) As Double
+    Dim dSelBet(2000) As Double, dSelOpen(2000) As Double, nSel As Integer
     Dim sKlein As String, nKlein As Integer
     Dim sGeenMail As String, nGeenMail As Integer
     Dim sMsg As String
@@ -3062,18 +3167,17 @@ Sub MaakHerinneringen()
     End If
 
     oDoc.calculateAll()
-    oAfr     = oDoc.Sheets.getByName("afrekening")
-    oOp      = oDoc.Sheets.getByName("opvolgen betalingen")
-    cSaldo   = ZoekKolomKop(oAfr, "Saldo")
-    cBesteld = ZoekKolomKop(oAfr, "Besteld in maand")
-    cEmail   = ZoekKolomKop(oAfr, "Email")
-    cKid     = ZoekKolomKop(oAfr, "klant_id")
-    cOKid    = ZoekKolomKop(oOp, "klant_id")
-    cONaam   = ZoekKolomKop(oOp, "Voornaam Familienaam")
-    cOEmail  = ZoekKolomKop(oOp, "Email")
-    cOBet    = ZoekKolomKop(oOp, "Totaal betaald")
-    cOOpen   = ZoekKolomKop(oOp, "Nog te betalen")
-    If cSaldo < 0 Or cBesteld < 0 Or cEmail < 0 Or cONaam < 0 Or cOBet < 0 Or cOOpen < 0 Then
+    oAfr    = oDoc.Sheets.getByName("afrekening")
+    oOp     = oDoc.Sheets.getByName("opvolgen betalingen")
+    cEmail  = ZoekKolomKop(oAfr, "Email")
+    cKid    = ZoekKolomKop(oAfr, "klant_id")
+    cMaand  = ZoekKolomKop(oAfr, "Maand")
+    cOKid   = ZoekKolomKop(oOp, "klant_id")
+    cONaam  = ZoekKolomKop(oOp, "Voornaam Familienaam")
+    cOEmail = ZoekKolomKop(oOp, "Email")
+    cOBet   = ZoekKolomKop(oOp, "Totaal betaald")
+    cOOpen  = ZoekKolomKop(oOp, "Nog te betalen")
+    If cEmail < 0 Or cMaand < 0 Or cONaam < 0 Or cOBet < 0 Or cOOpen < 0 Then
         MsgBox "Kolomkoppen niet herkend op een van beide tabbladen.", 16, "Herinneringen"
         Exit Sub
     End If
@@ -3113,10 +3217,12 @@ Sub MaakHerinneringen()
     nKolMax = oCur.RangeAddress.EndColumn
     rEind   = oCur.RangeAddress.EndRow
 
-    nMet = 0 : nZon = 0 : nKlein = 0 : sKlein = "" : nGeenMail = 0 : sGeenMail = ""
+    nSel = 0 : nKlein = 0 : sKlein = "" : nGeenMail = 0 : sGeenMail = ""
+    sMaand = ""
     For r = 6 To rEind
         sNaam = Trim(oAfr.getCellByPosition(0, r).getString())
         If sNaam = "" Then GoTo VolgendeHerRij
+        If sMaand = "" Then sMaand = Trim(oAfr.getCellByPosition(cMaand, r).getString())
         sKid = "" : sEmail = Trim(oAfr.getCellByPosition(cEmail, r).getString())
         If cKid >= 0 Then sKid = Trim(oAfr.getCellByPosition(cKid, r).getString())
         If sKid <> "" Then
@@ -3134,71 +3240,54 @@ Sub MaakHerinneringen()
             End If
         Next oi
         If dOpenst < dCent Then GoTo VolgendeHerRij      ' niets (meer) open
+        If dOpenst < dMinBedrag Then
+            nKlein = nKlein + 1
+            sKlein = sKlein & "  - " & sNaam & " (" & FmtNum2(dOpenst) & " " & Chr(8364) & ")" & Chr(10)
+            GoTo VolgendeHerRij
+        End If
         If sEmail = "" Then
             nGeenMail = nGeenMail + 1
             sGeenMail = sGeenMail & "  - " & sNaam & " (" & FmtNum2(dOpenst) & " " & Chr(8364) & ")" & Chr(10)
             GoTo VolgendeHerRij
         End If
-        If oAfr.getCellByPosition(cBesteld, r).getValue() >= dCent Then
-            If nMet <= UBound(iMet) Then
-                iMet(nMet)    = r       : dMetSort(nMet) = dOpenst
-                dMetBet(nMet) = dBet    : dMetOpen(nMet) = dOpenst
-                nMet = nMet + 1
-            End If
-        Else
-            ' Geen bestelling deze maand: kleine bedragen niet mailen. Ze reizen
-            ' vanzelf mee naar de afrekening van volgende maand.
-            If dOpenst < dMinZonder Then
-                nKlein = nKlein + 1
-                sKlein = sKlein & "  - " & sNaam & " (" & FmtNum2(dOpenst) & " " & Chr(8364) & ")" & Chr(10)
-            ElseIf nZon <= UBound(iZon) Then
-                iZon(nZon)    = r       : dZonSort(nZon) = dOpenst
-                dZonBet(nZon) = dBet    : dZonOpen(nZon) = dOpenst
-                nZon = nZon + 1
-            End If
+        If nSel <= UBound(iSel) Then
+            iSel(nSel)    = r    : dSel(nSel)     = dOpenst
+            dSelBet(nSel) = dBet : dSelOpen(nSel) = dOpenst
+            nSel = nSel + 1
         End If
         VolgendeHerRij:
     Next r
 
-    ' Staat er nog geen enkele betaling in? Dan is dit geen herinneringslijst
+    If nSel = 0 Then
+        MsgBox "Iedereen heeft betaald: geen herinnering nodig." & Chr(10) & _
+               "(gekeken naar ""Nog te betalen"" in opvolgen betalingen)", 64, "Herinneringen"
+        Exit Sub
+    End If
+
+    ' Staat er nog geen enkele betaling ingevuld? Dan is dit geen herinneringslijst
     ' maar gewoon iedereen met een saldo -- vragen voor we dat wegschrijven.
-    If dTotBet < dCent And (nMet + nZon) > 0 Then
+    If dTotBet < dCent Then
         If MsgBox("In 'opvolgen betalingen' staat nog geen enkele betaling ingevuld." & Chr(10) & Chr(10) & _
                   "Dan is dit geen herinneringslijst maar iedereen met een saldo" & Chr(10) & _
-                  "(" & (nMet + nZon) & " klanten). Normaal draai je deze macro pas" & Chr(10) & _
-                  "nadat je de betalingen ingevoerd hebt." & Chr(10) & Chr(10) & _
+                  "(" & nSel & " klanten). Normaal draai je deze macro pas" & Chr(10) & _
+                  "halverwege de maand, als de betalingen ingevoerd zijn." & Chr(10) & Chr(10) & _
                   "Toch doorgaan?", 49, "Herinneringen") <> 1 Then Exit Sub
     End If
 
+    If sMaand = "" Then sMaand = "deze maand"
+    SorteerAflopend(iSel(), dSel(), nSel)
     sMapUrl = MapUitUrl(sUrl)
-    sBasis  = MailmergeBasis(sUrl)
-    sRapMet = "" : sRapZonder = ""
-    If nMet > 0 Then
-        SorteerAflopend(iMet(), dMetSort(), nMet)
-        sRapMet = SchrijfMailmergeBlokken(oAfr, sMapUrl, sBasis & "_herinnering_met_bestelling", _
-                                          iMet(), nMet, nKolMax, True, dMetBet(), dMetOpen())
-    End If
-    If nZon > 0 Then
-        SorteerAflopend(iZon(), dZonSort(), nZon)
-        sRapZonder = SchrijfMailmergeBlokken(oAfr, sMapUrl, sBasis & "_herinnering_zonder_bestelling", _
-                                             iZon(), nZon, nKolMax, True, dZonBet(), dZonOpen())
-    End If
+    sBasis  = MailmergeBasis(sUrl) & "_mailmerge_herinnering_onbetaald"
+    sRapport = SchrijfMailmergeBlokken(oAfr, sMapUrl, sBasis, _
+                                       "herinnering: afrekening groenten " & sMaand, _
+                                       iSel(), nSel, nKolMax, True, dSelBet(), dSelOpen())
 
-    sMsg = "Betalingsherinneringen op basis van Nog te betalen (tabblad opvolgen betalingen)." & Chr(10) & Chr(10)
-    If nMet > 0 Then
-        sMsg = sMsg & "MET bestelling deze maand (" & nMet & "):" & Chr(10) & sRapMet & Chr(10)
-    Else
-        sMsg = sMsg & "MET bestelling deze maand: niemand." & Chr(10) & Chr(10)
-    End If
-    If nZon > 0 Then
-        sMsg = sMsg & "ZONDER bestelling deze maand (" & nZon & "):" & Chr(10) & sRapZonder & Chr(10)
-    Else
-        sMsg = sMsg & "ZONDER bestelling deze maand: niemand." & Chr(10) & Chr(10)
-    End If
-    sMsg = sMsg & "Map: " & ConvertFromURL(sMapUrl)
+    sMsg = nSel & " klant(en) hebben de afrekening van " & sMaand & " nog niet volledig betaald." & _
+           Chr(10) & "Onderwerp: herinnering: afrekening groenten " & sMaand & Chr(10) & Chr(10) & _
+           sRapport & Chr(10) & "Map: " & ConvertFromURL(sMapUrl)
     If nKlein > 0 Then
-        sMsg = sMsg & Chr(10) & Chr(10) & nKlein & " klant(en) zonder bestelling onder " & _
-               FmtNum2(dMinZonder) & " " & Chr(8364) & " overgeslagen" & Chr(10) & _
+        sMsg = sMsg & Chr(10) & Chr(10) & nKlein & " klant(en) onder " & FmtNum2(dMinBedrag) & " " & _
+               Chr(8364) & " overgeslagen" & Chr(10) & _
                "(gaat mee naar de afrekening van volgende maand):" & Chr(10) & sKlein
     End If
     If nGeenMail > 0 Then
