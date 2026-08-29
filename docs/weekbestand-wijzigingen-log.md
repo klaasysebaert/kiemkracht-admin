@@ -503,8 +503,9 @@ bij een uitgelijnd bestand is rij N per definitie de juiste rij.
 ## Week 35 / 2026
 
 *(genoteerd op 2026-08-26, achteraf gereconstrueerd uit de cellen van
-`week_35_2026_definitief.ods` — de intentieregels hieronder zijn deels afgeleid,
-zie de ⚠ waar dat het geval is)*
+`week_35_2026_definitief.ods`; gebeurtenis 2 herschreven op 2026-08-29 nadat Klaas
+meldde dat Ramses en Steffi een koppel zijn — ze stonden eerst als twee losse
+gevallen genoteerd. Openstaande vragen staan met ⚠ gemarkeerd.)*
 
 > **Belangrijke context: de premisse van deze log is deze week verschoven.**
 > Tot nu toe was het hoofdargument voor "de DB als enige bron" dat handwerk in
@@ -536,24 +537,61 @@ een handmatige rij, en die rij is er alleen om op papier te komen. Verwant aan d
 6e soort (eenmalige klant, week 31) maar anders: de klant bestáát, er is niets te
 bestellen, en het gaat over een ander product dan groenten.
 
-### Gebeurtenis 2 — abonnee ruilt zijn pakket in voor losse groenten
+### Gebeurtenis 2 — te late bestelling per e-mail, van de partner van een abonnee
+
+Steffi Desmet en Ramses Dewachter zijn een **koppel: één klantrecord, id 3263**
+(abonnee, klein pakket, Het Zonlicht, vrijdag). Steffi mailde ná het
+bestelvenster: *"Wij zijn te laat met het formulier invullen (…) GEEN: zomerprei,
+paprika, tomaten, kropsla (enkel de venkel en courgette dus). EXTRA: 1 komkommer,
+bladpeterselie, 1 gele meloen."*
 
 | # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
 |---|---|---|---|
-| 2 | 3263 Ramses Dewachter (Het Zonlicht, vrijdag) | ⚠ *afgeleid uit de cellen:* deze week **geen pakket**, wel twee losse stuks | **Kolom R op 0** gezet (klein pakket geschrapt) en losse groenten ingevuld: **Venkel 1** en **Courgette 1** (kolom X = 3,60 €) |
+| 2 | 3263 Ramses Dewachter / Steffi Desmet (Het Zonlicht, vrijdag) | Te laat voor het formulier: het pakket **zonder** zomerprei, paprika, tomaten en kropsla — dus enkel venkel en courgette — plus 1 komkommer, bladpeterselie en 1 gele meloen extra | **Kolom R op 0** (klein pakket geschrapt) en de twee overblijvende groenten als **losse** ingevuld: **Venkel 1** en **Courgette 1** (kolom X = 3,60 €) |
 
-**Wat dit kostte:** niets aan de tellingen — mits je met de weekbestand-macro
-ververst. Draai je `StartVerversBestellijst` (DB-route), dan telt de database hem
-nog steeds als klein pakket: **86 tegen 85**, en je zet er vrijdag één te veel
-klaar. Dat verschil is deze week ook effectief nagemeten.
+**De vertaling die hier gemaakt is.** De vraag was "pakket min vier groenten"; wat
+er staat is "geen pakket, twee losse stuks". Financieel liggen die dicht bij
+elkaar — vier weglatingen trekken samen ±13 € van het kleine pakket af, en wat
+overblijft ligt in de buurt van de 3,60 € die nu aangerekend wordt — maar het is
+wel een andere handeling dan gevraagd, en ze is nergens vastgelegd.
 
-**DB-implicatie: geen modelgat, twee ontbrekende deuren.** Ramses heeft een actief
-wekelijks abonnement (id 69) en géén annulatie voor week 35. Het feit valt uiteen
-in twee bestaande noties: (a) *annulatie* voor week 35 — tabel bestaat, sluit al
-uit in alle drie de takken, enkel admin-invoer ontbreekt; (b) *bestelling namens
-klant* voor de twee losse stuks — de al bekende deur uit de 7e soort (week 32).
-Nieuw is dat ze hier **als één handeling** binnenkomen: "geen pakket maar wel
-iets kleins" is één klantwens, geen twee.
+⚠ **Openstaand punt voor Klaas:** de drie EXTRA's uit de mail (1 komkommer,
+bladpeterselie, 1 gele meloen) staan **niet** in de rij. Bewust weggelaten of
+over het hoofd gezien? Als het bewust was, is dit meteen het antwoord op de vraag
+hierboven; zo niet, dan hoort het op de afrekening van augustus rechtgezet.
+
+**Wat dit kostte aan de tellingen:** niets — mits je met de weekbestand-macro
+ververst. Draai je `StartVerversBestellijst` (DB-route), dan telt de database het
+pakket nog steeds mee: **klein 86 tegen 85** in het weekbestand, en je zet er
+vrijdag één te veel klaar. Dat verschil is deze week ook effectief nagemeten.
+
+**DB-implicatie 1 — geen modelgat, wel twee bekende deuren.** Het feit valt uiteen
+in twee bestaande noties: (a) *annulatie* voor week 35 — Ramses heeft een actief
+wekelijks abonnement (id 69) en géén annulatie, dus de DB blijft hem tellen; de
+tabel bestaat en sluit al uit in alle drie de takken, enkel admin-invoer
+ontbreekt. (b) *bestelling namens klant* voor de losse groenten — de deur uit de
+7e soort (week 32, Yves). Nieuw is dat ze **als één klantwens** binnenkomen: "geen
+pakket maar wel iets kleins" is één beslissing, geen twee.
+
+**DB-implicatie 2 — NIEUW: een huishouden mailt vanaf een tweede adres, en niets
+koppelt daarop.** `klanten` heeft **email1 t/m email4**, en Steffi's adres staat
+netjes als **email2** bij 3263. Maar élke koppeling klant↔bestelling in het hele
+systeem kijkt alleen naar **email1**: `SamLaadDagcijfers` en de drie takken van
+`MaakWeekbestand` (`k.email1 = b.klant_email`), `cockpit-api.php` (regels ~696-782)
+en `postgres-proxy.php`. Alleen `admin-klanten.php` zoekt over alle vier. Er is
+zelfs enkel een index op `email1`.
+
+Gevolg: een bestelling die met een tweede huishoudadres binnenkomt **zonder**
+`KlantID` — dus via het kale formulier in plaats van via de gepersonaliseerde link
+uit de aanbod-mail — hangt aan geen enkele klant. Geen abonnements-uitsluiting,
+geen annulatie-check, geen afrekening op de juiste naam. Bestelt ze via haar link,
+dan zit `KlantID` in de POST (`postgres-proxy.php` ~452) en klopt alles.
+
+Schaal: **27 van de 353 actieve klanten hebben een email2**, 5 een email3, 4 een
+email4 — ongeveer één op de twaalf huishoudens. Dit is geen nieuwe soort handwerk,
+maar wel een stille valstrik die pas zichtbaar wordt als iemand buiten zijn link
+om bestelt. Kleine, afgebakende fix: de e-mailmatch verbreden van `email1` naar
+alle vier (en de index mee).
 
 ### Gebeurtenis 3 — weglating die via het opmerkingenveld binnenkomt, ná de lijsten
 
@@ -575,19 +613,6 @@ DB, maar in een veld dat niemand als feit leest. ⚠ **Voor Klaas:** haar opmerk
 zegt "mini pakket", maar ze heeft een **klein** pakket (kolom R = 1) — de moeite
 om na te kijken.
 
-### Gebeurtenis 4 — te late bestelling per e-mail van iemand die geen klant is
-
-| # | Wie (klant_id) | Wat de klant/situatie wou | Wat je in het weekbestand deed |
-|---|---|---|---|
-| 4 | — Steffi Desmet (steffi.dsmt@gmail.com, 0474 76 59 20) | Te laat met het formulier: een pakket **zonder** zomerprei, paprika, tomaten en kropsla (dus enkel venkel en courgette), **plus** 1 komkommer, bladpeterselie en 1 gele meloen | **Niets** — op 26/08 nog niet ingevoerd |
-
-**DB-implicatie: 7e soort, maar zonder klant.** Ze staat niet in `klanten` (niet
-op e-mail, voornaam of telefoonnummer), dus dit is de 7e soort (bestelling per
-e-mail na sluiting) **plus** de klantaanmaak uit de 6e soort. De mail zegt "wij",
-dus mogelijk bestelt haar gezin onder een andere naam — dat is precies het soort
-identiteitsvraag dat een admin-invoerscherm zou moeten stellen en een handmatige
-rij niet stelt.
-
 ### Wat week 35 verandert aan de bouwvolgorde
 
 De **telling** is geen driver meer: oogstlijst, afweeglijsten, printbladen en
@@ -606,6 +631,13 @@ reden om de deuren te bouwen:
    bevestigingsmail.
 4. **Voorraadtellers** (`besteld` / `aantal_beschikbaar`) lopen mis.
 5. **De rij verdwijnt** bij een nieuwe `MaakWeekbestand`-run.
+
+Los daarvan één losse, kleine fix die uit gebeurtenis 2 valt en niets met
+handwerk te maken heeft: **de klant↔bestelling-koppeling kijkt alleen naar
+`email1`**, terwijl 27 van de 353 actieve klanten een tweede adres hebben. Een
+huisgenoot die buiten zijn persoonlijke link om bestelt, hangt aan geen enkele
+klant. Verbreden naar `email1..email4` (met index) is af te bakenen werk en staat
+los van de rest van deze lijst.
 
 ---
 
