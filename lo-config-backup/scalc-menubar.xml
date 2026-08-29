@@ -783,6 +783,8 @@
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMaakAlleEtiketten?language=Basic&amp;location=application" menu:label="Maak Etiketten"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartPrintEtiketten?language=Basic&amp;location=application" menu:label="Print Etiketten"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMaakMaandbestand?language=Basic&amp;location=application" menu:label="Maak Maandbestand"/>
+   <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMaakMailmergeBlokken?language=Basic&amp;location=application" menu:label="Maak Mailmerge Blokken"/>
+   <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMaakHerinneringen?language=Basic&amp;location=application" menu:label="Maak Herinneringen"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartVoegLosseGroenteToe?language=Basic&amp;location=application" menu:label="Voeg Losse Groente Toe"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartKoffieOrderpicking?language=Basic&amp;location=application" menu:label="Koffie orderpicking"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMailSelectie?language=Basic&amp;location=application" menu:label="Mail Selectie"/>

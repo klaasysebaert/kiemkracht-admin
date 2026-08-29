@@ -104,6 +104,16 @@ Sub StartMaakMaandbestand()
     MaakMaandbestand()
 End Sub
 
+Sub StartMaakMailmergeBlokken()
+    ReloadKiemkracht()
+    MaakMailmergeBlokken()
+End Sub
+
+Sub StartMaakHerinneringen()
+    ReloadKiemkracht()
+    MaakHerinneringen()
+End Sub
+
 Sub StartBereidKoffieMailmergeVoor()
     ReloadKiemkracht()
     BereidKoffieMailmergeVoor()
