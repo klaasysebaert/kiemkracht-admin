@@ -2251,6 +2251,45 @@ Sub PrBouwRij(sBase As String, sWkDir As String, sWkFile As String)
     For iK = 0 To nRest - 1
         PrVoegOdt(aRest(iK), 1)
     Next iK
+
+    PrKeerRijOm()
+End Sub
+
+' ---------------------------------------------------------------------------
+' PrKeerRijOm — de rij omgekeerd naar de printer sturen.
+'
+' De printer werpt uit met de inkt naar boven: elk blad komt bovenop het vorige
+' te liggen, dus het EERST geprinte document ligt onderaan de stapel. Wil je de
+' stapel in werkvolgorde kunnen doorbladeren — bovenaan wat je eerst nodig hebt
+' — dan moet de wachtrij precies omgekeerd zijn aan die werkvolgorde.
+'
+' De rij hierboven staat daarom in leesbare werkvolgorde; hier draait ze om.
+' Wat binnen één document gebeurt, regelt de printerdriver: staat daar geen
+' omgekeerde paginavolgorde ingesteld, dan ligt binnen een document nog altijd
+' de laatste bladzijde bovenaan.
+' ---------------------------------------------------------------------------
+Sub PrKeerRijOm()
+    Dim iVoor As Integer
+    Dim iAchter As Integer
+    Dim sSoort As String
+    Dim sWaarde As String
+    Dim nKopie As Integer
+
+    iVoor   = 0
+    iAchter = mPrN - 1
+    Do While iVoor < iAchter
+        sSoort  = mPrSoort(iVoor)
+        sWaarde = mPrWaarde(iVoor)
+        nKopie  = mPrKopie(iVoor)
+        mPrSoort(iVoor)   = mPrSoort(iAchter)
+        mPrWaarde(iVoor)  = mPrWaarde(iAchter)
+        mPrKopie(iVoor)   = mPrKopie(iAchter)
+        mPrSoort(iAchter)  = sSoort
+        mPrWaarde(iAchter) = sWaarde
+        mPrKopie(iAchter)  = nKopie
+        iVoor   = iVoor + 1
+        iAchter = iAchter - 1
+    Loop
 End Sub
 
 ' Documenten van andere dagen dan donderdag/vrijdag (uitzonderingsweken)
