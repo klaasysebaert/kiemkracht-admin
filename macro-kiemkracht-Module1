@@ -129,13 +129,22 @@ Function MaakDBVerbinding() As Object
 End Function
 
 Function MaakDBVerbindingNaar(sDbNaam As String) As Object
+    MaakDBVerbindingNaar = MaakDBVerbindingNaarOmgeving(sDbNaam, BepaalOmgeving())
+End Function
+
+' Zelfde verbinding, maar met een EXPLICIETE omgeving ("prod" / "dev").
+' Nodig voor macro's die hun omgeving NIET aan BepaalOmgeving() ontlenen maar aan
+' de bestanden waarmee ze werken. BepaalOmgeving() valt terug op "dev" zodra er
+' geen databestand openstaat; MaakMaandbestand kiest in diezelfde situatie juist
+' de PROD-weekbestanden. Die twee liepen uiteen -> prod-cijfers met dev-voorkeuren.
+Function MaakDBVerbindingNaarOmgeving(sDbNaam As String, sOmgeving As String) As Object
     Dim sJdbcUrl     As String
     Dim sUser        As String
     Dim sPass        As String
     Dim bNetGestart  As Boolean
     bNetGestart = False
 
-    If BepaalOmgeving() = "dev" Then
+    If sOmgeving = "dev" Then
         ' Staging-DB via de socat-postgres-dev-bridge op de VPS (poort 5434).
         ' De bridge zoekt het container-IP per verbinding op — een hardgecodeerd
         ' IP hier brak telkens na een VPS-reboot/redeploy (containers krijgen
@@ -168,7 +177,7 @@ Function MaakDBVerbindingNaar(sDbNaam As String) As Object
 
     Dim oManager As Object
     oManager = CreateUnoService("com.sun.star.sdbc.DriverManager")
-    MaakDBVerbindingNaar = oManager.getConnectionWithInfo(sJdbcUrl, aProps())
+    MaakDBVerbindingNaarOmgeving = oManager.getConnectionWithInfo(sJdbcUrl, aProps())
 End Function
 
 ' Sluit alle openstaande ssh-tunnels (cmd-vensters) en reset de

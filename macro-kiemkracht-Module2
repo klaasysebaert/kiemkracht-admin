@@ -1642,6 +1642,15 @@ Sub MaakMaandbestand()
     If Not IsNull(oActief) Then
         If InStr(LCase(oActief.getURL()), "-dev.ods") > 0 Then sOmg = "-dev"
     End If
+    ' De DB hieronder MOET dezelfde omgeving volgen als de weekbestanden.
+    ' Vroeger liep die verbinding via MaakDBVerbinding() -> BepaalOmgeving(), en
+    ' dat valt terug op "dev" zodra er geen databestand openstaat -- precies de
+    ' situatie waarin deze macro wel de PROD-weekbestanden neemt. Gevolg: prod-
+    ' cijfers met dev-voorkeuren, en omdat nooit_afrekening in de dev-kopie op
+    ' FALSE staat, kreeg een uitgesloten klant toch een rij. Stil, want geen van
+    ' beide bronnen klaagde. Vandaar de expliciete omgeving.
+    Dim sOmgDb As String
+    If sOmg = "-dev" Then sOmgDb = "dev" Else sOmgDb = "prod"
 
     ' --- afrekening-voorkeuren uit de klanten-tabel (email_afrekening,
     '     voornaam/familienaam_afrekening, nooit_afrekening) ---
@@ -1654,12 +1663,12 @@ Sub MaakMaandbestand()
     ' onbruikbaar maakt (compilefout raakt álle macro's).
     Dim afrId(800) As String, afrEmail(800) As String
     Dim afrVoorN(800) As String, afrFamN(800) As String, afrNooit(800) As Boolean
-    Dim nAfrPref As Integer, api As Integer
+    Dim nAfrPref As Integer, api As Integer, nNooitDB As Integer
     Dim bAfrPrefOk As Boolean
     Dim oConnAfr As Object, oStAfr As Object, oRsAfr As Object
-    nAfrPref = 0 : bAfrPrefOk = False
+    nAfrPref = 0 : nNooitDB = 0 : bAfrPrefOk = False
     On Error Resume Next
-    oConnAfr = MaakDBVerbinding()
+    oConnAfr = MaakDBVerbindingNaarOmgeving("postgres", sOmgDb)
     On Error GoTo 0
     If Not IsNull(oConnAfr) Then
         On Error Resume Next
@@ -1677,6 +1686,7 @@ Sub MaakMaandbestand()
                 afrVoorN(nAfrPref) = Trim(oRsAfr.getString(3))
                 afrFamN(nAfrPref)  = Trim(oRsAfr.getString(4))
                 afrNooit(nAfrPref) = oRsAfr.getBoolean(5)
+                If afrNooit(nAfrPref) Then nNooitDB = nNooitDB + 1
                 nAfrPref = nAfrPref + 1
             Loop
             oRsAfr.close() : oStAfr.close()
@@ -1689,7 +1699,7 @@ Sub MaakMaandbestand()
     SluitSSHTunnels()
     On Error GoTo 0
     If Not bAfrPrefOk Then
-        If MsgBox("Kon de afrekening-voorkeuren niet uit de database ophalen." & Chr(10) & _
+        If MsgBox("Kon de afrekening-voorkeuren niet uit de " & UCase(sOmgDb) & "-database ophalen." & Chr(10) & _
                   "(email_afrekening / voornaam_afrekening / nooit_afrekening)" & Chr(10) & Chr(10) & _
                   "Doorgaan zonder? Dan krijgt iedereen de afrekening op email1," & Chr(10) & _
                   "en worden nooit_afrekening-klanten NIET overgeslagen.", _
@@ -2334,6 +2344,37 @@ Sub MaakMaandbestand()
         oS.Columns.getByIndex(22 + wi * 2 + 1).Width  = 9000
     Next wi
 
+    ' --- Totaalrij bovenaan (rij 3): som van de geldkolommen G..K ---
+    ' AGGREGATE(9;6;...) = SOM die foutcellen negeert. Een gewone SOM zou
+    ' stukgaan op een #VERW! die achterblijft als je later een klantrij wist.
+    ' Het bereik loopt bewust door tot rij 2000, ver onder de laatste klant,
+    ' zodat rijen die je er nadien manueel bij zet vanzelf meetellen.
+    ' Wit vlak = uit de grijze kopzone gelicht; vet kader rond G3 (Saldo),
+    ' het cijfer waar je maandelijks naar kijkt. Deze opmaak komt NA de
+    ' grijze achtergrond hierboven, anders overschrijft die het wit weer.
+    Dim oBLSom As New com.sun.star.table.BorderLine2
+    oBLSom.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
+    oBLSom.LineWidth = 50            ' 0,5 mm = duidelijk zwaarder dan een gewone rand
+    oBLSom.Color     = RGB(0, 0, 0)
+    Dim oTBSom As New com.sun.star.table.TableBorder2
+    oTBSom.TopLine    = oBLSom : oTBSom.IsTopLineValid    = True
+    oTBSom.BottomLine = oBLSom : oTBSom.IsBottomLineValid = True
+    oTBSom.LeftLine   = oBLSom : oTBSom.IsLeftLineValid   = True
+    oTBSom.RightLine  = oBLSom : oTBSom.IsRightLineValid  = True
+    Dim cSom As Integer, oSomA As Object
+    For cSom = 6 To 10
+        oS.getCellByPosition(cSom, 2).setFormula("=AGGREGATE(9;6;" & _
+            KolomLetter(cSom) & "7:" & KolomLetter(cSom) & "2000)")
+    Next cSom
+    oSomA = oS.getCellRangeByPosition(6, 2, 10, 2)
+    oSomA.CellBackColor = RGB(255, 255, 255)
+    oSomA.CharWeight    = com.sun.star.awt.FontWeight.BOLD
+    oSomA.NumberFormat  = nFmtMb
+    oS.getCellRangeByPosition(6, 2, 6, 2).TableBorder2 = oTBSom
+    oS.getCellByPosition(5, 2).setString("TOTAAL")
+    oS.getCellByPosition(5, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oS.getCellByPosition(5, 2).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
+
     ' Tabblad "opvolgen betalingen"
     oOut.Sheets.insertNewByName("opvolgen betalingen", 1)
     Dim oOp As Object : oOp = oOut.Sheets.getByName("opvolgen betalingen")
@@ -2384,6 +2425,23 @@ Sub MaakMaandbestand()
     oOp.Columns.getByIndex(6).Width = 2700   ' G Totaal betaald = 2,70 cm
     oOp.Columns.getByIndex(8).Width = 5000   ' I Email
     oOp.Columns.getByIndex(9).Width = 2400   ' J Voornaam = 2,40 cm
+
+    ' --- Totaalrij bovenaan (rij 3): D t/m H, zelfde logica als op het
+    ' afrekening-tab. Vervangt de =SUM(H7:H...) die hier tot nu toe manueel
+    ' bij kwam; het vette kader staat rond H3 (Nog te betalen).
+    Dim cSomOp As Integer, oSomOp As Object
+    For cSomOp = 3 To 7
+        oOp.getCellByPosition(cSomOp, 2).setFormula("=AGGREGATE(9;6;" & _
+            KolomLetter(cSomOp) & "7:" & KolomLetter(cSomOp) & "2000)")
+    Next cSomOp
+    oSomOp = oOp.getCellRangeByPosition(3, 2, 7, 2)
+    oSomOp.CellBackColor = RGB(255, 255, 255)
+    oSomOp.CharWeight    = com.sun.star.awt.FontWeight.BOLD
+    oSomOp.NumberFormat  = nFmtOp
+    oOp.getCellRangeByPosition(7, 2, 7, 2).TableBorder2 = oTBSom
+    oOp.getCellByPosition(2, 2).setString("TOTAAL")
+    oOp.getCellByPosition(2, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oOp.getCellByPosition(2, 2).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
 
     ' --- Tabblad "weekcontrole": kruiscontrole per week ---
     ' Per week: wat het maandbestand uit dat weekbestand samentelde (maand-aggregaat)
@@ -2513,9 +2571,15 @@ Sub MaakMaandbestand()
     End If
     Dim sMsgAfr As String : sMsgAfr = ""
     If Not bAfrPrefOk Then
-        sMsgAfr = Chr(10) & Chr(10) & "LET OP: afrekening-voorkeuren NIET geladen (geen DB-verbinding):" & Chr(10) & _
+        sMsgAfr = Chr(10) & Chr(10) & "LET OP: afrekening-voorkeuren NIET geladen (geen DB-verbinding naar " & _
+                  UCase(sOmgDb) & "):" & Chr(10) & _
                   "  email_afrekening en nooit_afrekening zijn deze run niet toegepast."
     Else
+        ' Altijd tonen uit welke database de voorkeuren komen: een run op de
+        ' dev-kopie ziet nooit_afrekening overal op FALSE staan en slaat dus
+        ' niemand over. Dat mag nooit meer stil gebeuren.
+        sMsgAfr = Chr(10) & Chr(10) & "Afrekening-voorkeuren uit de " & UCase(sOmgDb) & "-database: " & _
+                  nAfrPref & " klant(en) met een voorkeur, waarvan " & nNooitDB & " met nooit_afrekening."
         If sNooitLijst <> "" Then
             sMsgAfr = sMsgAfr & Chr(10) & Chr(10) & "Overgeslagen (nooit_afrekening):" & Chr(10) & sNooitLijst
         End If
