@@ -786,6 +786,7 @@
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartVoegLosseGroenteToe?language=Basic&amp;location=application" menu:label="Voeg Losse Groente Toe"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartKoffieOrderpicking?language=Basic&amp;location=application" menu:label="Koffie orderpicking"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMailSelectie?language=Basic&amp;location=application" menu:label="Mail Selectie"/>
+   <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartVoegKlantrijToe?language=Basic&amp;location=application" menu:label="Klantrij toevoegen"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartHerstelWeekbestandFormules?language=Basic&amp;location=application" menu:label="Herstel Weekbestand Formules"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartSyncMetSheets?language=Basic&amp;location=application" menu:label="Oud: uitwisseling sheet"/>
   </menu:menupopup>
