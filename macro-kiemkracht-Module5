@@ -3388,6 +3388,11 @@ Function SamPrintTabblad(oSam As Object, sTab As String) As Boolean
 
     aPrint(0).Name  = "Wait"
     aPrint(0).Value = True
+    ' Zonder JobName heet elke opdracht in de printerwachtrij gewoon
+    ' "samenstelling_35_2026.ods" en moet je aan het aantal bladzijden raden
+    ' welk tabblad je voor je hebt.
+    aPrint(1).Name  = "JobName"
+    aPrint(1).Value = "Samenstelling — " & sTab
     oSam.print(aPrint())
     SamPrintTabblad = True
 
