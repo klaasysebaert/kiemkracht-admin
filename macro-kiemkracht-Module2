@@ -1663,10 +1663,10 @@ Sub MaakMaandbestand()
     ' onbruikbaar maakt (compilefout raakt álle macro's).
     Dim afrId(800) As String, afrEmail(800) As String
     Dim afrVoorN(800) As String, afrFamN(800) As String, afrNooit(800) As Boolean
-    Dim nAfrPref As Integer, api As Integer, nNooitDB As Integer
+    Dim nAfrPref As Integer, api As Integer, nNooitDB As Integer, nAndersDB As Integer
     Dim bAfrPrefOk As Boolean
     Dim oConnAfr As Object, oStAfr As Object, oRsAfr As Object
-    nAfrPref = 0 : nNooitDB = 0 : bAfrPrefOk = False
+    nAfrPref = 0 : nNooitDB = 0 : nAndersDB = 0 : bAfrPrefOk = False
     On Error Resume Next
     oConnAfr = MaakDBVerbindingNaarOmgeving("postgres", sOmgDb)
     On Error GoTo 0
@@ -1686,7 +1686,11 @@ Sub MaakMaandbestand()
                 afrVoorN(nAfrPref) = Trim(oRsAfr.getString(3))
                 afrFamN(nAfrPref)  = Trim(oRsAfr.getString(4))
                 afrNooit(nAfrPref) = oRsAfr.getBoolean(5)
-                If afrNooit(nAfrPref) Then nNooitDB = nNooitDB + 1
+                If afrNooit(nAfrPref) Then
+                    nNooitDB = nNooitDB + 1
+                ElseIf afrEmail(nAfrPref) <> "" Or afrVoorN(nAfrPref) <> "" Or afrFamN(nAfrPref) <> "" Then
+                    nAndersDB = nAndersDB + 1
+                End If
                 nAfrPref = nAfrPref + 1
             Loop
             oRsAfr.close() : oStAfr.close()
@@ -1775,6 +1779,7 @@ Sub MaakMaandbestand()
     Dim sOKid As String, sONaam As String, sOEmail As String, sOKey As String
     Dim opKey(800) As String, opOntv(800) As Double, nOp As Integer, oi As Integer
     Dim nOvergedragen As Integer : nOvergedragen = 0
+    Dim sOvergedragenLijst As String : sOvergedragenLijst = ""
     Dim sGeenKid As String : sGeenKid = ""
     Dim sGeenEmail As String : sGeenEmail = ""
     Dim sWeekLijst As String : sWeekLijst = ""   ' verwerkte/overgeslagen weekbestanden (voor eindpopup)
@@ -2190,6 +2195,8 @@ Sub MaakMaandbestand()
                         mSaldo(nKl) = 0
                         mVorig(nKl) = dPSaldo : mOntv(nKl) = dPOntv : mHist(nKl) = True
                         nKl = nKl + 1 : nOvergedragen = nOvergedragen + 1
+                        sOvergedragenLijst = sOvergedragenLijst & "  - " & sPNaam & " (" & _
+                            FmtNum2(dPSaldo - dPOntv) & " " & Chr(8364) & ")" & Chr(10)
                     End If
                     VolgendeVorigeRij:
                     pr = pr + 1
@@ -2576,8 +2583,13 @@ Sub MaakMaandbestand()
     End If
     Dim sMsgVorig As String
     If bVorigGevonden Then
-        sMsgVorig = Chr(10) & Chr(10) & "Vorige maand verrekend uit: " & sVorigNaam & Chr(10) & _
-                    nOvergedragen & " klant(en) zonder " & sMaandNaam & "-bestelling overgedragen (openstaand saldo)."
+        sMsgVorig = Chr(10) & Chr(10) & "Vorige maand verrekend uit: " & sVorigNaam
+        If nOvergedragen = 0 Then
+            sMsgVorig = sMsgVorig & Chr(10) & "Geen klanten zonder " & sMaandNaam & "-bestelling om over te dragen."
+        Else
+            sMsgVorig = sMsgVorig & Chr(10) & nOvergedragen & " klant(en) zonder " & sMaandNaam & _
+                        "-bestelling overgedragen (openstaand saldo):" & Chr(10) & sOvergedragenLijst
+        End If
     Else
         sMsgVorig = Chr(10) & Chr(10) & "LET OP: vorige-maandbestand niet gevonden of kolomkoppen niet herkend:" & Chr(10) & "  " & sVorigNaam & Chr(10) & _
                     "'Vorig saldo' en 'Ontvangen' zijn leeg gelaten."
@@ -2595,11 +2607,14 @@ Sub MaakMaandbestand()
                   UCase(sOmgDb) & "):" & Chr(10) & _
                   "  email_afrekening en nooit_afrekening zijn deze run niet toegepast."
     Else
-        ' Altijd tonen uit welke database de voorkeuren komen: een run op de
-        ' dev-kopie ziet nooit_afrekening overal op FALSE staan en slaat dus
-        ' niemand over. Dat mag nooit meer stil gebeuren.
-        sMsgAfr = Chr(10) & Chr(10) & "Afrekening-voorkeuren uit de " & UCase(sOmgDb) & "-database: " & _
-                  nAfrPref & " klant(en) met een voorkeur, waarvan " & nNooitDB & " met nooit_afrekening."
+        ' De omgeving wordt enkel genoemd als ze NIET prod is: bij een run op de
+        ' dev-kopie staat nooit_afrekening overal op FALSE en wordt er dus
+        ' niemand overgeslagen. Bij een gewone run is de vermelding ruis.
+        sMsgAfr = Chr(10) & Chr(10)
+        If sOmgDb <> "prod" Then sMsgAfr = sMsgAfr & "LET OP: voorkeuren uit de DEV-database (staging)!" & Chr(10)
+        sMsgAfr = sMsgAfr & "Afrekening-voorkeuren in de database:" & Chr(10) & _
+                  "  " & nNooitDB & " klant(en) krijgen nooit een afrekening" & Chr(10) & _
+                  "  " & nAndersDB & " klant(en) krijgen ze op een afwijkend adres of onder een andere naam"
         If sNooitLijst <> "" Then
             sMsgAfr = sMsgAfr & Chr(10) & Chr(10) & "Overgeslagen (nooit_afrekening):" & Chr(10) & sNooitLijst
         End If
