@@ -2604,6 +2604,16 @@ Sub MaakWeekbestand()
         bLocked = False
     End If
 
+    ' --- Koprijen van de afrekening vastzetten ---
+    ' freezeAtPosition werkt op het ACTIEVE blad, dus even naar afrekening en
+    ' daarna terug. Zo blijft bij het scrollen zichtbaar welke kolom pakket,
+    ' losse groenten of weglatingen is. De instelling wordt in het bestand
+    ' bewaard; bestaande weekbestanden krijgen ze niet met terugwerkende kracht.
+    If oNieuwDoc.Sheets.hasByName("afrekening") Then
+        oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByName("afrekening"))
+        oNieuwDoc.getCurrentController().freezeAtPosition(0, 6)
+    End If
+
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
 
     ' --- Opslaan ---
@@ -6603,4 +6613,44 @@ KlantrijFout:
     SluitSSHTunnels()
     MsgBox "Fout bij het opzoeken van de klant:" & Chr(10) & Error$ & Chr(10) & _
            "Regel: " & Erl, 16, "Klantrij toevoegen"
+End Sub
+
+' ---------------------------------------------------------------------------
+' NeemOpmaakVanRijEronder — de zojuist ingevoegde rij iRij (0-based) de opmaak
+' geven van de rij eronder, en daarna leegmaken.
+'
+' Nodig omdat Calc een nieuwe rij de opmaak van de rij BOVEN zich meegeeft. In
+' het weekbestand staat boven de eerste klant van een afhaalpunt de gele
+' kopregel van dat blok; zonder deze correctie ziet de nieuwe klant er dus uit
+' als een afhaalpunt-kop.
+'
+' copyRange neemt inhoud én opmaak mee; clearContents(23) wist daarna waarde,
+' datum, tekst en formule en laat de opmaak staan.
+' ---------------------------------------------------------------------------
+Sub NeemOpmaakVanRijEronder(oSheet As Object, iRij As Long)
+    Const nKolLaatst = 70          ' ruim voorbij BK, de laatste gebruikte kolom
+    Const nWisFlags  = 23          ' waarde + datum + tekst + formule
+
+    Dim oBron As Object
+    Dim aDoel As New com.sun.star.table.CellAddress
+
+    On Error GoTo GeenOpmaak
+    oBron = oSheet.getCellRangeByPosition(0, iRij + 1, nKolLaatst, iRij + 1)
+    aDoel.Sheet  = oBron.getRangeAddress().Sheet
+    aDoel.Column = 0
+    aDoel.Row    = iRij
+    oSheet.copyRange(aDoel, oBron.getRangeAddress())
+    oSheet.getCellRangeByPosition(0, iRij, nKolLaatst, iRij).clearContents(nWisFlags)
+
+    ' Rijhoogte is een eigenschap van de rij zelf, geen celopmaak.
+    oSheet.Rows.getByIndex(iRij).OptimalHeight = oSheet.Rows.getByIndex(iRij + 1).OptimalHeight
+    If Not oSheet.Rows.getByIndex(iRij + 1).OptimalHeight Then
+        oSheet.Rows.getByIndex(iRij).Height = oSheet.Rows.getByIndex(iRij + 1).Height
+    End If
+    Exit Sub
+
+GeenOpmaak:
+    ' De opmaak overnemen is comfort, geen noodzaak: bij een tegenvaller houdt
+    ' de rij gewoon de opmaak van boven en gaat de rest van de macro door.
+    On Error GoTo 0
 End Sub
