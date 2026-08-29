@@ -6552,6 +6552,13 @@ Sub VoegKlantrijToe()
     oWk.Rows.insertByIndex(iRij, 1)
     oAfr.Rows.insertByIndex(iRij, 1)
 
+    ' Calc geeft een nieuwe rij de opmaak van de rij BOVEN zich. Stond je cursor
+    ' op de eerste klant van een afhaalpunt, dan erfde de nieuwe rij zo de gele
+    ' kopregel van dat blok. Neem daarom de opmaak over van de rij die net
+    ' opzijschoof — dat is de rij waar je cursor stond, nu één lager.
+    NeemOpmaakVanRijEronder(oWk, iRij)
+    NeemOpmaakVanRijEronder(oAfr, iRij)
+
     ' --- Klantgegevens invullen ---
     oWk.getCellByPosition(cNaam, iRij).setString(sWie)
     oWk.getCellByPosition(cDatum, iRij).setFormula("=A" & (iRij + 1))
