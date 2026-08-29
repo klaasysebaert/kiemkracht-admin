@@ -6381,7 +6381,6 @@ Sub VoegKlantrijToe()
     Dim oDoc   As Object
     Dim oWk    As Object
     Dim oAfr   As Object
-    Dim oVC    As Object
     Dim iRij   As Long        ' 0-based invoegpositie
     Dim sZoek  As String
 
