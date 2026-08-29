@@ -1743,7 +1743,11 @@ Sub MaakMaandbestand()
     Dim nGroenten As Integer, nWeg As Integer
     Dim gName(80) As String, gPrice(80) As Double, gEenh(80) As String
     Dim wName(40) As String
-    Dim g As Integer, w As Integer, rr As Integer, blanks As Integer
+    Dim g As Integer, w As Integer, rr As Integer
+    ' Onderkant van het datablad: uit het GEBRUIKTE BEREIK, niet uit een reeks
+    ' lege rijen (zie de klantenlus verderop). nRijenWk telt per week hoeveel
+    ' klantrijen er echt meegeteld zijn, voor de eindpopup.
+    Dim oCurD As Object, rEindD As Integer, nRijenWk As Integer
     ' Afrekening-tab gekoppeld op klant_id (anders naam) i.p.v. op rijnummer:
     ' het datablad en de afrekening-tab kunnen na manuele bewerking verschoven zijn.
     Dim afKid(2000) As String, afNaamL(2000) As String, afRow(2000) As Integer
@@ -1890,14 +1894,21 @@ Sub MaakMaandbestand()
         Loop
 
         ' Klantrijen (vanaf rij 7 = index 6)
-        blanks = 0 : rr = 6
-        Do While blanks < 10 And rr < 5000
+        ' GEEN "stop na 10 lege rijen" meer. Het Opmerkingen-blok bovenaan het
+        ' datablad (koprij 7, tekst in kolom AW) laat kolom A leeg en groeit mee
+        ' met het aantal opmerkingen van die week. In week 34/2026 stonden er 15
+        ' lege rijen na elkaar: de lus viel stil VOOR de eerste klant en die hele
+        ' week telde als 0,00 EUR mee. Het weekbestand zelf was in orde -- de
+        ' spiegelcontrole had daar niets op aan te merken, want die leest tot de
+        ' laatste rij van het gebruikte bereik. Dat doen we hier nu ook.
+        oCurD = oData.createCursor()
+        oCurD.gotoEndOfUsedArea(False)
+        rEindD = oCurD.RangeAddress.EndRow
+        nRijenWk = 0
+        rr = 6
+        Do While rr <= rEindD And rr < 5000
             sNaam = oData.getCellByPosition(cdNaam, rr).getString()
-            If sNaam = "" Then
-                blanks = blanks + 1
-                GoTo VolgendeRij
-            End If
-            blanks = 0
+            If sNaam = "" Then GoTo VolgendeRij
             sAfhM = oData.getCellByPosition(1, rr).getString()
             If sAfhM = "afhaalpunt/dag" Then GoTo VolgendeRij   ' koprij afhaalpunt
 
@@ -2022,6 +2033,7 @@ Sub MaakMaandbestand()
             End If
             mSaldo(kFound) = mSaldo(kFound) + dTot
             mWeekMaand(wi) = mWeekMaand(wi) + dTot   ' maand-aggregaat per week (kruiscontrole)
+            nRijenWk = nRijenWk + 1
             If mAfhDag(kFound) = "" Then mAfhDag(kFound) = sDayWord
             If sPak <> "" Then mPak(kFound, wi) = sPak
             If sItemsA <> "" Then
@@ -2047,7 +2059,15 @@ Sub MaakMaandbestand()
         nVerwerkt = nVerwerkt + 1
         bWeekDone(wi) = True
         sWeekNaam(wi) = Mid(sPad, Len(sWeekMap) + 1)
-        sWeekLijst = sWeekLijst & "  - week " & wkNr(wi) & ": " & sWeekNaam(wi) & Chr(10)
+        ' Aantal klantrijen erbij: een week die om welke reden ook leeg
+        ' binnenkomt, mag niet als gewoon verwerkte week ogen.
+        If nRijenWk = 0 Then
+            sWeekLijst = sWeekLijst & "  - week " & wkNr(wi) & ": " & sWeekNaam(wi) & _
+                         "  !! GEEN ENKELE KLANTRIJ GELEZEN" & Chr(10)
+        Else
+            sWeekLijst = sWeekLijst & "  - week " & wkNr(wi) & ": " & sWeekNaam(wi) & _
+                         " (" & nRijenWk & " klantrijen)" & Chr(10)
+        End If
 
         VolgendeWeek:
     Next wi
