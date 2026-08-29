@@ -6337,3 +6337,255 @@ Fout:
     ControleerWeekSpiegel = "Controle kon niet worden uitgevoerd: " & Err & " - " & Error & _
                             " (regel " & Erl & ")"
 End Function
+
+' ===========================================================================
+' KLANTRIJ TOEVOEGEN (weekbestand)
+'
+' Voor de last-minute bestelling: iemand belt nadat het weekbestand al gemaakt
+' is. Zet je cursor op de rij waar de klant moet komen, start de macro, en de
+' rij schuift op — in het datablad én in het tabblad afrekening, want dat
+' koppelt op RIJNUMMER en zou anders stil verschuiven (zie ControleerWeekSpiegel).
+'
+' De macro vult enkel de klantgegevens uit de databank; de bestelling zelf
+' (pakket, losse groenten, weglatingen) typ je er daarna zelf bij.
+' ===========================================================================
+
+' Herkent een weekbestand aan cel B1 ("Week 35") + de drie tabbladen die
+' MaakWeekbestand aanmaakt. Gebruikt door BepaalOmgeving en de macro hieronder.
+Function IsWeekbestandDoc(oDoc As Object) As Boolean
+    IsWeekbestandDoc = False
+    If IsNull(oDoc) Then Exit Function
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then Exit Function
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then Exit Function
+    If Not oDoc.Sheets.hasByName("afrekening") Then Exit Function
+    If Left(oDoc.Sheets.getByIndex(0).getCellByPosition(1, 0).getString(), 5) <> "Week " Then Exit Function
+    IsWeekbestandDoc = True
+End Function
+
+Sub VoegKlantrijToe()
+    ' Kolomindices — identiek aan MaakWeekbestand
+    Const cNaam     = 0    ' A voornaam + familienaam
+    Const cAfh      = 1    ' B afhaalpunt
+    Const cKlaarDag = 2    ' C dag klaarmaken
+    Const cTyp      = 3    ' D type
+    Const cFormaat  = 4    ' E formaat
+    Const cEmail    = 6    ' G email
+    Const cTel      = 7    ' H telefoon
+    Const cVoor     = 8    ' I voornaam
+    Const cType     = 9    ' J klant_type
+    Const cDag      = 10   ' K leverdag
+    Const cAnn      = 13   ' N dag afhaling
+    Const cWBest    = 15   ' P klant_id
+    Const cDatum    = 16   ' Q datum
+
+    Dim oDoc   As Object
+    Dim oWk    As Object
+    Dim oAfr   As Object
+    Dim oVC    As Object
+    Dim iRij   As Long        ' 0-based invoegpositie
+    Dim sZoek  As String
+
+    oDoc = ThisComponent
+    If Not IsWeekbestandDoc(oDoc) Then
+        MsgBox "Dit is geen weekbestand (cel B1 moet 'Week ...' bevatten en het " & _
+               "tabblad afrekening moet bestaan)." & Chr(10) & _
+               "Zet het weekbestand vooraan en probeer opnieuw.", 48, "Klantrij toevoegen"
+        Exit Sub
+    End If
+
+    oWk  = oDoc.Sheets.getByIndex(0)
+    oAfr = oDoc.Sheets.getByName("afrekening")
+
+    ' --- Waar staat de cursor? ---
+    oVC = oDoc.getCurrentController().getViewCursor()
+    If oVC.Spreadsheet.Name <> oWk.Name Then
+        MsgBox "Zet je cursor eerst in het eerste tabblad (" & oWk.Name & "), " & _
+               "op de rij waar de klant moet komen.", 48, "Klantrij toevoegen"
+        Exit Sub
+    End If
+    iRij = oVC.RangeAddress.StartRow
+    If iRij < 6 Then
+        MsgBox "Rij " & (iRij + 1) & " ligt in de koppen van het weekbestand." & Chr(10) & _
+               "Zet je cursor op een klantrij (vanaf rij 7).", 48, "Klantrij toevoegen"
+        Exit Sub
+    End If
+
+    Dim sHier As String
+    sHier = Trim(oWk.getCellByPosition(cNaam, iRij).getString())
+    If sHier = "" Then sHier = "(lege rij)"
+
+    ' --- Wie moet erbij? ---
+    sZoek = InputBox("Naam of klant-id van de klant die erbij moet?" & Chr(10) & Chr(10) & _
+                     "De nieuwe rij komt op rij " & (iRij + 1) & "; " & sHier & _
+                     " schuift naar onder.", "Klantrij toevoegen", "")
+    sZoek = Trim(sZoek)
+    If sZoek = "" Then Exit Sub
+
+    ' --- Klant opzoeken in de databank ---
+    Dim oConn As Object
+    Dim oStmt As Object
+    Dim oRS   As Object
+    Dim sWhere As String
+    Dim sQ     As String
+
+    If IsNumeric(sZoek) Then
+        sWhere = "k.id = " & CLng(Val(sZoek))
+    Else
+        ' Zoekt op voornaam, familienaam en de twee samen — dus "annelies",
+        ' "ponseele" en "annelies ponseele" vinden allemaal dezelfde klant.
+        Dim sVeilig As String
+        sVeilig = LCase(Replace(sZoek, "'", "''"))
+        sWhere = "(LOWER(k.voornaam) LIKE '%" & sVeilig & "%' " & _
+                 "OR LOWER(k.familienaam) LIKE '%" & sVeilig & "%' " & _
+                 "OR LOWER(k.voornaam || ' ' || k.familienaam) LIKE '%" & sVeilig & "%')"
+    End If
+
+    sQ = "SELECT k.id, k.voornaam, k.familienaam, COALESCE(k.email1,''), " & _
+         "COALESCE(k.telefoon,''), COALESCE(k.type,''), COALESCE(k.klant_type,''), " & _
+         "COALESCE(k.formaat,''), COALESCE(k.status,''), " & _
+         "COALESCE(ap.naam,''), COALESCE(ap.dag_klaarmaken,''), COALESCE(ap.dag_afhaling,'') " & _
+         "FROM klanten k " & _
+         "LEFT JOIN afhaalpunten ap ON ap.id = k.afhaalpunt_id " & _
+         "WHERE " & sWhere & " " & _
+         "ORDER BY k.familienaam, k.voornaam LIMIT 20"
+
+    Dim kId(19)      As Long
+    Dim kVoor(19)    As String
+    Dim kFam(19)     As String
+    Dim kEmail(19)   As String
+    Dim kTel(19)     As String
+    Dim kTyp(19)     As String
+    Dim kKType(19)   As String
+    Dim kFormaat(19) As String
+    Dim kStatus(19)  As String
+    Dim kAfh(19)     As String
+    Dim kKlaar(19)   As String
+    Dim kAfhDag(19)  As String
+    Dim nK           As Integer
+    nK = 0
+
+    On Error GoTo KlantrijFout
+    oConn = MaakDBVerbinding()
+    oStmt = oConn.createStatement()
+    oRS   = oStmt.executeQuery(sQ)
+    Do While oRS.next()
+        If nK <= 19 Then
+            kId(nK)      = oRS.getLong(1)
+            kVoor(nK)    = oRS.getString(2)
+            kFam(nK)     = oRS.getString(3)
+            kEmail(nK)   = oRS.getString(4)
+            kTel(nK)     = oRS.getString(5)
+            kTyp(nK)     = oRS.getString(6)
+            kKType(nK)   = oRS.getString(7)
+            kFormaat(nK) = oRS.getString(8)
+            kStatus(nK)  = oRS.getString(9)
+            kAfh(nK)     = oRS.getString(10)
+            kKlaar(nK)   = oRS.getString(11)
+            kAfhDag(nK)  = oRS.getString(12)
+            nK = nK + 1
+        End If
+    Loop
+    oRS.close() : oStmt.close() : oConn.close()
+    SluitSSHTunnels()
+    On Error GoTo 0
+
+    ' --- Geen, één of meerdere treffers ---
+    Dim iKeuze As Integer
+    iKeuze = -1
+
+    If nK = 0 Then
+        If MsgBox("Niemand gevonden voor """ & sZoek & """." & Chr(10) & Chr(10) & _
+                  "Toch een rij invoegen met enkel deze naam erin? " & _
+                  "(de rest vul je dan zelf aan)", 4 + 48, "Klantrij toevoegen") <> 6 Then Exit Sub
+    ElseIf nK = 1 Then
+        iKeuze = 0
+    Else
+        Dim sLijst As String
+        Dim iL     As Integer
+        sLijst = nK & " klanten gevonden voor """ & sZoek & """:" & Chr(10) & Chr(10)
+        For iL = 0 To nK - 1
+            sLijst = sLijst & (iL + 1) & ". " & Trim(kVoor(iL) & " " & kFam(iL)) & _
+                     " — " & kAfh(iL) & " (" & kTyp(iL) & ", id " & kId(iL) & ")" & Chr(10)
+        Next iL
+        Dim sNr As String
+        sNr = InputBox(sLijst & Chr(10) & "Welk nummer?", "Klantrij toevoegen", "1")
+        If Trim(sNr) = "" Then Exit Sub
+        If Not IsNumeric(sNr) Then
+            MsgBox "Geen geldig nummer: " & sNr, 48, "Klantrij toevoegen"
+            Exit Sub
+        End If
+        iKeuze = CInt(sNr) - 1
+        If iKeuze < 0 Or iKeuze >= nK Then
+            MsgBox "Nummer buiten bereik: " & sNr, 48, "Klantrij toevoegen"
+            Exit Sub
+        End If
+    End If
+
+    ' --- Bevestigen ---
+    Dim sWie As String
+    If iKeuze >= 0 Then
+        sWie = Trim(kVoor(iKeuze) & " " & kFam(iKeuze))
+        Dim sBev As String
+        sBev = sWie & Chr(10) & _
+               "afhaalpunt: " & kAfh(iKeuze) & Chr(10) & _
+               "klaarmaken: " & kKlaar(iKeuze) & "   afhaling: " & kAfhDag(iKeuze) & Chr(10) & _
+               "type: " & kTyp(iKeuze) & "   formaat: " & kFormaat(iKeuze) & Chr(10) & _
+               "klant-id: " & kId(iKeuze) & "   status: " & kStatus(iKeuze) & Chr(10) & Chr(10) & _
+               "Invoegen op rij " & (iRij + 1) & "?"
+        If kStatus(iKeuze) <> "actief" Then
+            sBev = sBev & Chr(10) & Chr(10) & "LET OP: deze klant staat niet op 'actief'."
+        End If
+        If MsgBox(sBev, 4 + 32, "Klantrij toevoegen") <> 6 Then Exit Sub
+    Else
+        sWie = sZoek
+    End If
+
+    ' --- Rij invoegen in béide bladen, op dezelfde plaats ---
+    oWk.Rows.insertByIndex(iRij, 1)
+    oAfr.Rows.insertByIndex(iRij, 1)
+
+    ' --- Klantgegevens invullen ---
+    oWk.getCellByPosition(cNaam, iRij).setString(sWie)
+    oWk.getCellByPosition(cDatum, iRij).setFormula("=A" & (iRij + 1))
+    If iKeuze >= 0 Then
+        oWk.getCellByPosition(cAfh,      iRij).setString(kAfh(iKeuze))
+        oWk.getCellByPosition(cKlaarDag, iRij).setString(kKlaar(iKeuze))
+        oWk.getCellByPosition(cTyp,      iRij).setString(kTyp(iKeuze))
+        oWk.getCellByPosition(cFormaat,  iRij).setString(kFormaat(iKeuze))
+        oWk.getCellByPosition(cEmail,    iRij).setString(kEmail(iKeuze))
+        oWk.getCellByPosition(cTel,      iRij).setString(kTel(iKeuze))
+        oWk.getCellByPosition(cVoor,     iRij).setString(kVoor(iKeuze))
+        oWk.getCellByPosition(cType,     iRij).setString(kKType(iKeuze))
+        oWk.getCellByPosition(cDag,      iRij).setString(kKlaar(iKeuze))
+        oWk.getCellByPosition(cAnn,      iRij).setString(kAfhDag(iKeuze))
+        oWk.getCellByPosition(cWBest,    iRij).setValue(kId(iKeuze))
+    End If
+
+    ' --- Formules en de afrekening-spiegel herstellen ---
+    Dim sVerslag As String
+    sVerslag = HerstelFormulesKern(oDoc)
+    If Left(sVerslag, 5) = "FOUT:" Then
+        MsgBox "De rij staat er, maar het herstellen van de formules liep mis:" & Chr(10) & _
+               Mid(sVerslag, 6) & Chr(10) & Chr(10) & _
+               "Draai ""Herstel Weekbestand Formules"" voor je verder werkt.", _
+               16, "Klantrij toevoegen"
+        Exit Sub
+    End If
+
+    oDoc.getCurrentController().select(oWk.getCellByPosition(17, iRij))
+    MsgBox sWie & " staat nu op rij " & (iRij + 1) & "." & Chr(10) & Chr(10) & _
+           "Vul zelf nog aan:" & Chr(10) & _
+           "   R-U   het pakket (KG / GG / EGG / MINI)" & Chr(10) & _
+           "   Y-AV  de losse groenten" & Chr(10) & _
+           "   AZ..  weglatingen" & Chr(10) & _
+           "   AW    een opmerking voor op de picklijst" & Chr(10) & Chr(10) & _
+           "De afrekening schoof mee op en de formules zijn hersteld. " & _
+           "Vergeet niet op te slaan.", 64, "Klantrij toegevoegd"
+    Exit Sub
+
+KlantrijFout:
+    On Error Resume Next
+    SluitSSHTunnels()
+    MsgBox "Fout bij het opzoeken van de klant:" & Chr(10) & Error$ & Chr(10) & _
+           "Regel: " & Erl, 16, "Klantrij toevoegen"
+End Sub

@@ -74,6 +74,11 @@ Sub StartVoegLosseGroenteToe()
     VoegLosseGroenteToe()
 End Sub
 
+Sub StartVoegKlantrijToe()
+    ReloadKiemkracht()
+    VoegKlantrijToe()
+End Sub
+
 Sub StartHerstelWeekbestandFormules()
     ReloadKiemkracht()
     HerstelWeekbestandFormules()
