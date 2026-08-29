@@ -2611,7 +2611,7 @@ Sub MaakWeekbestand()
     ' bewaard; bestaande weekbestanden krijgen ze niet met terugwerkende kracht.
     If oNieuwDoc.Sheets.hasByName("afrekening") Then
         oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByName("afrekening"))
-        oNieuwDoc.getCurrentController().freezeAtPosition(0, 6)
+        oNieuwDoc.getCurrentController().freezeAtPosition(1, 6)
     End If
 
     oNieuwDoc.getCurrentController().setActiveSheet(oNieuwDoc.Sheets.getByIndex(0))
