@@ -609,6 +609,36 @@ reden om de deuren te bouwen:
 
 ---
 
+## Tussenstand 2026-08-29 — macro *Klantrij toevoegen*
+
+Sinds vandaag zet je een late klant bij met de macro **Klantrij toevoegen**
+(`StartVoegKlantrijToe`) in plaats van met een handmatige rij-invoeging. Ze voegt
+de rij in het datablad **en** in *afrekening* tegelijk in, neemt de opmaak over
+van de rij die opzijschuift, vult de klantgegevens uit de databank en herstelt
+achteraf alle formules.
+
+Dat verandert twee dingen aan de redenen hierboven om de deuren te bouwen:
+
+- **Driver 2 (afrekening-spiegel) valt grotendeels weg voor deze weg.** De
+  rij-invoeging breekt de koppeling niet meer stil; de 13 scheve rijen van Maggie
+  zouden vandaag niet meer gebeuren. Het risico blijft wél bestaan voor élke
+  andere rij-ingreep met de hand (wissen, verslepen, plakken).
+- **Deze rijen dragen nu een `klant_id`** (kolom P, uit de databank). Een
+  handmatig getypte rij had dat niet, en was daardoor principieel niet
+  terugleesbaar. Wil je ooit het weekbestand als bron naar de DB terugschrijven,
+  dan zijn deze rijen nu identificeerbaar — de vroegere handmatige rijen niet.
+
+Ongewijzigd: de **bestelling zelf** (pakket in R–U, losse groenten in Y–AV,
+weglatingen vanaf AZ) typ je nog steeds met de hand en laat geen DB-spoor na. De
+drivers 1, 3, 4 en 5 blijven dus volledig staan — inclusief het feit dat de rij
+verdwijnt bij een nieuwe `MaakWeekbestand`-run.
+
+Staat de klant nog niet in de databank, dan maakt de macro hem ook niet aan: ze
+biedt enkel aan de rij met de getypte naam in te voegen. De **klantaanmaak** uit
+de 6e soort (week 35) blijft dus een open deur.
+
+---
+
 <!--
 Nieuwe week? Kopieer dit blok:
 
