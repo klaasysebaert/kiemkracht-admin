@@ -3365,7 +3365,7 @@ End Function
 ' ---------------------------------------------------------------------------
 Function SamPrintTabblad(oSam As Object, sTab As String) As Boolean
     Dim aZicht()   As Boolean
-    Dim aPrint(0)  As New com.sun.star.beans.PropertyValue
+    Dim aPrint(1)  As New com.sun.star.beans.PropertyValue
     Dim oBladen    As Object
     Dim iBlad      As Integer
     Dim nBladen    As Integer
