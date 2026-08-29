@@ -1611,6 +1611,13 @@ Sub MaakMaandbestand()
     Const caKid     = 5    ' F = klant_id (afrekening-tab; voor rij-koppeling op identiteit)
     Const caWeg0    = 51   ' AZ = eerste weglating-detailkolom (vast: 24+24+3)
     Const NWEKEN    = 5    ' vaste leverweek-slots (max donderdagen in een maand)
+    ' Ondergrens om een bedrag als "openstaand" te tellen: een VOLLE cent.
+    ' Niet 0,005: Saldo-cellen dragen soms een staartje van 3-4 decimalen
+    ' (bv. vorig saldo 28,025 vs ontvangen 28,03), en dat halve centje werd dan
+    ' als schuld gelezen. Het blad zelf rekent J = ROUND(H;2)-ROUND(I;2) en komt
+    ' voor datzelfde geval op 0,00 uit -- de klant stond dus met saldo 0,00 in
+    ' het maandbestand en zou een afrekening voor nul euro krijgen.
+    Const dCent     = 0.0099
 
     Dim saMaanden(12) As String
     saMaanden(1)="januari"  : saMaanden(2)="februari" : saMaanden(3)="maart"
@@ -2088,7 +2095,10 @@ Sub MaakMaandbestand()
     iVM = iTM - 1 : iVJaar = iJaar
     If iVM < 1 Then iVM = 12 : iVJaar = iVJaar - 1
     sVorigNaam = "afrekening_" & saMaanden(iVM) & "_" & iVJaar & sOmg & "_definitief.ods"
-    sVorigPad  = JaarMap(iVJaar) & sVorigNaam
+    ' Eerst in de maandmap; valt terug op de jaarmap zelf, want alles van vóór
+    ' deze wijziging ligt daar nog los (t/m juli 2026).
+    sVorigPad  = AfrekeningMap(iVJaar, saMaanden(iVM)) & sVorigNaam
+    If Not FileExists(sVorigPad) Then sVorigPad = JaarMap(iVJaar) & sVorigNaam
     If FileExists(sVorigPad) Then
         sVorigUrl = ConvertToURL(sVorigPad)
         oVorig = VindOpenDocument(sVorigUrl)          ' hergebruik als al open
@@ -2188,7 +2198,7 @@ Sub MaakMaandbestand()
                     Next ki
                     If kFound >= 0 Then
                         mVorig(kFound) = dPSaldo : mOntv(kFound) = dPOntv : mHist(kFound) = True
-                    ElseIf Abs(dPSaldo - dPOntv) >= 0.005 Then
+                    ElseIf Abs(dPSaldo - dPOntv) >= dCent Then
                         ' Deze maand niets besteld, maar nog openstaand -> overdragen als herinnering
                         mKey(nKl)   = sPKey  : mKid(nKl)   = sPKid
                         mVoor(nKl)  = sPVoor : mNaam(nKl)  = sPNaam : mEmail(nKl) = sPEmail
@@ -2260,7 +2270,7 @@ Sub MaakMaandbestand()
     For i2 = 0 To nKl - 1
         idx = ord(i2)
         ' Tonen zodra het totaal (deze maand + overgedragen saldo) niet ~0 is
-        If Abs(mSaldo(idx) + mVorig(idx) - mOntv(idx)) < 0.005 Then GoTo VolgendeUit
+        If Abs(mSaldo(idx) + mVorig(idx) - mOntv(idx)) < dCent Then GoTo VolgendeUit
         ' Afrekening-voorkeuren van deze klant (koppeling op klant_id)
         sAfrEmailKl = "" : sAfrVoorKl = "" : sAfrFamKl = "" : bNooitKl = False
         If Trim(mKid(idx)) <> "" Then
@@ -2540,7 +2550,9 @@ Sub MaakMaandbestand()
 
     ' Opslaan (verborgen opgebouwd), dan zichtbaar heropenen vanaf schijf
     ' zodat het venster de juiste titel heeft en freezeAtPosition werkt.
-    Dim sUit As String : sUit = JaarMap(iJaar) & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
+    ' Alles van deze maand (maandbestand, _definitief, mailmergeblokken) samen
+    ' in <jaarmap>\<jaar>_afrekening_<maand>\ -- zoals de week-submappen.
+    Dim sUit As String : sUit = AfrekeningMap(iJaar, sMaandNaam) & "afrekening_" & sMaandNaam & "_" & iJaar & sOmg & ".ods"
     Dim sUrlUit As String : sUrlUit = ConvertToURL(sUit)
 
     ' Sluit het doelbestand als het nog open staat (bv. van een vorige run),

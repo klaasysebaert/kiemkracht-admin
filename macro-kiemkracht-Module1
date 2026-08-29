@@ -2969,6 +2969,17 @@ Function JaarMap(iJaar As Integer) As String
     JaarMap = sMap
 End Function
 
+' Map voor alles wat bij de afrekening van EEN maand hoort: het maandbestand,
+' zijn _definitief-versie en de mailmerge-blokken die daaruit gemaakt worden.
+' Zelfde opzet als de week-submappen: <jaarmap>\<jaar>_afrekening_<maand>\.
+' Maakt de map aan als ze nog niet bestaat.
+Function AfrekeningMap(iJaar As Integer, sMaandNaam As String) As String
+    Dim sMap As String
+    sMap = JaarMap(iJaar) & iJaar & "_afrekening_" & sMaandNaam & "\"
+    If Not FileExists(sMap) Then MkDir(sMap)
+    AfrekeningMap = sMap
+End Function
+
 ' =============================================
 ' Kolomindex in klanten_beheer voor veldindex vi (0-23).
 ' Kolom K (index 10) is gereserveerd voor gebruikersformules.
