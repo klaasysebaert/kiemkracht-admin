@@ -6397,13 +6397,22 @@ Sub VoegKlantrijToe()
     oAfr = oDoc.Sheets.getByName("afrekening")
 
     ' --- Waar staat de cursor? ---
-    oVC = oDoc.getCurrentController().getViewCursor()
-    If oVC.Spreadsheet.Name <> oWk.Name Then
+    ' Calc heeft géén getViewCursor (dat is Writer): de selectie vraag je aan
+    ' het document zelf. Eén cel of een heel bereik geeft allebei een
+    ' RangeAddress; iets anders (een tekening, een grafiek) niet.
+    Dim oSel As Object
+    oSel = oDoc.getCurrentSelection()
+    If Not HasUnoInterfaces(oSel, "com.sun.star.sheet.XCellRangeAddressable") Then
+        MsgBox "Zet je cursor eerst in een cel van het tabblad " & oWk.Name & ", " & _
+               "op de rij waar de klant moet komen.", 48, "Klantrij toevoegen"
+        Exit Sub
+    End If
+    If oSel.getRangeAddress().Sheet <> 0 Then
         MsgBox "Zet je cursor eerst in het eerste tabblad (" & oWk.Name & "), " & _
                "op de rij waar de klant moet komen.", 48, "Klantrij toevoegen"
         Exit Sub
     End If
-    iRij = oVC.RangeAddress.StartRow
+    iRij = oSel.getRangeAddress().StartRow
     If iRij < 6 Then
         MsgBox "Rij " & (iRij + 1) & " ligt in de koppen van het weekbestand." & Chr(10) & _
                "Zet je cursor op een klantrij (vanaf rij 7).", 48, "Klantrij toevoegen"
