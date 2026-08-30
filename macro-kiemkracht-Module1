@@ -354,9 +354,9 @@ Sub LaadAlleTabellen()
     MsgBox "Alle tabellen geladen!", 64, "Klaar"
     ' De uitleg staat in de body, niet in de titel: een MsgBox-titel kapt af
     ' op de eerste Chr(10), dus een tweede titelregel is onzichtbaar.
-    If nUit > 0 Then MsgBox sUit & Chr(10) & UitschrijfAdvies("mail_opt_out (kolom AC)"), _
+    If nUit > 0 Then MsgBox sUit & Chr(10) & UitschrijfAdvies("mail_opt_out (kolom AD)"), _
         48, nUit & " nieuwe uitschrijver(s) voor de aanbodmail"
-    If nUitK > 0 Then MsgBox sUitK & Chr(10) & UitschrijfAdvies("koffie_opt_out (kolom AE)") & Chr(10) & _
+    If nUitK > 0 Then MsgBox sUitK & Chr(10) & UitschrijfAdvies("koffie_opt_out (kolom AF)") & Chr(10) & _
         "Let op: wie enkel de KOFFIE-mails afmeldt, blijft gewoon groentenklant." & Chr(10) & _
         "Type op stop-definitief zetten is enkel aan de orde als hij zich ook" & Chr(10) & _
         "voor de groenten-aanbodmail uitschreef (of geen groenten afneemt).", _
@@ -520,7 +520,7 @@ End Sub
 ' ---------------------------------------------------------------------------
 Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Dim oKB As Object, oStmt As Object, oRS As Object, oRngA As Object, oRngB As Object, oRngD As Object
-    Dim kbKol(20) As String
+    Dim kbKol(21) As String
     Dim j As Integer
     Dim nRows As Long, r As Long
     Dim sVal As String
@@ -534,12 +534,10 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     kbKol(10) = "email4"           : kbKol(11) = "telefoon"
     kbKol(12) = "opmerkingen"      : kbKol(13) = "opmerkingen_volgend"
     kbKol(14) = "opmerking_status" : kbKol(15) = "nooit_groenten"
-    kbKol(16) = "email_afrekening"       : kbKol(17) = "voornaam_afrekening"
-    kbKol(18) = "familienaam_afrekening" : kbKol(19) = "nooit_afrekening"
-    kbKol(20) = "afhaalpunt_alternatieven"   ' backlog #27, CSV van afhaalpunt-namen
-    ' email_afrekening2 hoort bij de opt-out-blok (AC-AG) omdat de kolommen
-    ' hier op veldindex-volgorde liggen; naast email_afrekening (Z) passen
-    ' zou alle latere velden verschuiven. Zie KBKolom().
+    kbKol(16) = "email_afrekening"       : kbKol(17) = "email_afrekening2"
+    kbKol(18) = "voornaam_afrekening"    : kbKol(19) = "familienaam_afrekening"
+    kbKol(20) = "nooit_afrekening"
+    kbKol(21) = "afhaalpunt_alternatieven"   ' backlog #27, CSV van afhaalpunt-namen
 
     If oSheets.hasByName("klanten_beheer") Then
         oKB = oSheets.getByName("klanten_beheer")
@@ -548,12 +546,12 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         oKB = oSheets.getByName("klanten_beheer")
     End If
 
-    ' F-J (5-9) en L-AB (11-27) wissen; K (10) bevat gebruikersformules.
-    ' AB (27) = interne alternatieven-snapshot, zie onderaan deze Sub.
-    ' AC-AF (28-31) = opt-outs (mail/koffie), AG (32) = tweede afrekening-adres.
+    ' F-J (5-9) en L-AC (11-28) wissen; K (10) bevat gebruikersformules.
+    ' AC (28) = interne alternatieven-snapshot, zie onderaan deze Sub.
+    ' AD-AG (29-32) = opt-outs (mail/koffie).
     oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
-    oKB.getCellRangeByPosition(11, 0, 27, 10000).clearContents(7)
-    oKB.getCellRangeByPosition(28, 0, 32, 10000).clearContents(7)
+    oKB.getCellRangeByPosition(11, 0, 28, 10000).clearContents(7)
+    oKB.getCellRangeByPosition(29, 0, 32, 10000).clearContents(7)
 
     ' Aantal rijen vooraf, om de sjablonen op maat te maken
     mStap = "klanten_beheer — rijen tellen"
@@ -574,20 +572,20 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         "SELECT voornaam, familienaam, voornaam2, familienaam2, afhaalpunt_id, " & _
         "type, formaat, email1, email2, email3, email4, telefoon, " & _
         "opmerkingen, opmerkingen_volgend, opmerking_status, nooit_groenten, " & _
-        "email_afrekening, voornaam_afrekening, familienaam_afrekening, nooit_afrekening, " & _
+        "email_afrekening, email_afrekening2, voornaam_afrekening, familienaam_afrekening, " & _
+        "nooit_afrekening, " & _
         "(SELECT string_agg(ap.naam, ',' ORDER BY ap.naam) FROM klant_afhaalpunt_alternatieven kaa " & _
         " JOIN afhaalpunten ap ON ap.id = kaa.afhaalpunt_id WHERE kaa.klant_id = klanten.id), " & _
-        "mail_opt_out, mail_opt_out_reden, koffie_opt_out, koffie_opt_out_reden, " & _
-        "email_afrekening2 " & _
+        "mail_opt_out, mail_opt_out_reden, koffie_opt_out, koffie_opt_out_reden " & _
         "FROM klanten ORDER BY id")
 
     ' Twee sjablonen uit de doelbereiken zelf (juiste UNO-structuur); rechtstreeks
     ' invullen, geen geneste Basic-array opbouwen/doorgeven. F-J = querykolommen
-    ' 1-5, L-AA = querykolommen 6-21.
+    ' 1-5, L-AB = querykolommen 6-22.
     mStap = "klanten_beheer — sjablonen (" & (nRows + 1) & " rijen)"
     oRngA = oKB.getCellRangeByPosition(5,  0, 9,  nRows)
-    oRngB = oKB.getCellRangeByPosition(11, 0, 26, nRows)
-    oRngD = oKB.getCellRangeByPosition(28, 0, 32, nRows)
+    oRngB = oKB.getCellRangeByPosition(11, 0, 27, nRows)
+    oRngD = oKB.getCellRangeByPosition(29, 0, 32, nRows)
     aOutA = oRngA.getDataArray()
     aOutB = oRngB.getDataArray()
     aOutD = oRngD.getDataArray()
@@ -599,14 +597,13 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     Next j
     aOutA(0) = aRij
     aRij = aOutB(0)
-    For j = 0 To 15
+    For j = 0 To 16
         aRij(j) = kbKol(j + 5)
     Next j
     aOutB(0) = aRij
     aRijD = aOutD(0)
     aRijD(0) = "mail_opt_out"   : aRijD(1) = "mail_opt_out_reden"
     aRijD(2) = "koffie_opt_out" : aRijD(3) = "koffie_opt_out_reden"
-    aRijD(4) = "email_afrekening2"
     aOutD(0) = aRijD
 
     ' Datarijen — rechtstreeks in de sjabloonrijen schrijven
@@ -622,15 +619,15 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         Next j
         aOutA(r) = aRij
         aRij = aOutB(r)
-        For j = 0 To 15
+        For j = 0 To 16
             sVal = oRS.getString(j + 6)
             If oRS.wasNull() Then sVal = ""
             aRij(j) = sVal
         Next j
         aOutB(r) = aRij
         aRijD = aOutD(r)
-        For j = 0 To 4
-            sVal = oRS.getString(j + 22)
+        For j = 0 To 3
+            sVal = oRS.getString(j + 23)
             If oRS.wasNull() Then sVal = ""
             aRijD(j) = sVal
         Next j
@@ -645,13 +642,13 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     oRngB.setDataArray(aOutB)
     oRngD.setDataArray(aOutD)
 
-    ' Kolom AB (27) = verborgen "vorige waarde"-snapshot van de alternatieven
-    ' (kolom AA, laatste veld in aOutB). SchrijfWijzigingenTerug vergelijkt
-    ' AA tegen AB om een bewerking te detecteren — afhaalpunt_alternatieven
+    ' Kolom AC (28) = verborgen "vorige waarde"-snapshot van de alternatieven
+    ' (kolom AB, laatste veld in aOutB). SchrijfWijzigingenTerug vergelijkt
+    ' AB tegen AC om een bewerking te detecteren — afhaalpunt_alternatieven
     ' is géén kolom op klanten, dus het klanten-tabblad kan hier niet als
     ' vergelijkingsbasis dienen zoals bij de andere velden.
     mStap = "klanten_beheer — alternatieven-snapshot"
-    Dim oRngC As Object : oRngC = oKB.getCellRangeByPosition(27, 0, 27, nRows)
+    Dim oRngC As Object : oRngC = oKB.getCellRangeByPosition(28, 0, 28, nRows)
     Dim aOutC As Variant : aOutC = oRngC.getDataArray()
     Dim aRijC As Variant
     aRijC = aOutC(0) : aRijC(0) = "afhaalpunt_alternatieven_vorig (NIET AANPASSEN)" : aOutC(0) = aRijC
@@ -659,7 +656,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     For rC = 1 To UBound(aOutC)
         aRij = aOutB(rC)
         aRijC = aOutC(rC)
-        aRijC(0) = aRij(15)
+        aRijC(0) = aRij(16)
         aOutC(rC) = aRijC
     Next rC
     oRngC.setDataArray(aOutC)
@@ -2986,20 +2983,26 @@ Function AfrekeningMap(iJaar As Integer, sMaandNaam As String) As String
 End Function
 
 ' =============================================
-' Kolomindex in klanten_beheer voor veldindex vi (0-23).
+' Kolomindex in klanten_beheer voor veldindex vi (0-24).
 ' Kolom K (index 10) is gereserveerd voor gebruikersformules.
 '   vi 0-4   → col 5-9   (F t/m J)
-'   vi 5-19  → col 11-25 (L t/m Z)
-'   vi 20-23 → col 28-31 (AC t/m AF) — opt-outs, apart van AA/AB (26/27,
+'   vi 5-20  → col 11-26 (L t/m AA)
+'   vi 21-24 → col 29-32 (AD t/m AG) — opt-outs, apart van AB/AC (27/28,
 '   afhaalpunt-alternatieven + snapshot) om die kolommen niet te verschuiven.
+'
+' De volgorde is die van veldNamen/kbKol, dus een veld ertussen schuiven
+' verplaatst alles erna. Dat is bewust gebeurd voor email_afrekening2 (X):
+' twee afrekening-adressen naast elkaar leest nu eenmaal beter dan een los
+' veld achteraan. Wie hier weer iets tussenvoegt: LaadKlantenBeheer heeft
+' vaste bereiken (11-27, 28, 29-32) die mee moeten.
 ' =============================================
 Function KBKolom(vi As Integer) As Integer
     If vi < 5 Then
         KBKolom = 5 + vi
-    ElseIf vi < 20 Then
+    ElseIf vi < 21 Then
         KBKolom = 6 + vi
     Else
-        KBKolom = 28 + (vi - 20)
+        KBKolom = 29 + (vi - 21)
     End If
 End Function
 
@@ -3074,11 +3077,11 @@ Sub SchrijfWijzigingenTerug()
     veldNamen(10) = "email4"           : veldNamen(11) = "telefoon"
     veldNamen(12) = "opmerkingen"      : veldNamen(13) = "opmerkingen_volgend"
     veldNamen(14) = "opmerking_status" : veldNamen(15) = "nooit_groenten"
-    veldNamen(16) = "email_afrekening"       : veldNamen(17) = "voornaam_afrekening"
-    veldNamen(18) = "familienaam_afrekening" : veldNamen(19) = "nooit_afrekening"
-    veldNamen(20) = "mail_opt_out"           : veldNamen(21) = "mail_opt_out_reden"
-    veldNamen(22) = "koffie_opt_out"         : veldNamen(23) = "koffie_opt_out_reden"
-    veldNamen(24) = "email_afrekening2"
+    veldNamen(16) = "email_afrekening"       : veldNamen(17) = "email_afrekening2"
+    veldNamen(18) = "voornaam_afrekening"    : veldNamen(19) = "familienaam_afrekening"
+    veldNamen(20) = "nooit_afrekening"
+    veldNamen(21) = "mail_opt_out"           : veldNamen(22) = "mail_opt_out_reden"
+    veldNamen(23) = "koffie_opt_out"         : veldNamen(24) = "koffie_opt_out_reden"
 
     Dim klantenIdCol As Integer : klantenIdCol = -1
     Dim kVeldCol(24) As Integer
@@ -3153,10 +3156,10 @@ Sub SchrijfWijzigingenTerug()
                 End If
             Next vi
         End If
-        ' afhaalpunt_alternatieven (kolom AA=26) is géén klanten-kolom en dus niet
-        ' in kVals — vergelijken tegen de eigen snapshot in kolom AB=27 (backlog #27).
+        ' afhaalpunt_alternatieven (kolom AB=27) is géén klanten-kolom en dus niet
+        ' in kVals — vergelijken tegen de eigen snapshot in kolom AC=28 (backlog #27).
         If Not bWijz Then
-            If Trim(oKB.getCellByPosition(26, r).getString()) <> Trim(oKB.getCellByPosition(27, r).getString()) Then
+            If Trim(oKB.getCellByPosition(27, r).getString()) <> Trim(oKB.getCellByPosition(28, r).getString()) Then
                 bWijz = True
             End If
         End If
@@ -3217,7 +3220,7 @@ Sub SchrijfWijzigingenTerug()
     Dim oStmt As Object : oStmt = oConn.createStatement()
     Dim nUpdates As Integer : nUpdates = 0
 
-    ' Afhaalpunt-alternatieven (backlog #27): namen uit kolom AA vooraf
+    ' Afhaalpunt-alternatieven (backlog #27): namen uit kolom AB vooraf
     ' opzoeken/valideren tegen afhaalpunten (naam, naam_publiek of rechtstreeks
     ' het afhaalpunt_id — zelfde invoervrijheid als het afhaalpunt_verlof-tabblad),
     ' vóór er iets weggeschreven wordt — bij een onbekende naam/id breekt de macro
@@ -3244,7 +3247,7 @@ Sub SchrijfWijzigingenTerug()
     Do While rAlt <= nTotaal
         sAltIdsCsv(rAlt) = ""
         If bGewijzigd(rAlt) Then
-            Dim sAltCsv As String : sAltCsv = Trim(oKB.getCellByPosition(26, rAlt).getString())
+            Dim sAltCsv As String : sAltCsv = Trim(oKB.getCellByPosition(27, rAlt).getString())
             If sAltCsv <> "" Then
                 Dim aAltNamen() As String : aAltNamen = Split(sAltCsv, ",")
                 Dim iAlt As Integer
@@ -3285,7 +3288,7 @@ Sub SchrijfWijzigingenTerug()
     Loop
 
     If nAltFout > 0 Then
-        MsgBox nAltFout & " ongeldige afhaalpunt-verwijzing(en) in kolom AA (afhaalpunt_alternatieven):" & Chr(10) & _
+        MsgBox nAltFout & " ongeldige afhaalpunt-verwijzing(en) in kolom AB (afhaalpunt_alternatieven):" & Chr(10) & _
                sAltFout & Chr(10) & Chr(10) & _
                "Gebruik het afhaalpunt_id (bv. 18) of een naam die exact overeenkomt met " & _
                "afhaalpunten.naam of naam_publiek. " & _
@@ -3317,11 +3320,12 @@ Sub SchrijfWijzigingenTerug()
             Dim sOpmerkStat   As String : sOpmerkStat   = oKB.getCellByPosition(KBKolom(14), r).getString()
             Dim sNooit        As String : sNooit        = Trim(oKB.getCellByPosition(KBKolom(15), r).getString())
             Dim sEmailAfr     As String : sEmailAfr     = Trim(oKB.getCellByPosition(KBKolom(16), r).getString())
-            Dim sVoorAfr      As String : sVoorAfr      = Trim(oKB.getCellByPosition(KBKolom(17), r).getString())
-            Dim sFamAfr       As String : sFamAfr       = Trim(oKB.getCellByPosition(KBKolom(18), r).getString())
-            Dim sNooitAfr     As String : sNooitAfr     = Trim(oKB.getCellByPosition(KBKolom(19), r).getString())
-            ' Tweede afrekening-adres (kolom AG). Leeg = enkel het eerste adres.
-            Dim sEmailAfr2    As String : sEmailAfr2    = Trim(oKB.getCellByPosition(KBKolom(24), r).getString())
+            ' Tweede afrekening-adres (kolom X), pal naast het eerste. Leeg =
+            ' enkel het eerste adres.
+            Dim sEmailAfr2    As String : sEmailAfr2    = Trim(oKB.getCellByPosition(KBKolom(17), r).getString())
+            Dim sVoorAfr      As String : sVoorAfr      = Trim(oKB.getCellByPosition(KBKolom(18), r).getString())
+            Dim sFamAfr       As String : sFamAfr       = Trim(oKB.getCellByPosition(KBKolom(19), r).getString())
+            Dim sNooitAfr     As String : sNooitAfr     = Trim(oKB.getCellByPosition(KBKolom(20), r).getString())
 
             Dim sAfhaalSql As String
             If sAfhaalId = "" Or Not IsNumeric(sAfhaalId) Then
@@ -3527,13 +3531,13 @@ Sub SchrijfWijzigingenTerug()
         rSync = rSync + 1
     Loop
 
-    ' Afhaalpunt-alternatieven-snapshot (kolom AB=27) bijwerken naar AA=26,
+    ' Afhaalpunt-alternatieven-snapshot (kolom AC=28) bijwerken naar AB=27,
     ' onafhankelijk van aKIdx (self-contained binnen klanten_beheer zelf) —
     ' zo herkent de volgende run een teruggedraaide alternatieven-waarde weer.
     Dim rSyncAlt As Integer : rSyncAlt = 1
     Do While rSyncAlt <= nTotaal
         If bGewijzigd(rSyncAlt) Then
-            oKB.getCellByPosition(27, rSyncAlt).setString(oKB.getCellByPosition(26, rSyncAlt).getString())
+            oKB.getCellByPosition(28, rSyncAlt).setString(oKB.getCellByPosition(27, rSyncAlt).getString())
         End If
         rSyncAlt = rSyncAlt + 1
     Loop
