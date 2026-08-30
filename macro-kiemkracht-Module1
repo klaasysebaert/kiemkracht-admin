@@ -3106,7 +3106,10 @@ Sub SchrijfWijzigingenTerug()
 
     ' === Stap 2: klanten-tabblad in arrays laden ===
     Dim kID(2000)       As Long
-    Dim kVals(2000, 23) As String
+    ' Tweede dimensie = het AANTAL VELDEN (veldNamen 0-24). Vergeet je die
+    ' bij een nieuw veld, dan compileert alles nog en knalt de macro pas bij
+    ' het laden op "Index buiten gedefinieerd bereik".
+    Dim kVals(2000, 24) As String
     Dim nKlanten As Integer : nKlanten = 0
     Dim kr As Integer : kr = 1
     Do While oKlanten.getCellByPosition(klantenIdCol, kr).getString() <> ""
@@ -3382,17 +3385,18 @@ Sub SchrijfWijzigingenTerug()
             ' GET/one-click-tak). Vlag flipt uit: exact de "ongedaan maken"-
             ' semantiek van uitschrijven.php (herstelSubmit-tak).
             Dim kIdxRow As Integer : kIdxRow = aKIdx(r)
-            Dim sMailOptNw   As String : sMailOptNw   = Trim(oKB.getCellByPosition(KBKolom(20), r).getString())
-            Dim sMailRedenNw As String : sMailRedenNw = Trim(oKB.getCellByPosition(KBKolom(21), r).getString())
-            Dim sKoffOptNw   As String : sKoffOptNw   = Trim(oKB.getCellByPosition(KBKolom(22), r).getString())
-            Dim sKoffRedenNw As String : sKoffRedenNw = Trim(oKB.getCellByPosition(KBKolom(23), r).getString())
+            Dim sMailOptNw   As String : sMailOptNw   = Trim(oKB.getCellByPosition(KBKolom(21), r).getString())
+            Dim sMailRedenNw As String : sMailRedenNw = Trim(oKB.getCellByPosition(KBKolom(22), r).getString())
+            Dim sKoffOptNw   As String : sKoffOptNw   = Trim(oKB.getCellByPosition(KBKolom(23), r).getString())
+            Dim sKoffRedenNw As String : sKoffRedenNw = Trim(oKB.getCellByPosition(KBKolom(24), r).getString())
 
             Dim bMailOptNw As Boolean : bMailOptNw = IsAanKB(sMailOptNw)
             Dim bKoffOptNw As Boolean : bKoffOptNw = IsAanKB(sKoffOptNw)
             Dim bMailOptOud As Boolean, bKoffOptOud As Boolean
             If kIdxRow >= 0 Then
-                bMailOptOud = IsAanKB(kVals(kIdxRow, 20))
-                bKoffOptOud = IsAanKB(kVals(kIdxRow, 22))
+                ' Veldindexen: 21 = mail_opt_out, 23 = koffie_opt_out (zie veldNamen).
+                bMailOptOud = IsAanKB(kVals(kIdxRow, 21))
+                bKoffOptOud = IsAanKB(kVals(kIdxRow, 23))
             Else
                 bMailOptOud = False
                 bKoffOptOud = False
