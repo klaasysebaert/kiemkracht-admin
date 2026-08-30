@@ -2880,6 +2880,12 @@ End Function
 ' maximaal 100 adressen, elk in een eigen Calc-document naast het bronbestand.
 ' iRij()      = rijindexen in oBron, al gesorteerd op bedrag (hoog -> laag)
 ' sOnderwerp  = mailtitel; komt als kolom "Onderwerp" achteraan elke rij
+'
+' Achteraan komt ook "Toelichting vorig saldo": gevuld met "(in jouw voordeel)"
+' zodra het vorige saldo negatief is, anders LEEG. Zo kan het sjabloon er
+' onvoorwaardelijk naar verwijzen -- "Vorig saldo: {toelichting}" levert bij
+' een leeg veld gewoon niets extra op, en bij een tegoed de verduidelijking
+' dat het bedrag in het voordeel van de klant staat.
 ' bExtra      = ook "Totaal betaald" / "Nog te betalen" toevoegen
 '               (dBetaald/dOpenst lopen dan parallel met iRij)
 ' Geeft een regel per geschreven bestand terug voor de eindpopup.
@@ -2895,8 +2901,9 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
     Dim aHid(0) As New com.sun.star.beans.PropertyValue
     Dim aSave(1) As New com.sun.star.beans.PropertyValue
     Dim oLoc As New com.sun.star.lang.Locale
+    Const dCentB = 0.0099
     Dim nBlok As Integer, b As Integer, i As Integer, r As Integer, ro As Integer
-    Dim nKopMax As Integer, cOnd As Integer, c As Integer
+    Dim nKopMax As Integer, cOnd As Integer, cToel As Integer, cVorigB As Integer, c As Integer
     Dim sNaam As String, sRapport As String
     Dim aKop As Variant, aRij As Variant
     Dim nFmt As Long
@@ -2909,13 +2916,15 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
     aSave(0).Name = "FilterName" : aSave(0).Value = "calc8"
     aSave(1).Name = "Overwrite"  : aSave(1).Value = True
     oLoc.Language = "nl" : oLoc.Country = "BE"
-    ' Kolomindeling achteraan: [Totaal betaald] [Nog te betalen] Onderwerp
+    ' Kolomindeling achteraan: Toelichting [Totaal betaald] [Nog te betalen] Onderwerp
+    cToel = nKolMax + 1
     If bExtra Then
-        cOnd = nKolMax + 3
+        cOnd = nKolMax + 4
     Else
-        cOnd = nKolMax + 1
+        cOnd = nKolMax + 2
     End If
     nKopMax = cOnd
+    cVorigB = ZoekKolomKop(oBron, "Vorig saldo")
 
     sRapport = ""
     nBlok = Int((nRij + PERBLOK - 1) / PERBLOK)
@@ -2928,9 +2937,10 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
         ' teruggeeft: een zelf opgebouwde geneste array faalt in LO Basic.
         aKop = oBron.getCellRangeByPosition(0, 0, nKolMax, 0).getDataArray()
         oS.getCellRangeByPosition(0, 0, nKolMax, 0).setDataArray(aKop)
+        oS.getCellByPosition(cToel, 0).setString("Toelichting vorig saldo")
         If bExtra Then
-            oS.getCellByPosition(nKolMax + 1, 0).setString("Totaal betaald")
-            oS.getCellByPosition(nKolMax + 2, 0).setString("Nog te betalen")
+            oS.getCellByPosition(nKolMax + 2, 0).setString("Totaal betaald")
+            oS.getCellByPosition(nKolMax + 3, 0).setString("Nog te betalen")
         End If
         oS.getCellByPosition(cOnd, 0).setString("Onderwerp")
 
@@ -2942,9 +2952,16 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
             r = iRij(i)
             aRij = oBron.getCellRangeByPosition(0, r, nKolMax, r).getDataArray()
             oS.getCellRangeByPosition(0, ro, nKolMax, ro).setDataArray(aRij)
+            ' Enkel invullen bij een tegoed; anders blijft de cel leeg en slaat
+            ' het sjabloon de toevoeging over.
+            If cVorigB >= 0 Then
+                If oBron.getCellByPosition(cVorigB, r).getValue() < -dCentB Then
+                    oS.getCellByPosition(cToel, ro).setString("(in jouw voordeel)")
+                End If
+            End If
             If bExtra Then
-                oS.getCellByPosition(nKolMax + 1, ro).setValue(dBetaald(i))
-                oS.getCellByPosition(nKolMax + 2, ro).setValue(dOpenst(i))
+                oS.getCellByPosition(nKolMax + 2, ro).setValue(dBetaald(i))
+                oS.getCellByPosition(nKolMax + 3, ro).setValue(dOpenst(i))
             End If
             oS.getCellByPosition(cOnd, ro).setString(sOnderwerp)
             ro = ro + 1
@@ -2956,14 +2973,15 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
         If nFmt = -1 Then nFmt = oDoc.getNumberFormats().addNew("0,00", oLoc)
         If ro > 1 Then
             oS.getCellRangeByPosition(6, 1, 10, ro - 1).NumberFormat = nFmt
-            If bExtra Then oS.getCellRangeByPosition(nKolMax + 1, 1, nKolMax + 2, ro - 1).NumberFormat = nFmt
+            If bExtra Then oS.getCellRangeByPosition(nKolMax + 2, 1, nKolMax + 3, ro - 1).NumberFormat = nFmt
         End If
         For c = 0 To nKolMax
             oS.Columns.getByIndex(c).Width = oBron.Columns.getByIndex(c).Width
         Next c
+        oS.Columns.getByIndex(cToel).Width = 4200
         If bExtra Then
-            oS.Columns.getByIndex(nKolMax + 1).Width = 2700
             oS.Columns.getByIndex(nKolMax + 2).Width = 2700
+            oS.Columns.getByIndex(nKolMax + 3).Width = 2700
         End If
         oS.Columns.getByIndex(cOnd).Width = 8000
 
