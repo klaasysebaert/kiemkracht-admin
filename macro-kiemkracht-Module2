@@ -2388,8 +2388,8 @@ Sub MaakMaandbestand()
     oS.Columns.getByIndex(3).Width = 5000   ' D Email
     oS.Columns.getByIndex(4).Width = 2400   ' E Voornaam = 2,40 cm
     oS.Columns.getByIndex(5).Width = 1750   ' F Maand = 1,75 cm
-    oS.Columns.getByIndex(6).Width  = 1300   ' G Saldo = 1,30 cm
-    oS.Columns.getByIndex(10).Width = 1500   ' K Besteld in maand = 1,50 cm
+    oS.Columns.getByIndex(6).Width  = 2000   ' G Saldo = 2,00 cm (past het totaal bovenaan)
+    oS.Columns.getByIndex(10).Width = 2000   ' K Besteld in maand = 2,00 cm
     oS.Columns.getByIndex(11).Width = 2200   ' L Afhaaldag = 2,20 cm
     For wi = 0 To NWEKEN - 1
         oS.Columns.getByIndex(12 + wi * 2).Width      = 8000
@@ -2616,7 +2616,7 @@ Sub MaakMaandbestand()
         If nOvergedragen = 0 Then
             sMsgVorig = sMsgVorig & Chr(10) & "Geen klanten zonder " & sMaandNaam & "-bestelling om over te dragen."
         Else
-            sMsgVorig = sMsgVorig & Chr(10) & nOvergedragen & " klant(en) zonder " & sMaandNaam & _
+            sMsgVorig = sMsgVorig & Chr(10) & Aantal(nOvergedragen, "klant", "klanten") & " zonder " & sMaandNaam & _
                         "-bestelling overgedragen (openstaand saldo):" & Chr(10) & sOvergedragenLijst
         End If
     Else
@@ -2642,8 +2642,8 @@ Sub MaakMaandbestand()
         sMsgAfr = Chr(10) & Chr(10)
         If sOmgDb <> "prod" Then sMsgAfr = sMsgAfr & "LET OP: voorkeuren uit de DEV-database (staging)!" & Chr(10)
         sMsgAfr = sMsgAfr & "Afrekening-voorkeuren in de database:" & Chr(10) & _
-                  "  " & nNooitDB & " klant(en) krijgen nooit een afrekening" & Chr(10) & _
-                  "  " & nAndersDB & " klant(en) krijgen ze op een afwijkend adres of onder een andere naam"
+                  "  " & Aantal(nNooitDB, "klant krijgt", "klanten krijgen") & " nooit een afrekening" & Chr(10) & _
+                  "  " & Aantal(nAndersDB, "klant krijgt", "klanten krijgen") & " ze op een afwijkend adres of onder een andere naam"
         If sNooitLijst <> "" Then
             sMsgAfr = sMsgAfr & Chr(10) & Chr(10) & "Overgeslagen (nooit_afrekening):" & Chr(10) & sNooitLijst
         End If
@@ -2974,9 +2974,19 @@ Function SchrijfMailmergeBlokken(oBron As Object, sMapUrl As String, sBasis As S
         End If
         oDoc.storeToURL(sMapUrl & sNaam, aSave())
         oDoc.close(True)
-        sRapport = sRapport & "  - " & sNaam & " (" & (ro - 1) & " adressen)" & Chr(10)
+        sRapport = sRapport & "  - " & sNaam & " (" & Aantal(ro - 1, "adres", "adressen") & ")" & Chr(10)
     Next b
     SchrijfMailmergeBlokken = sRapport
+End Function
+
+' Telwoord met het juiste enkel-/meervoud: Aantal(1, "klant", "klanten")
+' geeft "1 klant", Aantal(3, ...) geeft "3 klanten".
+Function Aantal(n As Integer, sEnkel As String, sMeer As String) As String
+    If n = 1 Then
+        Aantal = n & " " & sEnkel
+    Else
+        Aantal = n & " " & sMeer
+    End If
 End Function
 
 ' Insertion sort op twee parallelle arrays: hoogste bedrag eerst.
@@ -3131,12 +3141,12 @@ Sub MaakMailmergeBlokken()
     If nC > 0 Then sMsg = sMsg & sRapC Else sMsg = sMsg & "  (niemand)" & Chr(10)
     sMsg = sMsg & Chr(10) & "Map: " & ConvertFromURL(sMapUrl)
     If nKlein > 0 Then
-        sMsg = sMsg & Chr(10) & Chr(10) & nKlein & " klant(en) zonder bestelling onder " & _
+        sMsg = sMsg & Chr(10) & Chr(10) & Aantal(nKlein, "klant", "klanten") & " zonder bestelling onder " & _
                FmtNum2(dMinAlleen) & " " & Chr(8364) & " overgeslagen" & Chr(10) & _
                "(gaat mee naar de afrekening van volgende maand):" & Chr(10) & sKlein
     End If
     If nGeenMail > 0 Then
-        sMsg = sMsg & Chr(10) & Chr(10) & nGeenMail & " klant(en) zonder e-mailadres NIET opgenomen:" & _
+        sMsg = sMsg & Chr(10) & Chr(10) & Aantal(nGeenMail, "klant", "klanten") & " zonder e-mailadres NIET opgenomen:" & _
                Chr(10) & sGeenMail
     End If
     MsgBox sMsg, 64, "Mailmergebestanden"
@@ -3303,16 +3313,16 @@ Sub MaakHerinneringen()
                                        "herinnering: afrekening groenten " & sMaand, _
                                        iSel(), nSel, nKolMax, True, dSelBet(), dSelOpen())
 
-    sMsg = nSel & " klant(en) hebben de afrekening van " & sMaand & " nog niet volledig betaald." & _
+    sMsg = Aantal(nSel, "klant heeft", "klanten hebben") & " de afrekening van " & sMaand & " nog niet volledig betaald." & _
            Chr(10) & "Onderwerp: herinnering: afrekening groenten " & sMaand & Chr(10) & Chr(10) & _
            sRapport & Chr(10) & "Map: " & ConvertFromURL(sMapUrl)
     If nKlein > 0 Then
-        sMsg = sMsg & Chr(10) & Chr(10) & nKlein & " klant(en) onder " & FmtNum2(dMinBedrag) & " " & _
+        sMsg = sMsg & Chr(10) & Chr(10) & Aantal(nKlein, "klant", "klanten") & " onder " & FmtNum2(dMinBedrag) & " " & _
                Chr(8364) & " overgeslagen" & Chr(10) & _
                "(gaat mee naar de afrekening van volgende maand):" & Chr(10) & sKlein
     End If
     If nGeenMail > 0 Then
-        sMsg = sMsg & Chr(10) & Chr(10) & nGeenMail & " klant(en) met een openstaand bedrag maar" & Chr(10) & _
+        sMsg = sMsg & Chr(10) & Chr(10) & Aantal(nGeenMail, "klant", "klanten") & " met een openstaand bedrag maar" & Chr(10) & _
                "zonder e-mailadres, NIET opgenomen:" & Chr(10) & sGeenMail
     End If
     MsgBox sMsg, 64, "Herinneringen"
