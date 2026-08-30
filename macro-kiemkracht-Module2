@@ -1668,7 +1668,7 @@ Sub MaakMaandbestand()
     ' maakt LO Basic een variabele bij gebruik impliciet aan, en botst een
     ' latere Dim op "Variabele reeds gedefinieerd" — wat de hele bibliotheek
     ' onbruikbaar maakt (compilefout raakt álle macro's).
-    Dim afrId(800) As String, afrEmail(800) As String
+    Dim afrId(800) As String, afrEmail(800) As String, afrEmail2(800) As String
     Dim afrVoorN(800) As String, afrFamN(800) As String, afrNooit(800) As Boolean
     Dim nAfrPref As Integer, api As Integer, nNooitDB As Integer, nAndersDB As Integer
     Dim bAfrPrefOk As Boolean
@@ -1682,9 +1682,11 @@ Sub MaakMaandbestand()
         oStAfr = oConnAfr.createStatement()
         oRsAfr = oStAfr.executeQuery( _
             "SELECT id, COALESCE(email_afrekening,''), COALESCE(voornaam_afrekening,''), " & _
-            "COALESCE(familienaam_afrekening,''), nooit_afrekening FROM klanten " & _
+            "COALESCE(familienaam_afrekening,''), nooit_afrekening, " & _
+            "COALESCE(email_afrekening2,'') FROM klanten " & _
             "WHERE COALESCE(email_afrekening,'') <> '' OR COALESCE(voornaam_afrekening,'') <> '' " & _
-            "OR COALESCE(familienaam_afrekening,'') <> '' OR nooit_afrekening")
+            "OR COALESCE(familienaam_afrekening,'') <> '' OR nooit_afrekening " & _
+            "OR COALESCE(email_afrekening2,'') <> ''")
         On Error GoTo 0
         If Not IsNull(oRsAfr) Then
             Do While oRsAfr.next() And nAfrPref <= UBound(afrId)
@@ -1693,9 +1695,11 @@ Sub MaakMaandbestand()
                 afrVoorN(nAfrPref) = Trim(oRsAfr.getString(3))
                 afrFamN(nAfrPref)  = Trim(oRsAfr.getString(4))
                 afrNooit(nAfrPref) = oRsAfr.getBoolean(5)
+                afrEmail2(nAfrPref) = Trim(oRsAfr.getString(6))
                 If afrNooit(nAfrPref) Then
                     nNooitDB = nNooitDB + 1
-                ElseIf afrEmail(nAfrPref) <> "" Or afrVoorN(nAfrPref) <> "" Or afrFamN(nAfrPref) <> "" Then
+                ElseIf afrEmail(nAfrPref) <> "" Or afrVoorN(nAfrPref) <> "" Or afrFamN(nAfrPref) <> "" _
+                       Or afrEmail2(nAfrPref) <> "" Then
                     nAndersDB = nAndersDB + 1
                 End If
                 nAfrPref = nAfrPref + 1
@@ -1796,11 +1800,12 @@ Sub MaakMaandbestand()
     Dim sSpiegelLijst As String : sSpiegelLijst = ""
     ' Afrekening-voorkeuren: arrays + DB-objecten staan hoger gedeclareerd,
     ' vóór hun eerste gebruik (zie blok "afrekening-voorkeuren" bovenaan).
-    Dim sAfrEmailKl As String, sAfrVoorKl As String, sAfrFamKl As String
+    Dim sAfrEmailKl As String, sAfrVoorKl As String, sAfrFamKl As String, sAfrEmail2Kl As String
     Dim bNooitKl As Boolean
     Dim sEffEmail As String, sEffVoor As String
     Dim sNooitLijst As String : sNooitLijst = ""
     Dim sAfwijkendAdres As String : sAfwijkendAdres = ""
+    Dim sTweedeAdres As String : sTweedeAdres = ""
 
     For wi = 0 To nWk - 1
         ' Enkel het exacte "week_<wk>_<jaar><omg>_definitief.ods" telt als databron
@@ -2272,12 +2277,13 @@ Sub MaakMaandbestand()
         ' Tonen zodra het totaal (deze maand + overgedragen saldo) niet ~0 is
         If Abs(mSaldo(idx) + mVorig(idx) - mOntv(idx)) < dCent Then GoTo VolgendeUit
         ' Afrekening-voorkeuren van deze klant (koppeling op klant_id)
-        sAfrEmailKl = "" : sAfrVoorKl = "" : sAfrFamKl = "" : bNooitKl = False
+        sAfrEmailKl = "" : sAfrVoorKl = "" : sAfrFamKl = "" : sAfrEmail2Kl = "" : bNooitKl = False
         If Trim(mKid(idx)) <> "" Then
             For api = 0 To nAfrPref - 1
                 If afrId(api) = Trim(mKid(idx)) Then
                     sAfrEmailKl = afrEmail(api) : sAfrVoorKl = afrVoorN(api)
                     sAfrFamKl   = afrFamN(api)  : bNooitKl   = afrNooit(api)
+                    sAfrEmail2Kl = afrEmail2(api)
                     Exit For
                 End If
             Next api
@@ -2294,6 +2300,17 @@ Sub MaakMaandbestand()
         If sAfrEmailKl <> "" Then
             sEffEmail = sAfrEmailKl
             sAfwijkendAdres = sAfwijkendAdres & "  - " & mNaam(idx) & " -> " & sAfrEmailKl & Chr(10)
+        End If
+        ' Tweede afrekening-adres: erbij, niet in plaats van. Beide adressen in
+        ' dezelfde cel, met komma -- de mailmerge maakt daar EEN mail van aan
+        ' allebei. Dezelfde persoon, dezelfde afrekening, dus geen twee mails.
+        If sAfrEmail2Kl <> "" And LCase(sAfrEmail2Kl) <> LCase(Trim(sEffEmail)) Then
+            If Trim(sEffEmail) = "" Then
+                sEffEmail = sAfrEmail2Kl
+            Else
+                sEffEmail = sEffEmail & ", " & sAfrEmail2Kl
+            End If
+            sTweedeAdres = sTweedeAdres & "  - " & mNaam(idx) & " -> " & sEffEmail & Chr(10)
         End If
         sEffVoor = mVoor(idx)
         If sAfrVoorKl <> "" Then sEffVoor = sAfrVoorKl
@@ -2632,6 +2649,10 @@ Sub MaakMaandbestand()
         End If
         If sAfwijkendAdres <> "" Then
             sMsgAfr = sMsgAfr & Chr(10) & Chr(10) & "Afwijkend afrekening-adres (email_afrekening):" & Chr(10) & sAfwijkendAdres
+        End If
+        If sTweedeAdres <> "" Then
+            sMsgAfr = sMsgAfr & Chr(10) & Chr(10) & "Afrekening naar TWEE adressen (email_afrekening2):" & _
+                      Chr(10) & sTweedeAdres
         End If
     End If
     Dim sMsgWeken As String : sMsgWeken = ""

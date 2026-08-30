@@ -537,6 +537,9 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     kbKol(16) = "email_afrekening"       : kbKol(17) = "voornaam_afrekening"
     kbKol(18) = "familienaam_afrekening" : kbKol(19) = "nooit_afrekening"
     kbKol(20) = "afhaalpunt_alternatieven"   ' backlog #27, CSV van afhaalpunt-namen
+    ' email_afrekening2 hoort bij de opt-out-blok (AC-AG) omdat de kolommen
+    ' hier op veldindex-volgorde liggen; naast email_afrekening (Z) passen
+    ' zou alle latere velden verschuiven. Zie KBKolom().
 
     If oSheets.hasByName("klanten_beheer") Then
         oKB = oSheets.getByName("klanten_beheer")
@@ -547,10 +550,10 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
 
     ' F-J (5-9) en L-AB (11-27) wissen; K (10) bevat gebruikersformules.
     ' AB (27) = interne alternatieven-snapshot, zie onderaan deze Sub.
-    ' AC-AF (28-31) = opt-outs (mail/koffie), zie onderaan deze Sub.
+    ' AC-AF (28-31) = opt-outs (mail/koffie), AG (32) = tweede afrekening-adres.
     oKB.getCellRangeByPosition(5,  0, 9,  10000).clearContents(7)
     oKB.getCellRangeByPosition(11, 0, 27, 10000).clearContents(7)
-    oKB.getCellRangeByPosition(28, 0, 31, 10000).clearContents(7)
+    oKB.getCellRangeByPosition(28, 0, 32, 10000).clearContents(7)
 
     ' Aantal rijen vooraf, om de sjablonen op maat te maken
     mStap = "klanten_beheer — rijen tellen"
@@ -574,7 +577,8 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         "email_afrekening, voornaam_afrekening, familienaam_afrekening, nooit_afrekening, " & _
         "(SELECT string_agg(ap.naam, ',' ORDER BY ap.naam) FROM klant_afhaalpunt_alternatieven kaa " & _
         " JOIN afhaalpunten ap ON ap.id = kaa.afhaalpunt_id WHERE kaa.klant_id = klanten.id), " & _
-        "mail_opt_out, mail_opt_out_reden, koffie_opt_out, koffie_opt_out_reden " & _
+        "mail_opt_out, mail_opt_out_reden, koffie_opt_out, koffie_opt_out_reden, " & _
+        "email_afrekening2 " & _
         "FROM klanten ORDER BY id")
 
     ' Twee sjablonen uit de doelbereiken zelf (juiste UNO-structuur); rechtstreeks
@@ -583,7 +587,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     mStap = "klanten_beheer — sjablonen (" & (nRows + 1) & " rijen)"
     oRngA = oKB.getCellRangeByPosition(5,  0, 9,  nRows)
     oRngB = oKB.getCellRangeByPosition(11, 0, 26, nRows)
-    oRngD = oKB.getCellRangeByPosition(28, 0, 31, nRows)
+    oRngD = oKB.getCellRangeByPosition(28, 0, 32, nRows)
     aOutA = oRngA.getDataArray()
     aOutB = oRngB.getDataArray()
     aOutD = oRngD.getDataArray()
@@ -602,6 +606,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
     aRijD = aOutD(0)
     aRijD(0) = "mail_opt_out"   : aRijD(1) = "mail_opt_out_reden"
     aRijD(2) = "koffie_opt_out" : aRijD(3) = "koffie_opt_out_reden"
+    aRijD(4) = "email_afrekening2"
     aOutD(0) = aRijD
 
     ' Datarijen — rechtstreeks in de sjabloonrijen schrijven
@@ -624,7 +629,7 @@ Private Sub LaadKlantenBeheer(oSheets As Object, oConn As Object)
         Next j
         aOutB(r) = aRij
         aRijD = aOutD(r)
-        For j = 0 To 3
+        For j = 0 To 4
             sVal = oRS.getString(j + 22)
             If oRS.wasNull() Then sVal = ""
             aRijD(j) = sVal
@@ -3060,7 +3065,7 @@ Sub SchrijfWijzigingenTerug()
     If nAntw <> 1 Then Exit Sub
 
     ' === Stap 1: klanten-tabblad header → kolom-indices (geen SSH nodig) ===
-    Dim veldNamen(23) As String
+    Dim veldNamen(24) As String
     veldNamen(0)  = "voornaam"         : veldNamen(1)  = "familienaam"
     veldNamen(2)  = "voornaam2"        : veldNamen(3)  = "familienaam2"
     veldNamen(4)  = "afhaalpunt_id"    : veldNamen(5)  = "type"
@@ -3073,17 +3078,18 @@ Sub SchrijfWijzigingenTerug()
     veldNamen(18) = "familienaam_afrekening" : veldNamen(19) = "nooit_afrekening"
     veldNamen(20) = "mail_opt_out"           : veldNamen(21) = "mail_opt_out_reden"
     veldNamen(22) = "koffie_opt_out"         : veldNamen(23) = "koffie_opt_out_reden"
+    veldNamen(24) = "email_afrekening2"
 
     Dim klantenIdCol As Integer : klantenIdCol = -1
-    Dim kVeldCol(23) As Integer
+    Dim kVeldCol(24) As Integer
     Dim vi As Integer
-    For vi = 0 To 23 : kVeldCol(vi) = -1 : Next vi
+    For vi = 0 To 24 : kVeldCol(vi) = -1 : Next vi
 
     Dim hIdx As Integer : hIdx = 0
     Do While oKlanten.getCellByPosition(hIdx, 0).getString() <> ""
         Dim hNaam As String : hNaam = oKlanten.getCellByPosition(hIdx, 0).getString()
         If hNaam = "id" Then klantenIdCol = hIdx
-        For vi = 0 To 23
+        For vi = 0 To 24
             If hNaam = veldNamen(vi) Then kVeldCol(vi) = hIdx
         Next vi
         hIdx = hIdx + 1
@@ -3102,7 +3108,7 @@ Sub SchrijfWijzigingenTerug()
     Dim kr As Integer : kr = 1
     Do While oKlanten.getCellByPosition(klantenIdCol, kr).getString() <> ""
         kID(nKlanten) = CLng(oKlanten.getCellByPosition(klantenIdCol, kr).getValue())
-        For vi = 0 To 23
+        For vi = 0 To 24
             If kVeldCol(vi) >= 0 Then
                 If vi = 4 Then
                     If oKlanten.getCellByPosition(kVeldCol(vi), kr).getString() = "" Then
@@ -3141,7 +3147,7 @@ Sub SchrijfWijzigingenTerug()
 
         Dim bWijz As Boolean : bWijz = (kIdx = -1)
         If Not bWijz Then
-            For vi = 0 To 23
+            For vi = 0 To 24
                 If kVals(kIdx, vi) <> Trim(oKB.getCellByPosition(KBKolom(vi), r).getString()) Then
                     bWijz = True : Exit For
                 End If
@@ -3314,6 +3320,8 @@ Sub SchrijfWijzigingenTerug()
             Dim sVoorAfr      As String : sVoorAfr      = Trim(oKB.getCellByPosition(KBKolom(17), r).getString())
             Dim sFamAfr       As String : sFamAfr       = Trim(oKB.getCellByPosition(KBKolom(18), r).getString())
             Dim sNooitAfr     As String : sNooitAfr     = Trim(oKB.getCellByPosition(KBKolom(19), r).getString())
+            ' Tweede afrekening-adres (kolom AG). Leeg = enkel het eerste adres.
+            Dim sEmailAfr2    As String : sEmailAfr2    = Trim(oKB.getCellByPosition(KBKolom(24), r).getString())
 
             Dim sAfhaalSql As String
             If sAfhaalId = "" Or Not IsNumeric(sAfhaalId) Then
@@ -3432,6 +3440,7 @@ Sub SchrijfWijzigingenTerug()
                    "opmerkingen_volgend = "  & SqlStr(sOpmerkVolg)   & ", " & _
                    "opmerking_status = "     & SqlStr(sOpmerkStat)   & ", " & _
                    "email_afrekening = "     & SqlStr(sEmailAfr)     & ", " & _
+                   "email_afrekening2 = "    & SqlStr(sEmailAfr2)    & ", " & _
                    "voornaam_afrekening = "  & SqlStr(sVoorAfr)      & ", " & _
                    "familienaam_afrekening = " & SqlStr(sFamAfr)     & ", " & _
                    "nooit_afrekening = "     & sNooitAfrSql          & ", " & _
@@ -3498,7 +3507,7 @@ Sub SchrijfWijzigingenTerug()
             ' deze verouderde basis) — geen foute klantgegevens, wel onnodige
             ' DELETE+INSERT-churn op abonnementen (aangemaakt_op/gewijzigd_op
             ' reset voor vals-gemelde klanten).
-            For viS = 0 To 23
+            For viS = 0 To 24
                 If kVeldCol(viS) >= 0 Then
                     If viS = 4 Then
                         Dim sAfhSync As String
