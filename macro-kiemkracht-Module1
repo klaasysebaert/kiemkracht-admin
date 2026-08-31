@@ -2477,7 +2477,11 @@ Sub MaakWeekbestand()
     Next g
 
     ' Weglatings-DETAILkolommen (vanaf AZ, uitgelijnd op het datablad): per
-    ' weglatingsgroente de waarde die de klant in mindering krijgt. Er staan nu
+    ' weglatingsgroente de waarde die de klant in mindering krijgt, AFGEROND OP
+    ' 5 CENT (ROUND(x*20;0)/20 -- MROUND bestaat niet in de API-formuletaal).
+    ' Afronden gebeurt PER WEGLATING, niet op het totaal: zo tonen de mailtekst
+    ' ("geen rabarber: -1,60 EUR") en het afgetrokken bedrag hetzelfde getal.
+    ' De som van 5-cent-veelvouden blijft zelf een 5-cent-veelvoud. Er staan nu
     ' vast nWegSlots (>=12) kolommen klaar, ook lege, zodat een handmatig
     ' toegevoegde weglating meteen meeloopt. Het vaste TOTAAL staat in kolom D —
     ' daar naar verwijzen voor maandoverzichten, niet naar deze detailkolommen.
@@ -2558,7 +2562,9 @@ Sub MaakWeekbestand()
             "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
         ' Weglating-detailkolommen (AZ+): per groente de in-pakket-waarde, maar enkel
         ' als de klant ze weglaat. Opzoeken in 'pakketwaardes' o.b.v. (formaat
-        ' 1=KG..4=MINI, naam). Niet-gevonden/"geen pakket" -> 0 (IFERROR). 12 slots.
+        ' 1=KG..4=MINI, naam), daarna afgerond op 5 cent (zie Afrond5Cent, dat
+        ' dezelfde afronding in Basic doet voor ControleerWeekSpiegel).
+        ' Niet-gevonden/"geen pakket" -> 0 (IFERROR). 12 slots.
         sFmtCol = "IF(" & sData & "." & KolomLetter(cKG)   & asr & ">0;1;" & _
                   "IF(" & sData & "." & KolomLetter(cGG)   & asr & ">0;2;" & _
                   "IF(" & sData & "." & KolomLetter(cEGG)  & asr & ">0;3;" & _
@@ -2567,8 +2573,8 @@ Sub MaakWeekbestand()
             sWegColA = KolomLetter(cWeg0 + wAfr)
             oAfr.getCellByPosition(cWeg0 + wAfr, ar).setFormula( _
                 "=IF(" & sData & "." & sWegColA & asr & "="""";"""";" & _
-                "IFERROR(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
-                sFmtCol & ");0))")
+                "IFERROR(ROUND(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
+                sFmtCol & ")*20;0)/20;0))")
         Next wAfr
         ' D: vast weglatingen-totaal = som van de detailkolommen
         oAfr.getCellByPosition(3, ar).setFormula( _
@@ -6013,7 +6019,8 @@ Function HerstelFormulesKern(oDoc As Object) As String
             "&"" ""&" & sEenRng & "&"" " & Chr(224) & " ""&" & _
             "TEXT(" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & " = ""&" & _
             "TEXT(" & sData & "." & sFG & asr & ":" & sLG & asr & "*" & sData & "." & sFG & "$3:" & sLG & "$3;""0,00"")&"" " & Chr(8364) & """))")
-        ' AZ..BK: in-pakket-waarde van elke weglating, opgezocht in 'pakketwaardes'
+        ' AZ..BK: in-pakket-waarde van elke weglating, opgezocht in 'pakketwaardes',
+        ' afgerond op 5 cent (identiek aan MaakWeekbestand -- zie Afrond5Cent)
         sFmtCol = "IF(" & sData & "." & KolomLetter(cKG)   & asr & ">0;1;" & _
                   "IF(" & sData & "." & KolomLetter(cGG)   & asr & ">0;2;" & _
                   "IF(" & sData & "." & KolomLetter(cEGG)  & asr & ">0;3;" & _
@@ -6022,8 +6029,8 @@ Function HerstelFormulesKern(oDoc As Object) As String
             sWegColA = KolomLetter(cWeg0 + wSlot)
             oAfr.getCellByPosition(cWeg0 + wSlot, ar).setFormula( _
                 "=IF(" & sData & "." & sWegColA & asr & "="""";"""";" & _
-                "IFERROR(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
-                sFmtCol & ");0))")
+                "IFERROR(ROUND(INDEX(" & sPwVal & ";MATCH(" & sData & "." & sWegColA & "$3;" & sPwKey & ";0);" & _
+                sFmtCol & ")*20;0)/20;0))")
         Next wSlot
         ' D: vast weglatingen-totaal
         oAfr.getCellByPosition(3, ar).setFormula( _
@@ -6148,6 +6155,27 @@ End Function
 
 
 ' =============================================
+' Afronden op 5 cent
+' ---------------------------------------------
+' Weglatingen worden per stuk op 5 cent afgerond (sinds week 36/2026), zodat
+' een klant "geen rabarber: -1,60 EUR" leest en niet "-1,58 EUR". De cellen
+' doen dat met ROUND(x*20;0)/20; deze functie is de Basic-pendant, zodat
+' ControleerWeekSpiegel exact hetzelfde herrekent als wat er in het blad staat.
+' Zonder deze functie zou de controle na de invoering elke weglating-rij als
+' "verkeerd bedrag" aanmerken (tolerantie daar is een halve cent).
+' Symmetrisch afronden (0,025 -> 0,05), dus ook bruikbaar voor negatieve
+' bedragen, al komen die hier niet voor.
+' =============================================
+Function Afrond5Cent(dWaarde As Double) As Double
+    If dWaarde < 0 Then
+        Afrond5Cent = -Int(-dWaarde * 20 + 0.5) / 20
+    Else
+        Afrond5Cent = Int(dWaarde * 20 + 0.5) / 20
+    End If
+End Function
+
+
+' =============================================
 ' Kiemkracht - Weekbestand: spiegel controleren
 ' ---------------------------------------------
 ' Poort vóór MaakMaandbestand. Controleert per weekbestand of het contract
@@ -6259,8 +6287,9 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
     Dim sVb As String, nVb As Integer
     Dim sNaamD As String, sNaamA As String, sKidD As String, sKidA As String
     Dim sAfhD As String
-    Dim dPak As Double, dLos As Double, dWeg As Double
+    Dim dPak As Double, dLos As Double, dWeg As Double, dWegR As Double
     Dim dPakA As Double, dLosA As Double, dWegA As Double
+    Dim dWegAf As Double
     Dim iFmt As Integer, q As Double, iPwi As Integer
     Dim sIds As String, sId As String, nDubbel As Integer, sDubbelLijst As String
     nKlant = 0 : nMisUit = 0 : nMisBedrag = 0 : nVb = 0 : sVb = ""
@@ -6306,14 +6335,21 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
             If q <> 0 Then dLos = dLos + q * dPrijsGr(g)
         Next g
 
-        dWeg = 0
+        ' dWeg  = som van de RUWE pakketwaardes (weekbestanden t/m week 35/2026)
+        ' dWegR = som van de per stuk op 5 cent afgeronde waardes (vanaf week 36)
+        ' Beide gelden als correct: zo blijft de controle bruikbaar op oudere
+        ' bestanden zonder de afronding, en meldt ze bij nieuwe bestanden nog
+        ' altijd elke echte afwijking (een halve cent tolerantie per rij).
+        dWeg = 0 : dWegR = 0
         If bHeeftPW And iFmt >= 0 Then
             For w = 0 To nWegSlots - 1
                 If Trim(oWk.getCellByPosition(cWeg0 + w, r - 1).getString()) = "" Then GoTo VolgendeWegSlot
                 If sWegNaam(w) = "" Then GoTo VolgendeWegSlot
                 For iPwi = 0 To nPW - 1
                     If pwNaam(iPwi) = sWegNaam(w) Then
-                        dWeg = dWeg + pwVal(iPwi, iFmt)
+                        dWeg  = dWeg  + pwVal(iPwi, iFmt)
+                        ' Per weglating afronden op 5 cent, net als de cel (AZ+)
+                        dWegR = dWegR + Afrond5Cent(pwVal(iPwi, iFmt))
                         Exit For
                     End If
                 Next iPwi
@@ -6325,8 +6361,12 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
         dLosA = oAfr.getCellByPosition(caLos, r - 1).getValue()
         dWegA = oAfr.getCellByPosition(caWeg, r - 1).getValue()
 
+        ' Afwijking weglatingen = de kleinste van beide (ruw of afgerond)
+        dWegAf = Abs(dWegA - dWeg)
+        If Abs(dWegA - dWegR) < dWegAf Then dWegAf = Abs(dWegA - dWegR)
+
         If Abs(dPakA - dPak) > dTol Or Abs(dLosA - dLos) > dTol Or _
-           (bHeeftPW And Abs(dWegA - dWeg) > dTol) Then
+           (bHeeftPW And dWegAf > dTol) Then
             nMisBedrag = nMisBedrag + 1
             If nVb < 6 Then
                 nVb = nVb + 1
@@ -6335,8 +6375,8 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
                     sVb = sVb & " pakket " & Format(dPakA, "0.00") & " i.p.v. " & Format(dPak, "0.00")
                 If Abs(dLosA - dLos) > dTol Then _
                     sVb = sVb & " losse " & Format(dLosA, "0.00") & " i.p.v. " & Format(dLos, "0.00")
-                If bHeeftPW And Abs(dWegA - dWeg) > dTol Then _
-                    sVb = sVb & " weglating " & Format(dWegA, "0.00") & " i.p.v. " & Format(dWeg, "0.00")
+                If bHeeftPW And dWegAf > dTol Then _
+                    sVb = sVb & " weglating " & Format(dWegA, "0.00") & " i.p.v. " & Format(dWegR, "0.00")
                 sVb = sVb & Chr(10)
             End If
         End If
