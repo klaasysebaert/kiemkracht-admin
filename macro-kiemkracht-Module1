@@ -2541,11 +2541,14 @@ Sub MaakWeekbestand()
             sData & "." & KolomLetter(cEGG)  & asr & "*$B$4+" & _
             sData & "." & KolomLetter(cMINI) & asr & "*$B$5)")
         ' per groente Y..AV: geleverde hoeveelheid x prijs/eenheid (rij 3); leeg -> ""
+        ' Afgerond op 2 decimalen: een halve kilo aan 3,35 EUR geeft anders
+        ' 1,675 EUR -- de cel toont dan 1,68 maar rekent 1,675 aan (zie
+        ' Afrond2Cent voor de Basic-pendant).
         For g = 0 To nGroentSlots - 1
             sCol = KolomLetter(cGroent0 + g)
             oAfr.getCellByPosition(cGroent0 + g, ar).setFormula( _
                 "=IF(" & sData & "." & sCol & asr & "="""";"""";" & _
-                sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3)")
+                "ROUND(" & sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3;2))")
         Next g
         ' C: losse-groenten-totaal
         oAfr.getCellByPosition(2, ar).setFormula( _
@@ -6002,12 +6005,12 @@ Function HerstelFormulesKern(oDoc As Object) As String
             sData & "." & KolomLetter(cGG)   & asr & "*$B$3+" & _
             sData & "." & KolomLetter(cEGG)  & asr & "*$B$4+" & _
             sData & "." & KolomLetter(cMINI) & asr & "*$B$5)")
-        ' Y..AV: geleverde hoeveelheid x prijs/eenheid (rij 3)
+        ' Y..AV: geleverde hoeveelheid x prijs/eenheid (rij 3), op 2 decimalen
         For g = 0 To nGroentSlots - 1
             sCol = KolomLetter(cGroent0 + g)
             oAfr.getCellByPosition(cGroent0 + g, ar).setFormula( _
                 "=IF(" & sData & "." & sCol & asr & "="""";"""";" & _
-                sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3)")
+                "ROUND(" & sData & "." & sCol & asr & "*" & sData & "." & sCol & "$3;2))")
         Next g
         ' C: losse-groenten-totaal
         oAfr.getCellByPosition(2, ar).setFormula( _
@@ -6174,6 +6177,19 @@ Function Afrond5Cent(dWaarde As Double) As Double
     End If
 End Function
 
+' Idem op de cent, voor de losse groenten (halve kilo's geven anders 1,675).
+' Nagemeten 2026-08-31: deze Basic-afronding geeft exact hetzelfde resultaat als
+' ROUND(x;2) in de cel voor 0,5 x 3,35 / 2,25 / 4,95 / 3,15 en 1,5 x 3,35 -- de
+' gevallen die precies op een halve cent uitkomen. Dat moet ook, anders zou
+' ControleerWeekSpiegel elke halve kilo als "verkeerd bedrag" melden.
+Function Afrond2Cent(dWaarde As Double) As Double
+    If dWaarde < 0 Then
+        Afrond2Cent = -Int(-dWaarde * 100 + 0.5) / 100
+    Else
+        Afrond2Cent = Int(dWaarde * 100 + 0.5) / 100
+    End If
+End Function
+
 
 ' =============================================
 ' Kiemkracht - Weekbestand: spiegel controleren
@@ -6287,9 +6303,10 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
     Dim sVb As String, nVb As Integer
     Dim sNaamD As String, sNaamA As String, sKidD As String, sKidA As String
     Dim sAfhD As String
-    Dim dPak As Double, dLos As Double, dWeg As Double, dWegR As Double
+    Dim dPak As Double, dLos As Double, dLosR As Double
+    Dim dWeg As Double, dWegR As Double
     Dim dPakA As Double, dLosA As Double, dWegA As Double
-    Dim dWegAf As Double
+    Dim dWegAf As Double, dLosAf As Double
     Dim iFmt As Integer, q As Double, iPwi As Integer
     Dim sIds As String, sId As String, nDubbel As Integer, sDubbelLijst As String
     nKlant = 0 : nMisUit = 0 : nMisBedrag = 0 : nVb = 0 : sVb = ""
@@ -6329,10 +6346,15 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
                oWk.getCellByPosition(cEGG,  r - 1).getValue() * dPrijsPak(2) + _
                oWk.getCellByPosition(cMINI, r - 1).getValue() * dPrijsPak(3)
 
-        dLos = 0
+        ' dLos = ruwe som (weekbestanden t/m week 35/2026), dLosR = per groente
+        ' op de cent afgerond (vanaf week 36). Beide gelden als correct.
+        dLos = 0 : dLosR = 0
         For g = 0 To nGroentSlots - 1
             q = oWk.getCellByPosition(cGroent0 + g, r - 1).getValue()
-            If q <> 0 Then dLos = dLos + q * dPrijsGr(g)
+            If q <> 0 Then
+                dLos  = dLos  + q * dPrijsGr(g)
+                dLosR = dLosR + Afrond2Cent(q * dPrijsGr(g))
+            End If
         Next g
 
         ' dWeg  = som van de RUWE pakketwaardes (weekbestanden t/m week 35/2026)
@@ -6361,11 +6383,14 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
         dLosA = oAfr.getCellByPosition(caLos, r - 1).getValue()
         dWegA = oAfr.getCellByPosition(caWeg, r - 1).getValue()
 
-        ' Afwijking weglatingen = de kleinste van beide (ruw of afgerond)
+        ' Afwijking = de kleinste van beide varianten (ruw of afgerond), zodat de
+        ' controle zowel op oude als op nieuwe weekbestanden bruikbaar blijft.
         dWegAf = Abs(dWegA - dWeg)
         If Abs(dWegA - dWegR) < dWegAf Then dWegAf = Abs(dWegA - dWegR)
+        dLosAf = Abs(dLosA - dLos)
+        If Abs(dLosA - dLosR) < dLosAf Then dLosAf = Abs(dLosA - dLosR)
 
-        If Abs(dPakA - dPak) > dTol Or Abs(dLosA - dLos) > dTol Or _
+        If Abs(dPakA - dPak) > dTol Or dLosAf > dTol Or _
            (bHeeftPW And dWegAf > dTol) Then
             nMisBedrag = nMisBedrag + 1
             If nVb < 6 Then
@@ -6373,8 +6398,8 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
                 sVb = sVb & "   rij " & r & "  " & Left(sNaamD & Space(22), 22)
                 If Abs(dPakA - dPak) > dTol Then _
                     sVb = sVb & " pakket " & Format(dPakA, "0.00") & " i.p.v. " & Format(dPak, "0.00")
-                If Abs(dLosA - dLos) > dTol Then _
-                    sVb = sVb & " losse " & Format(dLosA, "0.00") & " i.p.v. " & Format(dLos, "0.00")
+                If dLosAf > dTol Then _
+                    sVb = sVb & " losse " & Format(dLosA, "0.00") & " i.p.v. " & Format(dLosR, "0.00")
                 If bHeeftPW And dWegAf > dTol Then _
                     sVb = sVb & " weglating " & Format(dWegA, "0.00") & " i.p.v. " & Format(dWegR, "0.00")
                 sVb = sVb & Chr(10)

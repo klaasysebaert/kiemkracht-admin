@@ -1609,6 +1609,8 @@ Sub MaakMaandbestand()
     Const caBedrag  = 1    ' B = pakket-bedrag
     Const caTotaal  = 4    ' E = TOTAAL
     Const caKid     = 5    ' F = klant_id (afrekening-tab; voor rij-koppeling op identiteit)
+    Const caGro0    = 24   ' Y  = eerste losse-groentekolom in het afrekening-tabblad
+    Const caGroSlots = 24  ' Y..AV; verder lezen zou in AW/AX/AY belanden
     Const caWeg0    = 51   ' AZ = eerste weglating-detailkolom (vast: 24+24+3)
     Const NWEKEN    = 5    ' vaste leverweek-slots (max donderdagen in een maand)
     ' Ondergrens om een bedrag als "openstaand" te tellen: een VOLLE cent.
@@ -1998,7 +2000,16 @@ Sub MaakMaandbestand()
                     ' Beknopt: "<naam>: <totaal> EUR". Bij meer dan 1 eenheid de
                     ' detail erachter tussen haakjes: "(<aantal> <eenheid> a <prijs> EUR)".
                     ' a via Chr(224), EUR via Chr(8364) tegen mojibake.
-                    dItemTot = q * gPrice(g)
+                    ' Bedrag uit de afrekening-cel: die is sinds week 36/2026 op
+                    ' 2 decimalen afgerond, en dat is het bedrag dat ook echt
+                    ' aangerekend wordt (kolom C telt diezelfde cellen op). Zelf
+                    ' hoeveelheid x prijs herrekenen zou bij een halve kilo een
+                    ' cent kunnen schelen met het totaal in dezelfde mail.
+                    ' Terugval op de eigen berekening voor oudere weekbestanden
+                    ' of een afrekening-rij die niet gevonden werd.
+                    dItemTot = 0
+                    If g < caGroSlots Then dItemTot = oAfr.getCellByPosition(caGro0 + g, arRow).getValue()
+                    If dItemTot = 0 Then dItemTot = q * gPrice(g)
                     If q = 1 Then
                         sItem = gName(g) & ": " & FmtNum2(dItemTot) & " " & Chr(8364)
                     Else
