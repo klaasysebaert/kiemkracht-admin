@@ -651,9 +651,14 @@ bestellingen kwamen toen van een tweede huishoudadres, en voor drie ervan
 Ysebaert 2835) faalde de uitsluiting in tak 2, zodat het huishouden **twee keer**
 geteld werd: één keer als bestelling, één keer als ritme-abonnee.
 
-Conclusie: geen losse taak voor nu, maar een **voorwaarde bij het embedded
-formulier** — match verbreden naar `email1..email4` (met index) vóór dat live
-gaat, anders levert elke tweede-adres-bestelling een dubbeltelling op.
+**Beslist (Klaas, 31/08/2026): meenemen als voorwaarde bij het embedded
+formulier**, niet als losse taak nu. Let op de scherpe formulering: het gaat niet
+om nieuwe klanten — die hebben nog geen record, dus daar valt niets fout te
+matchen. Het gaat om de **bestaande klant die het embedded formulier gebruikt**
+in plaats van zijn persoonlijke link, met eender welk van zijn huishoudadressen.
+Match verbreden naar `email1..email4` (met index) in alle koppel-queries vóór dat
+formulier live gaat; dat voorkomt meteen ook dat zo iemand als dubbele klant
+aangemaakt wordt.
 
 ---
 
