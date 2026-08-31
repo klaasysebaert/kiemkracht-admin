@@ -632,12 +632,28 @@ reden om de deuren te bouwen:
 4. **Voorraadtellers** (`besteld` / `aantal_beschikbaar`) lopen mis.
 5. **De rij verdwijnt** bij een nieuwe `MaakWeekbestand`-run.
 
-Los daarvan één losse, kleine fix die uit gebeurtenis 2 valt en niets met
+Los daarvan één **latente** kwestie die uit gebeurtenis 2 valt en niets met
 handwerk te maken heeft: **de klant↔bestelling-koppeling kijkt alleen naar
-`email1`**, terwijl 27 van de 353 actieve klanten een tweede adres hebben. Een
-huisgenoot die buiten zijn persoonlijke link om bestelt, hangt aan geen enkele
-klant. Verbreden naar `email1..email4` (met index) is af te bakenen werk en staat
-los van de rest van deze lijst.
+`email1`**, terwijl 27 van de 353 actieve klanten een tweede adres hebben.
+
+**Vandaag geen probleem** (nagemeten 2026-08-31): van week 26 t/m 36 zijn er
+**1193 bestellingen en nul zonder `klant_id`**. Iedereen bestelt via de
+gepersonaliseerde link uit de aanbod-mail, en dan draagt de POST de `KlantID` —
+het e-mailadres doet er dan niet toe. Alle twaalf bestellingen zonder `klant_id`
+zitten in week 15-19, de opstart-/testperiode.
+
+**Het wordt wél een probleem zodra het kale formulier in gebruik gaat** — het
+formulier dat op de website ingebed wordt voor nieuwe klanten. Dan komen
+bestellingen per ontwerp zonder `KlantID` binnen en is het e-mailadres het enige
+aanknopingspunt. Hoe dat er dan uitziet, staat al in de data van week 19: vier
+bestellingen kwamen toen van een tweede huishoudadres, en voor drie ervan
+(Ramses Dewachter 3263 — Steffi's eigen bestelling —, Lien Hooghe 3261, Luc
+Ysebaert 2835) faalde de uitsluiting in tak 2, zodat het huishouden **twee keer**
+geteld werd: één keer als bestelling, één keer als ritme-abonnee.
+
+Conclusie: geen losse taak voor nu, maar een **voorwaarde bij het embedded
+formulier** — match verbreden naar `email1..email4` (met index) vóór dat live
+gaat, anders levert elke tweede-adres-bestelling een dubbeltelling op.
 
 ---
 
