@@ -6168,12 +6168,23 @@ End Function
 ' "verkeerd bedrag" aanmerken (tolerantie daar is een halve cent).
 ' Symmetrisch afronden (0,025 -> 0,05), dus ook bruikbaar voor negatieve
 ' bedragen, al komen die hier niet voor.
+'
+' EPSROND is geen cosmetica. Een bedrag dat DECIMAAL precies op een halve cent
+' uitkomt, ligt in BINAIR er meestal nipt onder: 4,1 x 0,95 = 3,895 wordt
+' 3,8949999999999996, en Int(x*100+0.5) maakt daar 3,89 van terwijl ROUND(x;2)
+' in de cel 3,90 geeft (Calc corrigeert die representatiefout wel). Zonder deze
+' epsilon wijkt de controle dus 1 cent af van het blad en meldt ze een fout die
+' er niet is -- gezien 2026-08-31 op week 33, Iris Vandermeersch, 4,1 kg paprika.
+' 1E-9 op een getal in de honderdtallen corrigeert enkel die representatiefout
+' (orde 1E-13) en nooit een echt verschil.
 ' =============================================
+Const EPSROND = 0.000000001
+
 Function Afrond5Cent(dWaarde As Double) As Double
     If dWaarde < 0 Then
-        Afrond5Cent = -Int(-dWaarde * 20 + 0.5) / 20
+        Afrond5Cent = -Int(-dWaarde * 20 + 0.5 + EPSROND) / 20
     Else
-        Afrond5Cent = Int(dWaarde * 20 + 0.5) / 20
+        Afrond5Cent = Int(dWaarde * 20 + 0.5 + EPSROND) / 20
     End If
 End Function
 
@@ -6184,9 +6195,9 @@ End Function
 ' ControleerWeekSpiegel elke halve kilo als "verkeerd bedrag" melden.
 Function Afrond2Cent(dWaarde As Double) As Double
     If dWaarde < 0 Then
-        Afrond2Cent = -Int(-dWaarde * 100 + 0.5) / 100
+        Afrond2Cent = -Int(-dWaarde * 100 + 0.5 + EPSROND) / 100
     Else
-        Afrond2Cent = Int(dWaarde * 100 + 0.5) / 100
+        Afrond2Cent = Int(dWaarde * 100 + 0.5 + EPSROND) / 100
     End If
 End Function
 
@@ -6235,7 +6246,10 @@ Function ControleerWeekSpiegel(oWeek As Object) As String
     Const caLos        = 2    ' afrekening C
     Const caWeg        = 3    ' afrekening D
     Const caKid        = 5    ' afrekening F
-    Const dTol         = 0.005
+    ' Iets ruimer dan een halve cent: 7,15 - 7,145 geeft in drijvende komma
+    ' 0,0050000000000000044 en dat is nipt GROTER dan 0,005. Een echte fout is
+    ' sinds de afronding minstens een volle cent, dus deze haarbreedte kost niets.
+    Const dTol         = 0.0051
 
     If Not oWeek.Sheets.hasByName("afrekening") Then
         ControleerWeekSpiegel = "Geen tabblad 'afrekening' in dit weekbestand."
