@@ -2713,6 +2713,21 @@ End Sub
 ' 8 cm van elkaar (richtpunt voor de nietloze perforator, past in een ringmap)
 ' en een snijstippellijn op elk derde van de pagina.
 '
+' DE PAGINAMARGES TELLEN MEE. Wat gelijk moet zijn is niet de kaart maar de
+' STROOK die je overhoudt na het knippen: 297 / 3 = 99 mm. Boven kaart 1 zit
+' 12,35 mm paginamarge die bij haar strook hoort; boven kaart 2 en 3 zit niets,
+' want daar is de strook net afgesneden. Reken je dat niet mee, dan krijg je
+' stroken van 101 / 91 / 105 mm, staan de merktekens bij kaart 2 en 3 pal op de
+' snijrand (de perforator bijt dan in de groentenaam) en zit de tekst bij de
+' onderste kaartjes zichtbaar hoger. Daarom:
+'   - de kaarten zijn NIET even hoog: 88,55 / 99,00 / 84,75 mm, samen 272,30 mm
+'     (de volle printzone), zo dat de stippellijnen exact op 99 en 198 mm vallen;
+'   - kaart 2 en 3 krijgen de ontbrekende marge in hun merkteken-rij, die
+'     daardoor 15,45 mm hoog is in plaats van 5 mm. De tekens staan onderaan
+'     uitgelijnd, dus ze schuiven mee naar onder en staan bij alle drie de
+'     kaartjes 17,35 mm onder de snijrand.
+' Netto: de drie stroken zijn 99 mm en zien er identiek uit.
+'
 ' De kaarten staan in de knip-en-stapel-volgorde van het Apps Script: de lijst
 ' wordt in drie gelijke delen gesplitst en pagina i draagt deel1(i), deel2(i),
 ' deel3(i). Knip je alle vellen in drie stroken en leg je de drie stapels op
@@ -2723,9 +2738,19 @@ End Sub
 ' databank nodig — StartMaakStapels herbouwt de bladen meteen nadat je in de
 ' kolom Stapelkaart een groente aan- of afvinkt.
 ' ---------------------------------------------------------------------------
+' Alle maten in 1/100 mm.
 Const ST_MAX_RIJ  = 540
-Const ST_RIJEN    = 8        ' rijen per kaart (marks/blank/titel/detail/weglating/teller/vul/snij)
-Const ST_KAARTH   = 9076     ' hoogte per kaart in 1/100 mm (= 1/3 van de printzone)
+Const ST_RIJEN    = 8        ' rijen per kaart (merk/wit/titel/aantal/weglating/teller/vul/snij)
+Const ST_STROOK   = 9900     ' één strook papier na het knippen: 297 / 3
+Const ST_MARGE    = 1235     ' paginamarge boven en onder (zie SamZetStapelPagina)
+Const ST_MERK     = 500      ' merkteken-rij van de bovenste kaart
+Const ST_WIT      = 800      ' wit tussen de merktekens en de titel; ruimte voor
+                             ' de perforator, die anders in de groentenaam bijt
+Const ST_REGEL    = 1300     ' titel / aantal / weglating, elk 28 pt
+Const ST_TELLER   = 450      ' "<groente>: 1 van 4", 10 pt
+Const ST_SNIJ     = 400      ' rij met de snijstippellijn
+Const ST_STIP     = 190      ' hoe hoog de stippellijn in die rij afdrukt
+                             ' (gemeten in de PDF: 10 pt, onderaan uitgelijnd)
 
 ' ---------------------------------------------------------------------------
 ' MaakStapels — beide stapelbladen herbouwen uit het document zelf.
@@ -2939,6 +2964,10 @@ Private Sub SamVulStapelDag(oDoc As Object, iDag As Integer)
     Dim iIdx   As Integer
     Dim iBasis As Integer
     Dim iPos   As Integer
+    Dim iMerkKol As Integer
+    Dim iMerkH As Integer
+    Dim iKaartH As Integer
+    Dim iVulH  As Integer
     nDeel  = Int((nIt + 2) / 3)
     nSlots = nDeel * 3
 
@@ -2947,11 +2976,16 @@ Private Sub SamVulStapelDag(oDoc As Object, iDag As Integer)
         iIdx   = iPos * nDeel + (iKaart \ 3)
         iBasis = iKaart * ST_RIJEN
 
-        ' perforatie-hulptekens (kolom B en D staan exact 8 cm uit elkaar)
-        oSt.getCellByPosition(1, iBasis).setString("|")
-        oSt.getCellByPosition(1, iBasis).CharColor = clGrijs
-        oSt.getCellByPosition(3, iBasis).setString("|")
-        oSt.getCellByPosition(3, iBasis).CharColor = clGrijs
+        ' Perforatie-hulptekens (kolom B en D staan exact 8 cm uit elkaar).
+        ' Onderaan uitgelijnd: bij kaart 2 en 3 is deze rij hoger (ze draagt de
+        ' ontbrekende paginamarge), en zo staan de tekens toch bij alle drie de
+        ' kaartjes even ver onder de snijrand.
+        For iMerkKol = 1 To 3 Step 2
+            oSt.getCellByPosition(iMerkKol, iBasis).setString("|")
+            oSt.getCellByPosition(iMerkKol, iBasis).CharColor = clGrijs
+            oSt.getCellByPosition(iMerkKol, iBasis).VertJustify = _
+                com.sun.star.table.CellVertJustify2.BOTTOM
+        Next iMerkKol
 
         If iIdx < nIt Then
             ' titel + detail, groot en gecentreerd over de volle breedte
@@ -2991,17 +3025,33 @@ Private Sub SamVulStapelDag(oDoc As Object, iDag As Integer)
             oSt.getCellByPosition(0, iBasis + 7).HoriJustify = com.sun.star.table.CellHoriJustify.CENTER
         End If
 
-        ' Rijhoogtes: samen exact ST_KAARTH, één derde van de printzone. De
-        ' weglating-regel is uit de vulrij geknipt (4250 -> 5550), zodat de drie
-        ' kaarten precies op één blad blijven passen.
-        SamZetRij(oSt, iBasis + 0, 500)
-        SamZetRij(oSt, iBasis + 1, 300)
-        SamZetRij(oSt, iBasis + 2, 1300)
-        SamZetRij(oSt, iBasis + 3, 1300)
-        SamZetRij(oSt, iBasis + 4, 1300)
-        SamZetRij(oSt, iBasis + 5, 450)
-        SamZetRij(oSt, iBasis + 6, ST_KAARTH - 5550)
-        SamZetRij(oSt, iBasis + 7, 400)
+        ' Rijhoogtes — zie de uitleg bovenaan deze sectie. De hoogte van de
+        ' kaart en van haar merkteken-rij hangen af van haar plaats op het blad:
+        '   boven  88,55 mm  merkrij  5,00 mm  (12,35 mm marge zit erboven)
+        '   midden 99,00 mm  merkrij 15,45 mm
+        '   onder  84,75 mm  merkrij 15,45 mm  (12,35 mm marge zit eronder)
+        ' De vulrij vangt het verschil op; de stippellijnen belanden zo op 99 en
+        ' 198 mm van de bovenrand, dus op exact een derde van het blad.
+        If iPos = 0 Then
+            iMerkH = ST_MERK
+            iKaartH = ST_STROOK - ST_MARGE + ST_STIP
+        ElseIf iPos = 1 Then
+            iMerkH = ST_MERK + ST_MARGE - ST_STIP
+            iKaartH = ST_STROOK
+        Else
+            iMerkH = ST_MERK + ST_MARGE - ST_STIP
+            iKaartH = ST_STROOK - ST_MARGE - ST_STIP
+        End If
+        iVulH = iKaartH - (iMerkH + ST_WIT + 3 * ST_REGEL + ST_TELLER + ST_SNIJ)
+
+        SamZetRij(oSt, iBasis + 0, iMerkH)
+        SamZetRij(oSt, iBasis + 1, ST_WIT)
+        SamZetRij(oSt, iBasis + 2, ST_REGEL)
+        SamZetRij(oSt, iBasis + 3, ST_REGEL)
+        SamZetRij(oSt, iBasis + 4, ST_REGEL)
+        SamZetRij(oSt, iBasis + 5, ST_TELLER)
+        SamZetRij(oSt, iBasis + 6, iVulH)
+        SamZetRij(oSt, iBasis + 7, ST_SNIJ)
 
         ' nieuwe pagina bij elke eerste kaart van een drietal
         If iPos = 0 And iKaart > 0 Then
