@@ -2344,7 +2344,7 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     Next iSlot
 
     ' --- Kop: dag + PAKKETTEN-matrix ---
-    oPr.getCellByPosition(0, 0).setString(sDagLbl)
+    oPr.getCellByPosition(0, 0).setString(sDagLbl & " OOGST PAKKETTEN")
     oPr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oPr.getCellByPosition(0, 0).CharHeight = 16
     ' week + tijdstempel op een eigen rij: in kolom G/H loopt de tekst voorbij
