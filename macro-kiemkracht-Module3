@@ -1073,7 +1073,7 @@ Sub MaakOverzichten()
             oCurs3.setPropertyValue("CharHeight", 16)
             oCurs3.setPropertyValue("ParaTopMargin", 0)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-            oText3.insertString(oCurs3, UCase(aDagen(d)), False)
+            oText3.insertString(oCurs3, UCase(aDagen(d)) & " LOS", False)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
             Select Case LCase(aDagen(d))
