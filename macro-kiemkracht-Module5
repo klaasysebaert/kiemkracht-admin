@@ -25,7 +25,8 @@
 '                          per maat én per dag met de som, weglatingen, Nodig,
 '                          besteld-tellers per dag) en
 '                          "Afweeglijst donderdag"/"Afweeglijst vrijdag" en de
-'                          vier printbladen (Oogst/Vullen per dag) verversen.
+'                          printbladen (Oogst per dag, Oogst totaal, Vullen
+'                          per dag) verversen.
 '
 ' Wachtwoord: COCKPIT_WACHTWOORD wordt gelezen uit
 '   %APPDATA%\LibreOffice\cockpit-wachtwoord-<omgeving>.txt
@@ -51,6 +52,7 @@ Const TAB_AFW_VR  = "Afweeglijst vrijdag"
 Const TAB_AFW_OUD = "Afweeglijst"     ' eerste versie: één blad -> wordt gewist
 Const TAB_PR_OD   = "Oogst donderdag"
 Const TAB_PR_OV   = "Oogst vrijdag"
+Const TAB_PR_OT   = "Oogst totaal"    ' donderdag + vrijdag samen
 Const TAB_PR_VD   = "Vullen donderdag"
 Const TAB_PR_VV   = "Vullen vrijdag"
 Const TAB_ST_D    = "Stapels donderdag"
@@ -228,6 +230,7 @@ Sub MaakSamenstellingDoc()
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_VD)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_OV)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_VV)
+    oTabTmp = SamZorgTab(oNieuwDoc, TAB_PR_OT)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_ST_D)
     oTabTmp = SamZorgTab(oNieuwDoc, TAB_ST_V)
 
@@ -2246,11 +2249,15 @@ Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object)
 End Sub
 
 ' ---------------------------------------------------------------------------
-' SamVulPrintbladen — de vier printbladen herbouwen (oogst + vullen, per dag).
+' SamVulPrintbladen — de printbladen herbouwen (oogst per dag + oogst
+' totaal, vullen per dag).
 ' Vervangen de printpagina's van Blad1 in de Google Sheet:
 '   "Oogst donderdag/vrijdag"  = overzicht bij het oogsten/bestellen: de vier
 '       maat-blokken met prijzen en Nodig, daaronder de totale hoeveelheid per
 '       groente voor die dag en de bijbestellijst van losse groenten.
+'   "Oogst totaal"             = hetzelfde blad voor de hele week: donderdag
+'       plus vrijdag (en de pakketten zonder gekende dag). Zelfde aantallen en
+'       weglatingen als waarmee de Oogstlijst haar kolom Nodig berekent.
 '   "Vullen donderdag/vrijdag" = aftikblad bij het vullen van de bakken: per
 '       maat welke groente er in gaat, hoeveel per pakket en hoeveel in totaal.
 ' Alles wordt gelezen uit de Samenstelling-/Los-tab en de g*-arrays
@@ -2259,6 +2266,7 @@ End Sub
 Private Sub SamVulPrintbladen(oDoc As Object, iWeek As Integer, iJaar As Integer)
     SamVulPrintOogst(oDoc, 0, iWeek, iJaar)
     SamVulPrintOogst(oDoc, 1, iWeek, iJaar)
+    SamVulPrintOogst(oDoc, 2, iWeek, iJaar)
     SamVulPrintVullen(oDoc, 0, iWeek, iJaar)
     SamVulPrintVullen(oDoc, 1, iWeek, iJaar)
     ' dagloos, dus één keer voor de hele week (geen printblad)
@@ -2267,20 +2275,39 @@ Private Sub SamVulPrintbladen(oDoc As Object, iWeek As Integer, iJaar As Integer
     SamVulStapels(oDoc)
 End Sub
 
-' Weglatingen van één groente/maat op één dag (0 = donderdag, 1 = vrijdag)
+' Weglatingen van één groente/maat op één dag (0 = donderdag, 1 = vrijdag,
+' 2 = de hele week: don + vrij + de weglatingen zonder gekende dag, precies
+' zoals de weglating-kolommen op de Oogstlijst)
 Private Function SamWegDag(sNaam As String, iMaat As Integer, iDag As Integer) As Long
     Dim iWg As Integer
     SamWegDag = 0
     For iWg = 0 To gNWg - 1
         If gWgNaam(iWg) = sNaam And gWgMaat(iWg) = iMaat Then
-            If iDag = 0 Then SamWegDag = gWgDon(iWg) Else SamWegDag = gWgVrij(iWg)
+            Select Case iDag
+                Case 0    : SamWegDag = gWgDon(iWg)
+                Case 1    : SamWegDag = gWgVrij(iWg)
+                Case Else : SamWegDag = gWgDon(iWg) + gWgVrij(iWg) + gWgOnb(iWg)
+            End Select
             Exit Function
         End If
     Next iWg
 End Function
 
+' Aantal pakketten van één maat op dag iDag (0 = donderdag, 1 = vrijdag,
+' 2 = de hele week). Het weektotaal telt ook de pakketten zonder gekende dag
+' mee — hetzelfde getal als "don en vrij" in de matrix en als het aantal
+' waarmee de Oogstlijst rekent.
+Private Function SamDagAant(iMaat As Integer, iDag As Integer) As Long
+    If iDag = 2 Then
+        SamDagAant = gDgTot(iMaat)
+    Else
+        SamDagAant = gDgAant(iMaat, iDag)
+    End If
+End Function
+
 ' ---------------------------------------------------------------------------
-' Oogst/bestelblad voor één dag (kolommen A..H)
+' Oogst/bestelblad (kolommen A..H). iDag: 0 = donderdag, 1 = vrijdag,
+' 2 = de hele week op één blad ("Oogst totaal").
 ' ---------------------------------------------------------------------------
 Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
                              iWeek As Integer, iJaar As Integer)
@@ -2298,6 +2325,11 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     Dim nWeg   As Long
     Dim dNodig As Double
     Dim dPakket As Double
+    Dim sNodigLbl As String
+    Dim sVersie   As String
+    Dim iHlRij    As Integer
+    Dim iTab      As Integer
+    Dim bNieuw    As Boolean
     Dim dOmzet As Double
     Dim dTot   As Double
     Dim clKop  As Long
@@ -2311,13 +2343,24 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     aMaatKort(0) = "KG" : aMaatKort(1) = "GG"
     aMaatKort(2) = "EGG" : aMaatKort(3) = "MINI"
     clKop = RGB(220, 233, 200)
-    If iDag = 0 Then
-        sTab = TAB_PR_OD : sDagLbl = "DONDERDAG"
-    Else
-        sTab = TAB_PR_OV : sDagLbl = "VRIJDAG"
-    End If
+    Select Case iDag
+        Case 0    : sTab = TAB_PR_OD : sDagLbl = "DONDERDAG" : sNodigLbl = "DONDERDAG"
+        Case 1    : sTab = TAB_PR_OV : sDagLbl = "VRIJDAG"   : sNodigLbl = "VRIJDAG"
+        Case Else : sTab = TAB_PR_OT : sDagLbl = "TOTAAL"    : sNodigLbl = "DONDERDAG + VRIJDAG"
+    End Select
 
+    ' Een tabblad dat nog niet bestond komt achteraan; zet "Oogst totaal"
+    ' meteen naast de dagbladen in plaats van achter de stapelkaarten.
+    bNieuw = Not oDoc.Sheets.hasByName(sTab)
     oPr  = SamZorgTab(oDoc, sTab)
+    If bNieuw And iDag = 2 Then
+        For iTab = 0 To oDoc.Sheets.Count - 1
+            If oDoc.Sheets.getByIndex(iTab).Name = TAB_PR_VV Then
+                oDoc.Sheets.moveByName(sTab, iTab + 1)
+                Exit For
+            End If
+        Next iTab
+    End If
     oSam = oDoc.Sheets.getByName(TAB_SAM)
     oPr.getCellRangeByPosition(0, 0, 7, PR_MAX_RIJ).clearContents(55)
 
@@ -2349,8 +2392,11 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     oPr.getCellByPosition(0, 0).CharHeight = 16
     ' week + tijdstempel op een eigen rij: in kolom G/H loopt de tekst voorbij
     ' de laatste printkolom en dat levert een lege overloop-pagina op
-    oPr.getCellByPosition(0, 1).setString("week " & iWeek & "/" & iJaar & _
-        " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM"))
+    sVersie = "week " & iWeek & "/" & iJaar & _
+        " — versie: " & Format(Now(), "DD/MM/YYYY HH:MM")
+    If iDag = 2 Then sVersie = sVersie & _
+        " — donderdag + vrijdag samen, incl. pakketten zonder gekende dag"
+    oPr.getCellByPosition(0, 1).setString(sVersie)
 
     oPr.getCellByPosition(1, 2).setString("PAKKETTEN")
     For iMaat = 0 To 3
@@ -2370,7 +2416,10 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     oPr.getCellByPosition(6, 5).setFormula("=SUM(C6:F6)")
     oPr.getCellRangeByPosition(1, 2, 6, 2).CellBackColor = clKop
     oPr.getCellRangeByPosition(1, 2, 6, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oPr.getCellRangeByPosition(1, 4 + iDag, 6, 4 + iDag).CharWeight = _
+    ' de regel waarop dit blad rekent vet: don = rij 5, vrij = rij 6,
+    ' totaal = rij 4 ("don en vrij")
+    If iDag = 2 Then iHlRij = 3 Else iHlRij = 4 + iDag
+    oPr.getCellRangeByPosition(1, iHlRij, 6, iHlRij).CharWeight = _
         com.sun.star.awt.FontWeight.BOLD
 
     ' --- Kolomkoppen ---
@@ -2396,7 +2445,7 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     Dim iKopRij As Integer
     For iMaat = 0 To 3
         iKopRij = iRij
-        oPr.getCellByPosition(0, iRij).setValue(gDgAant(iMaat, iDag))
+        oPr.getCellByPosition(0, iRij).setValue(SamDagAant(iMaat, iDag))
         oPr.getCellByPosition(1, iRij).setString(aMaatNaam(iMaat) & ":")
         oPr.getCellByPosition(6, iRij).setString("omzet:")
         oPr.getCellRangeByPosition(0, iRij, 7, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
@@ -2406,7 +2455,7 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
         For iG = 0 To nG - 1
             If gHv(iG, iMaat) > 0 Then
                 nWeg  = SamWegDag(gN(iG), iMaat, iDag)
-                nAant = gDgAant(iMaat, iDag) - nWeg
+                nAant = SamDagAant(iMaat, iDag) - nWeg
                 If nAant < 0 Then nAant = 0
                 dNodig = Int(nAant * gHv(iG, iMaat) * 100 + 0.5) / 100
                 oPr.getCellByPosition(0, iRij).setValue(nAant)
@@ -2439,7 +2488,7 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
 
     ' --- Totale hoeveelheid per groente voor deze dag ---
     iRij = iRij + 1
-    oPr.getCellByPosition(0, iRij).setString("TOTAAL NODIG " & sDagLbl & " (alle pakketten samen)")
+    oPr.getCellByPosition(0, iRij).setString("TOTAAL NODIG " & sNodigLbl & " (alle pakketten samen)")
     oPr.getCellByPosition(0, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
     iRij = iRij + 1
     oPr.getCellByPosition(0, iRij).setString("Groente")
@@ -2621,7 +2670,7 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
 
     iRij = 3
     For iMaat = 0 To 3
-        oPr.getCellByPosition(0, iRij).setValue(gDgAant(iMaat, iDag))
+        oPr.getCellByPosition(0, iRij).setValue(SamDagAant(iMaat, iDag))
         oPr.getCellByPosition(1, iRij).setString(aMaatNaam(iMaat))
         oPr.getCellRangeByPosition(0, iRij, 4, iRij).CellBackColor = aMaatKleur(iMaat)
         oPr.getCellRangeByPosition(0, iRij, 4, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
@@ -2636,7 +2685,7 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
         For iG = 0 To nG - 1
             If gHv(iG, iMaat) > 0 Then
                 nWeg  = SamWegDag(gN(iG), iMaat, iDag)
-                nAant = gDgAant(iMaat, iDag) - nWeg
+                nAant = SamDagAant(iMaat, iDag) - nWeg
                 If nAant < 0 Then nAant = 0
                 dNodig = Int(nAant * gHv(iG, iMaat) * 100 + 0.5) / 100
                 oPr.getCellByPosition(0, iRij).setValue(nAant)
@@ -3357,6 +3406,7 @@ Function SamTabNaam(sSleutel As String) As String
         Case "afw_vr"   : SamTabNaam = TAB_AFW_VR
         Case "oogst_do" : SamTabNaam = TAB_PR_OD
         Case "oogst_vr" : SamTabNaam = TAB_PR_OV
+        Case "oogst_tot": SamTabNaam = TAB_PR_OT
         Case "vul_do"   : SamTabNaam = TAB_PR_VD
         Case "vul_vr"   : SamTabNaam = TAB_PR_VV
         Case "stap_do"  : SamTabNaam = TAB_ST_D

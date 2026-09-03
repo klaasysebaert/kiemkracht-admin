@@ -58,6 +58,7 @@ PROBES = [
     # blad stil wegvallen uit de printrij.
     ("Module5", "SamTabNaam", ("stap_vr",), "Stapels vrijdag"),
     ("Module5", "SamTabNaam", ("oogst_do",), "Oogst donderdag"),
+    ("Module5", "SamTabNaam", ("oogst_tot",), "Oogst totaal"),
     ("Module5", "SamTabNaam", ("bestaat_niet",), ""),
     # Etikettenvellen: 24 per vel, elk deel begint op een nieuw vel. Fout
     # afronden hier betekent te weinig vellen in de printer leggen.
