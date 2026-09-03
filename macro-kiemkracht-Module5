@@ -3389,7 +3389,7 @@ End Function
 ' PRINTEN VAN DE SAMENSTELLING-TABBLADEN
 '
 ' MaakPrint (Module3) drukt de Writer-overzichten naast het weekbestand af en
-' sinds 2026-08-26 ook acht tabbladen uit het samenstelling-document. Die
+' sinds 2026-08-26 ook negen tabbladen uit het samenstelling-document. Die
 ' tabbladen staan verweven tussen de .odt's, dus het document gaat één keer
 ' open en blijft open tot de hele rij geprint is.
 '

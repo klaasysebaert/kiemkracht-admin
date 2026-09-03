@@ -1916,8 +1916,8 @@ End Sub
 ' =============================================
 ' Kiemkracht - Alle overzichten afdrukken
 ' Drukt de Writer-overzichten naast het weekbestand af, de koffie-orderpicking
-' uit de zustermap, en acht tabbladen uit het samenstelling-document van
-' dezelfde week (Oogst / Afweeglijst / Vullen / Stapels, per klaarmaakdag).
+' uit de zustermap, en negen tabbladen uit het samenstelling-document van
+' dezelfde week (Oogst per dag + Oogst totaal, Afweeglijst, Vullen, Stapels).
 '
 ' Volgorde (vastgelegd 2026-08-26): eerst oogsten — oogstlijst losse groenten
 ' en het Oogst-blad per dag; dan afwegen en stapelen per dag; dan de
@@ -2075,7 +2075,7 @@ End Function
 ' ---------------------------------------------------------------------------
 ' PrBereidSamenstelling — het samenstelling-document zoeken en de vragen
 ' stellen die vóór het printen horen. Geeft False als er niets geprint mag
-' worden; mPrSamOk zegt of de acht tabbladen mee mogen.
+' worden; mPrSamOk zegt of de negen tabbladen mee mogen.
 '
 ' Drie vragen, en nooit twee na elkaar over hetzelfde:
 '   1. geen bruikbaar bestand           -> enkel het weekbestand printen?
@@ -2104,7 +2104,7 @@ Function PrBereidSamenstelling(oWk As Object, iWeek As Integer, iJaar As Integer
         bZelf = False
         nAntw = MsgBox("Geen samenstelling-bestand gevonden voor week " & iWeek & "/" & iJaar & _
                        ", of het bestand gaat over een andere week." & Chr(10) & Chr(10) & _
-                       "De acht tabbladen (Oogst, Afweeglijst, Vullen, Stapels) vallen dan weg." & Chr(10) & _
+                       "De negen tabbladen (Oogst, Afweeglijst, Vullen, Stapels) vallen dan weg." & Chr(10) & _
                        "Enkel de overzichten van het weekbestand printen?", _
                        4 + 48, "Print")
         If nAntw <> 6 Then Exit Function
@@ -2212,13 +2212,15 @@ Sub PrBouwRij(sBase As String, sWkDir As String, sWkFile As String)
     mPrN = 0
     PrZoekKoffie(sWkDir, sWkFile, aKoffie(), nKoffieDo, aKoffieVr(), nKoffieVr, aRest(), nRest)
 
-    ' 1-4  oogsten: losse oogstlijst en het Oogst-blad, per dag
+    ' 1-5  oogsten: losse oogstlijst en het Oogst-blad per dag, dan het
+    '      weektotaal (donderdag + vrijdag samen) voor de groothandel
     PrVoegOdt(sBase & "_losse_groenten_oogstlijst_donderdag.odt", 1)
     PrVoegTab("oogst_do")
     PrVoegOdt(sBase & "_losse_groenten_oogstlijst_vrijdag.odt", 1)
     PrVoegTab("oogst_vr")
+    PrVoegTab("oogst_tot")
 
-    ' 5-10 afwegen en stapelen, per dag (losse afweeglijst dubbel)
+    ' 6-11 afwegen en stapelen, per dag (losse afweeglijst dubbel)
     PrVoegOdt(sBase & "_losse_groenten_afweeglijst_donderdag.odt", 2)
     PrVoegTab("afw_do")
     PrVoegTab("stap_do")
@@ -2226,19 +2228,19 @@ Sub PrBouwRij(sBase As String, sWkDir As String, sWkFile As String)
     PrVoegTab("afw_vr")
     PrVoegTab("stap_vr")
 
-    ' 11-14 picklijsten
+    ' 12-15 picklijsten
     PrVoegOdt(sBase & "_losse_groenten_per_klant_formaat_donderdag.odt", 1)
     PrVoegOdt(sBase & "_losse_groenten_per_klant_afhaalpunt_donderdag.odt", 1)
     PrVoegOdt(sBase & "_losse_groenten_per_klant_formaat_vrijdag.odt", 1)
     PrVoegOdt(sBase & "_losse_groenten_per_klant_afhaalpunt_vrijdag.odt", 1)
 
-    ' 15-18 vullen, met de weglatingen van diezelfde dag erachter
+    ' 16-19 vullen, met de weglatingen van diezelfde dag erachter
     PrVoegTab("vul_do")
     PrVoegOdt(sBase & "_weglatingen_donderdag.odt", 1)
     PrVoegTab("vul_vr")
     PrVoegOdt(sBase & "_weglatingen_vrijdag.odt", 1)
 
-    ' 19-20 koffie
+    ' 20-21 koffie
     For iK = 0 To nKoffieDo - 1
         PrVoegOdt(aKoffie(iK), 1)
     Next iK
