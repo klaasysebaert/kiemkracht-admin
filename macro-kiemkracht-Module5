@@ -2127,10 +2127,12 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     Next iG
 
     ' --- Titel ---
-    ' "PAKKET" erbij: er bestaat ook een afweeglijst voor de losse groenten
-    ' (MaakOverzichten), en op papier moet je de twee uit elkaar houden.
+    ' "PAKKETTEN" erbij: er bestaat ook een afweeglijst voor de losse groenten
+    ' (MaakOverzichten, kop "DONDERDAG LOS"), en op papier moet je de twee uit
+    ' elkaar houden. Het aantal staat erbij zodat meteen duidelijk is voor
+    ' hoeveel pakketten je afweegt.
     ' sDagLbl zelf blijft ongemoeid — die levert verderop "donderdag nodig:".
-    oAfw.getCellByPosition(0, 0).setString(sDagLbl & " PAKKET")
+    oAfw.getCellByPosition(0, 0).setString(sDagLbl & ": " & SamDagTotaal(iDag) & " PAKKETTEN")
     oAfw.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     ' Tijdstempel in G in plaats van E: de titel staat op lettergrootte 20 en
     ' loopt over de lege buurcellen door. Stond de tekst in E, dan kapte ze de
@@ -2303,6 +2305,17 @@ Private Function SamDagAant(iMaat As Integer, iDag As Integer) As Long
     Else
         SamDagAant = gDgAant(iMaat, iDag)
     End If
+End Function
+
+' Alle maten samen: hoeveel pakketten er die dag klaargemaakt worden (iDag zoals
+' hierboven). Staat in de kop van het afweegblad en van het vulblad, zodat je op
+' papier meteen ziet voor hoeveel kisten je bezig bent.
+Private Function SamDagTotaal(iDag As Integer) As Long
+    Dim iMaatT As Integer
+    SamDagTotaal = 0
+    For iMaatT = 0 To 3
+        SamDagTotaal = SamDagTotaal + SamDagAant(iMaatT, iDag)
+    Next iMaatT
 End Function
 
 ' ---------------------------------------------------------------------------
@@ -2661,7 +2674,8 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
         End If
     Next iSlot
 
-    oPr.getCellByPosition(0, 0).setString(sDagLbl & " — pakketten vullen")
+    oPr.getCellByPosition(0, 0).setString(sDagLbl & " — pakketten vullen (" & _
+        SamDagTotaal(iDag) & " kisten)")
     oPr.getCellByPosition(0, 0).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oPr.getCellByPosition(0, 0).CharHeight = 18
     oPr.getCellByPosition(0, 1).setString("week " & iWeek & "/" & iJaar & _
