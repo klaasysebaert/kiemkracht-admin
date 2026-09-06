@@ -2152,7 +2152,13 @@ Sub MaakMaandbestand()
                 cOTot   = ZoekKolomKop(oVOp, "Totaal betaald")
                 nOp = 0
                 If cONaam >= 0 And cOTot >= 0 Then
-                    pBlanks = 0 : pr = 1
+                    ' Vanaf rij 7: daar begint de klantenlijst in elk maandbestand.
+                    ' Hoger zit de kopzone -- op het afrekening-tabblad staan in
+                    ' A2:A4 de sneltoets-tips, die anders als klantnaam gelezen
+                    ' worden. Dat was onschuldig zolang G2 leeg was, maar sinds de
+                    ' totaalrij op rij 2 staat zou zo'n regel het MAANDTOTAAL als
+                    ' openstaand saldo van een spookklant overdragen.
+                    pBlanks = 0 : pr = 6
                     Do While pBlanks < 10 And pr < 5000
                         sONaam = oVOp.getCellByPosition(cONaam, pr).getString()
                         If sONaam = "" Then
@@ -2181,7 +2187,7 @@ Sub MaakMaandbestand()
                 End If
                 If cVNaam >= 0 And cVSaldo >= 0 And cOTot >= 0 Then bVorigGevonden = True
                 If bVorigGevonden Then pBlanks = 0 Else pBlanks = 10   ' koppen niet herkend -> loop overslaan
-                pr = 1
+                pr = 6                                                  ' zie hierboven: klantrijen starten op rij 7
                 Do While pBlanks < 10 And pr < 5000
                     sPNaam = oVAfr.getCellByPosition(cVNaam, pr).getString()
                     If sPNaam = "" Then
@@ -2409,14 +2415,16 @@ Sub MaakMaandbestand()
         oS.Columns.getByIndex(22 + wi * 2 + 1).Width  = 9000
     Next wi
 
-    ' --- Totaalrij bovenaan (rij 3): som van de geldkolommen G..K ---
+    ' --- Totaalrij bovenaan (rij 2): som van de geldkolommen G..K ---
     ' AGGREGATE(9;6;...) = SOM die foutcellen negeert. Een gewone SOM zou
     ' stukgaan op een #VERW! die achterblijft als je later een klantrij wist.
     ' Het bereik loopt bewust door tot rij 2000, ver onder de laatste klant,
     ' zodat rijen die je er nadien manueel bij zet vanzelf meetellen.
-    ' Wit vlak = uit de grijze kopzone gelicht; vet kader rond G3 (Saldo),
+    ' Wit vlak = uit de grijze kopzone gelicht; vet kader rond G2 (Saldo),
     ' het cijfer waar je maandelijks naar kijkt. Deze opmaak komt NA de
     ' grijze achtergrond hierboven, anders overschrijft die het wit weer.
+    ' Stond tot september 2026 op rij 3; een rij hoger gehaald zodat rij 3-6
+    ' vrijkomen voor het kasoverzicht (zie "Kasoverzicht" verderop).
     Dim oBLSom As New com.sun.star.table.BorderLine2
     oBLSom.LineStyle = com.sun.star.table.BorderLineStyle.SOLID
     oBLSom.LineWidth = 50            ' 0,5 mm = duidelijk zwaarder dan een gewone rand
@@ -2428,17 +2436,17 @@ Sub MaakMaandbestand()
     oTBSom.RightLine  = oBLSom : oTBSom.IsRightLineValid  = True
     Dim cSom As Integer, oSomA As Object
     For cSom = 6 To 10
-        oS.getCellByPosition(cSom, 2).setFormula("=AGGREGATE(9;6;" & _
+        oS.getCellByPosition(cSom, 1).setFormula("=AGGREGATE(9;6;" & _
             KolomLetter(cSom) & "7:" & KolomLetter(cSom) & "2000)")
     Next cSom
-    oSomA = oS.getCellRangeByPosition(6, 2, 10, 2)
+    oSomA = oS.getCellRangeByPosition(6, 1, 10, 1)
     oSomA.CellBackColor = RGB(255, 255, 255)
     oSomA.CharWeight    = com.sun.star.awt.FontWeight.BOLD
     oSomA.NumberFormat  = nFmtMb
-    oS.getCellRangeByPosition(6, 2, 6, 2).TableBorder2 = oTBSom
-    oS.getCellByPosition(5, 2).setString("TOTAAL")
-    oS.getCellByPosition(5, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
-    oS.getCellByPosition(5, 2).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
+    oS.getCellRangeByPosition(6, 1, 6, 1).TableBorder2 = oTBSom
+    oS.getCellByPosition(5, 1).setString("TOTAAL")
+    oS.getCellByPosition(5, 1).CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oS.getCellByPosition(5, 1).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
 
     ' Tabblad "opvolgen betalingen"
     oOut.Sheets.insertNewByName("opvolgen betalingen", 1)
@@ -2507,6 +2515,39 @@ Sub MaakMaandbestand()
     oOp.getCellByPosition(2, 2).setString("TOTAAL")
     oOp.getCellByPosition(2, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
     oOp.getCellByPosition(2, 2).HoriJustify = com.sun.star.table.CellHoriJustify.RIGHT
+
+    ' --- Kasoverzicht op het afrekening-tabblad (G3:H6) ---
+    ' Onder de totaalrij, in de kopzone die daardoor vrijkwam. Leest van boven
+    ' naar beneden als een rekensom:
+    '   G2  TOTAAL          alles wat deze maand aangerekend wordt
+    '   G3  Ontvangen op    wat er al binnen is (som van "Totaal betaald")
+    '   G4  = G2 - G3       nog te ontvangen
+    '   G5  invulveld       overschrijvingen die je zelf gepland hebt
+    '   G6  = G4 - G5       ruimte (verwacht)
+    ' Het label staat RECHTS van het bedrag (kolom H): kolom F draagt al het
+    ' TOTAAL-label van rij 2, en zo overlappen de teksten elkaar niet.
+    '
+    ' Deze code staat bewust NA het aanmaken van "opvolgen betalingen": een
+    ' formule naar een tabblad dat nog niet bestaat, wordt door LibreOffice
+    ' meteen als #REF! vastgelegd en herstelt zich niet als het blad er later
+    ' bijkomt. G3 telt kolom "Totaal betaald" (G) van dat blad op, met
+    ' AGGREGATE zodat een achtergebleven foutcel de som niet sloopt.
+    oS.getCellByPosition(6, 2).setFormula("=AGGREGATE(9;6;'opvolgen betalingen'." & _
+        KolomLetter(6) & "7:" & KolomLetter(6) & "2000)")
+    oS.getCellByPosition(7, 2).setString("Ontvangen op")
+    oS.getCellByPosition(6, 3).setFormula("=G2-G3")
+    oS.getCellByPosition(7, 3).setString("nog te ontvangen")
+    oS.getCellByPosition(7, 4).setString("overschrijvingen gepland")
+    oS.getCellByPosition(6, 5).setFormula("=G4-G5")
+    oS.getCellByPosition(7, 5).setString("ruimte (verwacht)")
+    Dim oKas As Object
+    oKas = oS.getCellRangeByPosition(6, 2, 7, 5)
+    oKas.CellBackColor = RGB(255, 255, 255)      ' zelfde witte vlak als de totaalrij
+    oS.getCellRangeByPosition(6, 2, 6, 5).NumberFormat = nFmtMb
+    ' G5 is het enige veld dat je zelf invult -> lichtblauw, zoals de invulvelden
+    ' in het samenstellingsdocument.
+    oS.getCellByPosition(6, 4).CellBackColor = RGB(221, 235, 247)
+    oS.getCellRangeByPosition(6, 5, 7, 5).CharWeight = com.sun.star.awt.FontWeight.BOLD
 
     ' --- Tabblad "weekcontrole": kruiscontrole per week ---
     ' Per week: wat het maandbestand uit dat weekbestand samentelde (maand-aggregaat)
