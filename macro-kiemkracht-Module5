@@ -2493,7 +2493,6 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     oPr.getCellByPosition(5, iRij).setString("In pakket")
     oPr.getCellByPosition(6, iRij).setString("Nodig")
     oPr.getCellByPosition(7, iRij).setString("Weglating")
-    oPr.getCellRangeByPosition(0, iRij, 7, iRij).CellBackColor = clKop
     oPr.getCellRangeByPosition(0, iRij, 7, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
     iRij = iRij + 1
 
