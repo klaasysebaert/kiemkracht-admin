@@ -2426,6 +2426,7 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     End If
     oSam = oDoc.Sheets.getByName(TAB_SAM)
     oPr.getCellRangeByPosition(0, 0, 7, PR_MAX_RIJ).clearContents(55)
+    oPr.getCellRangeByPosition(0, 0, 7, PR_MAX_RIJ).CharColor = PrintGrijs()
 
     ' --- Pakketgroenten inlezen ---
     Dim gN(SAM_SLOTS - 1)     As String
