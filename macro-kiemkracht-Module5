@@ -2964,6 +2964,7 @@ Private Sub SamVulStapelDag(oDoc As Object, iDag As Integer)
     ' naar standaard (een kortere week mag geen resten van vorige week tonen) ---
     oSt.getCellRangeByPosition(0, 0, 4, ST_MAX_RIJ).merge(False)
     oSt.getCellRangeByPosition(0, 0, 4, ST_MAX_RIJ).clearContents(55)
+    oSt.getCellRangeByPosition(0, 0, 4, ST_MAX_RIJ).CharColor = PrintGrijs()
     For iRij = 0 To ST_MAX_RIJ
         oSt.Rows.getByIndex(iRij).IsStartOfNewPage = False
         oSt.Rows.getByIndex(iRij).OptimalHeight = True
