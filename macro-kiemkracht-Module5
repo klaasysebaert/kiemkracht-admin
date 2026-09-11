@@ -2732,7 +2732,6 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
     For iMaat = 0 To 3
         oPr.getCellByPosition(0, iRij).setValue(SamDagAant(iMaat, iDag))
         oPr.getCellByPosition(1, iRij).setString(aMaatNaam(iMaat))
-        oPr.getCellRangeByPosition(0, iRij, 4, iRij).CellBackColor = aMaatKleur(iMaat)
         oPr.getCellRangeByPosition(0, iRij, 4, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
         iRij = iRij + 1
         oPr.getCellByPosition(0, iRij).setString("Aantal")
@@ -2740,7 +2739,9 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
         oPr.getCellByPosition(2, iRij).setString("Per pakket")
         oPr.getCellByPosition(3, iRij).setString("Samen")
         oPr.getCellByPosition(4, iRij).setString("Weglatingen")
-        oPr.getCellRangeByPosition(0, iRij, 4, iRij).CellBackColor = clKop
+        ' Deze kopregel had haar grijze vlak als enige markering; nu die weg is
+        ' (inktbesparing) neemt vet die rol over, zoals op de Oogstbladen.
+        oPr.getCellRangeByPosition(0, iRij, 4, iRij).CharWeight = com.sun.star.awt.FontWeight.BOLD
         iRij = iRij + 1
         For iG = 0 To nG - 1
             If gHv(iG, iMaat) > 0 Then
