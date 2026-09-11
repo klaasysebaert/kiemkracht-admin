@@ -2705,6 +2705,7 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
     oPr  = SamZorgTab(oDoc, sTab)
     oSam = oDoc.Sheets.getByName(TAB_SAM)
     oPr.getCellRangeByPosition(0, 0, 4, PR_MAX_RIJ).clearContents(55)
+    oPr.getCellRangeByPosition(0, 0, 4, PR_MAX_RIJ).CharColor = PrintGrijs()
 
     Dim gN(SAM_SLOTS - 1)     As String
     Dim gHv(SAM_SLOTS - 1, 3) As Double
