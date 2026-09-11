@@ -374,6 +374,7 @@ Sub MaakOverzichten()
         sD = aDagen(dd)
 
         oWriter = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+        ZetTekstGrijs(oWriter)
 
         oPS = oWriter.StyleFamilies.getByName("PageStyles").getByIndex(0)
         oPS.IsLandscape  = False
@@ -608,6 +609,7 @@ Sub MaakOverzichten()
         sD = aDagen(dd)
 
         oWriterF = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+        ZetTekstGrijs(oWriterF)
 
         oPSF = oWriterF.StyleFamilies.getByName("PageStyles").getByIndex(0)
         oPSF.IsLandscape  = False
@@ -822,6 +824,7 @@ Sub MaakOverzichten()
         End If
 
         oWriter2 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+        ZetTekstGrijs(oWriter2)
         oWriter2.getCurrentController().getFrame().getContainerWindow().setVisible(True)
 
         oPS2 = oWriter2.StyleFamilies.getByName("PageStyles").getByIndex(0)
@@ -923,7 +926,7 @@ Sub MaakOverzichten()
 
             oCurs2.setPropertyValue("ParaAdjust", com.sun.star.style.ParagraphAdjust.LEFT)
             oCurs2.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
-            oCurs2.setPropertyValue("CharColor", RGB(0, 0, 0))
+            oCurs2.setPropertyValue("CharColor", PrintGrijs())
             If iShow2 = nLeft2 And iShow2 > 0 Then
                 oCurs2.setPropertyValue("BreakType", com.sun.star.style.BreakType.COLUMN_BEFORE)
             End If
@@ -1042,6 +1045,7 @@ Sub MaakOverzichten()
 
         For d = 0 To nDagen - 1
             oWriter3 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+            ZetTekstGrijs(oWriter3)
             oWriter3.getCurrentController().getFrame().getContainerWindow().setVisible(True)
 
             oPS3 = oWriter3.StyleFamilies.getByName("PageStyles").getByIndex(0)
@@ -1184,7 +1188,7 @@ Sub MaakOverzichten()
                                     oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.ITALIC)
                                     oText3.insertString(oCurs3, Chr(9) & "(vrijdag " & sTotVrij3 & " " & groentEenh(g) & ")", False)
                                     oCurs3.setPropertyValue("CharHeight", 16)
-                                    oCurs3.setPropertyValue("CharColor", RGB(0, 0, 0))
+                                    oCurs3.setPropertyValue("CharColor", PrintGrijs())
                                     oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
                                 End If
                             End If
@@ -1197,7 +1201,7 @@ Sub MaakOverzichten()
                         oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.ITALIC)
                         oText3.insertString(oCurs3, "(vrijdag " & sTotVrij3 & " " & groentEenh(g) & ")", False)
                         oCurs3.setPropertyValue("CharHeight", 16)
-                        oCurs3.setPropertyValue("CharColor", RGB(0, 0, 0))
+                        oCurs3.setPropertyValue("CharColor", PrintGrijs())
                         oCurs3.setPropertyValue("CharPosture", com.sun.star.awt.FontSlant.NONE)
                         bVrijPrev = False
                     End If
@@ -1291,6 +1295,7 @@ Sub MaakOverzichten()
 
         For d = 0 To nDagen - 1
             oWriter4 = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+            ZetTekstGrijs(oWriter4)
             oWriter4.getCurrentController().getFrame().getContainerWindow().setVisible(True)
 
             oPS4 = oWriter4.StyleFamilies.getByName("PageStyles").getByIndex(0)
@@ -1743,6 +1748,7 @@ Sub KoffieOrderpicking()
         sD = aDagen(dd)
 
         oWriter = oDesktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, aArgs())
+        ZetTekstGrijs(oWriter)
 
         oPS = oWriter.StyleFamilies.getByName("PageStyles").getByIndex(0)
         oPS.IsLandscape  = False

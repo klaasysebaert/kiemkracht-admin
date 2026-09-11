@@ -2293,8 +2293,8 @@ Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object, _
     oCur.gotoStart(False)
     oCur.gotoEnd(True)
     oCur.CharHeight = 12
-    ' Bewust niet vet: de voettekst is een naamkaartje, geen kop, en vet legt
-    ' merkbaar meer inkt op papier (HP ENVY, cartridges).
+    ' Bewust niet vet en lichter dan de bladtekst: de voettekst is een
+    ' naamkaartje, geen kop. Scheelt ook inkt.
     oCur.CharColor  = RGB(90, 90, 90)
     oStyle.RightPageFooterContent = oVoet
 
