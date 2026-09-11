@@ -2476,7 +2476,6 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     oPr.getCellByPosition(6, 3).setFormula("=SUM(C4:F4)")
     oPr.getCellByPosition(6, 4).setFormula("=SUM(C5:F5)")
     oPr.getCellByPosition(6, 5).setFormula("=SUM(C6:F6)")
-    oPr.getCellRangeByPosition(1, 2, 6, 2).CellBackColor = clKop
     oPr.getCellRangeByPosition(1, 2, 6, 2).CharWeight = com.sun.star.awt.FontWeight.BOLD
     ' de regel waarop dit blad rekent vet: don = rij 5, vrij = rij 6,
     ' totaal = rij 4 ("don en vrij")
