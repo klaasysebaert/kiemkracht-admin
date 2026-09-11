@@ -2290,7 +2290,9 @@ Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object, _
     oCur.gotoStart(False)
     oCur.gotoEnd(True)
     oCur.CharHeight = 12
-    oCur.CharWeight = com.sun.star.awt.FontWeight.BOLD
+    ' Bewust niet vet: de voettekst is een naamkaartje, geen kop, en vet legt
+    ' merkbaar meer inkt op papier (HP ENVY, cartridges).
+    oCur.CharColor  = RGB(90, 90, 90)
     oStyle.RightPageFooterContent = oVoet
 
     oSheet.PageStyle = sStijl
