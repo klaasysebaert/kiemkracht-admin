@@ -2681,18 +2681,17 @@ Private Sub SamVulPrintVullen(oDoc As Object, iDag As Integer, _
     Dim nAant  As Long
     Dim nWeg   As Long
     Dim dNodig As Double
-    Dim clKop  As Long
     Dim aMaatNaam(3) As String
-    Dim aMaatKleur(3) As Long
 
     aMaatNaam(0) = "Klein groentenpakket"
     aMaatNaam(1) = "Groot groentenpakket"
     aMaatNaam(2) = "Extra groot groentenpakket"
     aMaatNaam(3) = "Mini groentenpakket"
-    ' maat-kleuren zoals het weekbestand
-    aMaatKleur(0) = RGB(204, 255, 153) : aMaatKleur(1) = RGB(153, 204, 255)
-    aMaatKleur(2) = RGB(178, 178, 178) : aMaatKleur(3) = RGB(255, 153, 204)
-    clKop = RGB(238, 238, 238)
+    ' De maat-kleuren van het weekbestand (groen/blauw/grijs/roze) stonden hier
+    ' als volle balk achter elke maatkop. Op de printer — zonder kleurencartridge
+    ' — kwamen ze er als grijze vlakken uit: veel inkt over een grote
+    ' oppervlakte, zonder dat ze iets toevoegden. De maatkop is vet en draagt de
+    ' volledige naam, dat volstaat.
     If iDag = 0 Then
         sTab = TAB_PR_VD : sDagLbl = "DONDERDAG"
     Else
