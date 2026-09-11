@@ -3849,6 +3849,41 @@ Function WeekNaarDonderdag(iWeek As Integer) As Date
 End Function
 
 ' =============================================
+' Helper: datum van een ISO-weekdag in een BEPAALD jaar.
+' iWeekdagISO: 1 = maandag ... 4 = donderdag, 5 = vrijdag, 7 = zondag.
+'
+' Anders dan WeekNaarDonderdag, die vooruitzoekt vanaf vandaag en dus over de
+' jaargrens springt zodra je een week uit het verleden vraagt: in week 40/2026
+' geeft WeekNaarDonderdag(37) de donderdag van week 37 *2027*. Voor een blad dat
+' je achteraf nog eens herdrukt is dat een jaar te ver.
+' Recept: ISO-week 1 is de week waarin 4 januari valt.
+' =============================================
+Function DatumVanWeek(iWeek As Integer, iJaar As Integer, iWeekdagISO As Integer) As Date
+    Dim dJan4  As Date
+    Dim dWk1Ma As Date
+    dJan4  = DateSerial(iJaar, 1, 4)
+    dWk1Ma = dJan4 - (WeekDay(dJan4, 2) - 1)      ' maandag van ISO-week 1
+    DatumVanWeek = dWk1Ma + (iWeek - 1) * 7 + (iWeekdagISO - 1)
+End Function
+
+' =============================================
+' Helper: datum als "17 september 2026".
+' De maandnamen worden elders telkens lokaal opgebouwd (MaakOverzichten,
+' MaakWeekbestand); dit is dezelfde lijst, maar op één plek. Bewust zonder
+' dagnaam: wie die nodig heeft, heeft ze meestal al bij de hand.
+' =============================================
+Function DatumLangNL(d As Date) As String
+    Dim saMaanden(12) As String
+    saMaanden(1)  = "januari"   : saMaanden(2)  = "februari"
+    saMaanden(3)  = "maart"     : saMaanden(4)  = "april"
+    saMaanden(5)  = "mei"       : saMaanden(6)  = "juni"
+    saMaanden(7)  = "juli"      : saMaanden(8)  = "augustus"
+    saMaanden(9)  = "september" : saMaanden(10) = "oktober"
+    saMaanden(11) = "november"  : saMaanden(12) = "december"
+    DatumLangNL = Day(d) & " " & saMaanden(Month(d)) & " " & Year(d)
+End Function
+
+' =============================================
 ' Helper: parseert weekinvoer "W22-W24, W26" naar een
 ' CSV-string van weeknummers "22,23,24,26".
 '   bEnkel = True  -> slechts één week toegelaten (stop/start)
