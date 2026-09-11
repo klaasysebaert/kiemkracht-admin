@@ -3849,6 +3849,21 @@ Function WeekNaarDonderdag(iWeek As Integer) As Date
 End Function
 
 ' =============================================
+' Helper: tekstkleur voor alles wat op papier gaat.
+'
+' Donkergrijs in plaats van zwart: de printer rastert dat en legt merkbaar
+' minder inkt op papier, terwijl het op leesafstand als zwart oogt. Bewust
+' donkerder dan de secundaire grijzen die er al waren — RGB(80,80,80) voor
+' bijzinnen, RGB(102,102,102) voor de "nodig:"-regels, RGB(153-204) voor
+' terzijdes — zodat de hiërarchie blijft kloppen.
+'
+' Geen Const: die wil een letterlijke waarde en RGB() is een functie.
+' =============================================
+Function PrintGrijs() As Long
+    PrintGrijs = RGB(64, 64, 64)
+End Function
+
+' =============================================
 ' Helper: datum van een ISO-weekdag in een BEPAALD jaar.
 ' iWeekdagISO: 1 = maandag ... 4 = donderdag, 5 = vrijdag, 7 = zondag.
 '
