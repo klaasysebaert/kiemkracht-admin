@@ -33,6 +33,20 @@ Function EenheidUitRij3(sRuw As String) As String
     End If
 End Function
 
+' ---------------------------------------------------------------------------
+' ZetTekstGrijs — alle tekst van een print-document donkergrijs i.p.v. zwart.
+'
+' Inktbesparing: via de alinea-standaardstijl, zodat élke alinea die geen eigen
+' kleur zet meegaat. De paar plekken die wél expliciet kleuren (de cursieve
+' "(vrijdag ...)"-terzijdes in RGB(80,80,80)) blijven zoals ze zijn.
+' ---------------------------------------------------------------------------
+Sub ZetTekstGrijs(oWr As Object)
+    On Error Resume Next
+    oWr.StyleFamilies.getByName("ParagraphStyles") _
+       .getByName("Standard").CharColor = PrintGrijs()
+    On Error GoTo 0
+End Sub
+
 Sub MaakOverzichten()
     On Error GoTo DebugFout
 
