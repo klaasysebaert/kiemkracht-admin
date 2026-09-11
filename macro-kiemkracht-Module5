@@ -2403,7 +2403,6 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     aMaatNaam(3) = "Mini groentenpakket"
     aMaatKort(0) = "KG" : aMaatKort(1) = "GG"
     aMaatKort(2) = "EGG" : aMaatKort(3) = "MINI"
-    clKop = RGB(220, 233, 200)
     Select Case iDag
         Case 0    : sTab = TAB_PR_OD : sDagLbl = "DONDERDAG" : sNodigLbl = "DONDERDAG"
         Case 1    : sTab = TAB_PR_OV : sDagLbl = "VRIJDAG"   : sNodigLbl = "VRIJDAG"
