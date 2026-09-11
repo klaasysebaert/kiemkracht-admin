@@ -2225,16 +2225,28 @@ End Sub
 ' Pagina-instelling voor de afweegbladen: A4 staand, smalle marges, horizontaal
 ' gecentreerd en op één bladzijde geschaald (ScaleToPages = 1), zodat het blad
 ' altijd op één A4 past — ook als er een week veel groenten zijn.
-Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object)
+'
+' sStijl is per dag verschillend ("Afweeglijst donderdag" / "... vrijdag"): tot
+' nu deelden beide bladen één stijl, maar een stijl draagt maar één voettekst,
+' dus vrijdag zou die van donderdag overschrijven.
+'
+' sVoet komt enkel op de AFDRUK ("Afweeglijst pakketten — donderdag 17 september
+' 2026"): op de werktafel liggen de twee dagen en de bijna gelijk ogende
+' afweeglijst van de losse groenten door elkaar, en de kop bovenaan helpt enkel
+' als het blad bovenop ligt.
+Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object, _
+                               sStijl As String, sVoet As String)
     Dim oStyles As Object
     Dim oStyle  As Object
+    Dim oVoet   As Object
+    Dim oCur    As Object
     On Error Resume Next
     oStyles = oDoc.StyleFamilies.getByName("PageStyles")
-    If Not oStyles.hasByName("Afweeglijst") Then
+    If Not oStyles.hasByName(sStijl) Then
         oStyle = oDoc.createInstance("com.sun.star.style.PageStyle")
-        oStyles.insertByName("Afweeglijst", oStyle)
+        oStyles.insertByName(sStijl, oStyle)
     End If
-    oStyle = oStyles.getByName("Afweeglijst")
+    oStyle = oStyles.getByName(sStijl)
     oStyle.IsLandscape        = False
     oStyle.Width              = 21000
     oStyle.Height             = 29700
@@ -2243,10 +2255,28 @@ Private Sub SamZetAfweegPagina(oDoc As Object, oSheet As Object)
     oStyle.TopMargin          = 1000
     oStyle.BottomMargin       = 1000
     oStyle.HeaderIsOn         = False
-    oStyle.FooterIsOn         = False
     oStyle.CenterHorizontally = True
     oStyle.ScaleToPages       = 1
-    oSheet.PageStyle = "Afweeglijst"
+
+    ' --- Voettekst ---
+    oStyle.FooterIsOn            = True
+    oStyle.FooterIsShared        = True    ' linker- en rechterpagina gelijk
+    oStyle.FooterIsDynamicHeight = True
+    oStyle.FooterBodyDistance    = 300
+    ' De struct die je uit de stijl haalt is een KOPIE: zonder de toewijzing
+    ' terug naar RightPageFooterContent gebeurt er niets.
+    oVoet = oStyle.RightPageFooterContent
+    oVoet.LeftText.setString("")
+    oVoet.RightText.setString("")
+    oVoet.CenterText.setString(sVoet)
+    oCur = oVoet.CenterText.createTextCursor()
+    oCur.gotoStart(False)
+    oCur.gotoEnd(True)
+    oCur.CharHeight = 12
+    oCur.CharWeight = com.sun.star.awt.FontWeight.BOLD
+    oStyle.RightPageFooterContent = oVoet
+
+    oSheet.PageStyle = sStijl
     On Error GoTo 0
 End Sub
 
