@@ -2055,6 +2055,8 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     Dim sNaam  As String
     Dim sTab   As String
     Dim sDagLbl As String
+    Dim dLever As Date
+    Dim sVoet  As String
     Dim nAantalDag As Long
     Dim nWegDag    As Long
     Dim dNodig  As Double
