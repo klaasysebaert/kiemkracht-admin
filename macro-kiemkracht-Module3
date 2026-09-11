@@ -39,11 +39,23 @@ End Function
 ' Inktbesparing: via de alinea-standaardstijl, zodat élke alinea die geen eigen
 ' kleur zet meegaat. De paar plekken die wél expliciet kleuren (de cursieve
 ' "(vrijdag ...)"-terzijdes in RGB(80,80,80)) blijven zoals ze zijn.
+'
+' Kop- en voetteksten hangen NIET aan "Standard" maar aan hun eigen stijlen;
+' zonder die erbij bleef de voetregel zwart en dus donkerder dan de tekst
+' erboven.
 ' ---------------------------------------------------------------------------
 Sub ZetTekstGrijs(oWr As Object)
+    Dim oStijlen As Object
+    Dim aStijl(2) As String
+    Dim i As Integer
+    aStijl(0) = "Standard" : aStijl(1) = "Header" : aStijl(2) = "Footer"
     On Error Resume Next
-    oWr.StyleFamilies.getByName("ParagraphStyles") _
-       .getByName("Standard").CharColor = PrintGrijs()
+    oStijlen = oWr.StyleFamilies.getByName("ParagraphStyles")
+    For i = 0 To 2
+        If oStijlen.hasByName(aStijl(i)) Then
+            oStijlen.getByName(aStijl(i)).CharColor = PrintGrijs()
+        End If
+    Next i
     On Error GoTo 0
 End Sub
 
