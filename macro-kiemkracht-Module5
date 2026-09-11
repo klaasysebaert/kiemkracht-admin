@@ -2221,7 +2221,12 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     Next iKol
     oAfw.Columns.getByIndex(5).Width = 760               ' tussenkolom F
 
-    SamZetAfweegPagina(oDoc, oAfw)
+    ' --- Pagina + voettekst (donderdag = ISO-weekdag 4, vrijdag = 5) ---
+    ' DatumVanWeek en niet WeekNaarDonderdag: die laatste zoekt vooruit vanaf
+    ' vandaag en zou bij een herdruk van een oudere week een jaar te ver springen.
+    dLever = DatumVanWeek(iWeek, iJaar, 4 + iDag)
+    sVoet  = "Afweeglijst pakketten — " & LCase(sDagLbl) & " " & DatumLangNL(dLever)
+    SamZetAfweegPagina(oDoc, oAfw, "Afweeglijst " & LCase(sDagLbl), sVoet)
 End Sub
 
 ' Pagina-instelling voor de afweegbladen: A4 staand, smalle marges, horizontaal
