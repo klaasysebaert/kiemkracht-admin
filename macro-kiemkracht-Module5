@@ -2024,8 +2024,18 @@ End Sub
 ' Volledig afgeleid: geen invulvelden, wordt bij elke ververs herbouwd.
 ' ---------------------------------------------------------------------------
 Private Sub SamVulAfweeglijst(oDoc As Object, iWeek As Integer, iJaar As Integer)
+    Dim oStyles As Object
     SamVulAfweegDag(oDoc, 0, iWeek, iJaar)
     SamVulAfweegDag(oDoc, 1, iWeek, iJaar)
+    ' Tot nu deelden beide bladen één paginastijl "Afweeglijst"; die kan geen
+    ' dag-afhankelijke voettekst dragen en is na de twee aanroepen hierboven
+    ' wees. Weg ermee, anders blijft ze in elk bestaand document in de
+    ' stijllijst hangen. Lukt het niet (hangt er toch nog een blad aan), dan is
+    ' er niets stuk.
+    On Error Resume Next
+    oStyles = oDoc.StyleFamilies.getByName("PageStyles")
+    If oStyles.hasByName("Afweeglijst") Then oStyles.removeByName("Afweeglijst")
+    On Error GoTo 0
 End Sub
 
 ' ---------------------------------------------------------------------------
