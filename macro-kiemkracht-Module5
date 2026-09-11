@@ -2090,6 +2090,9 @@ Private Sub SamVulAfweegDag(oDoc As Object, iDag As Integer, _
     ' inhoud én harde opmaak wissen (1+2+4+16+32), zodat een korter blad geen
     ' resten van de vorige week overhoudt
     oAfw.getCellRangeByPosition(0, 0, 10, AFW_MAX_RIJ).clearContents(55)
+    ' Grondkleur donkergrijs i.p.v. zwart (inktbesparing). Meteen na het wissen,
+    ' zodat de lichtere grijzen die hieronder per cel volgen het overschrijven.
+    oAfw.getCellRangeByPosition(0, 0, 10, AFW_MAX_RIJ).CharColor = PrintGrijs()
 
     ' --- Groenten + hoeveelheid per maat van de Samenstelling-tab ---
     Dim gN(SAM_SLOTS - 1) As String
