@@ -943,6 +943,7 @@ Sub BereidKoffieMailmergeVoor()
     nRijen = r - 1
     MsgBox "Koffie-mailmerge klaar!" & Chr(10) & Chr(10) & _
            nRijen & " klanten opgenomen in sheet 'Koffiemailmerge'." & Chr(10) & _
+           "Campagne-id: " & lRunID & " (voor het uitschrijflog)." & Chr(10) & _
            "Doelomgeving: " & KOFFIE_URL, _
            64, "BereidKoffieMailmergeVoor"
 
