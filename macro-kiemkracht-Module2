@@ -818,6 +818,20 @@ Sub BereidKoffieMailmergeVoor()
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
+
+    ' --- Stap 1b: nieuwe koffie-campagne aanmaken ---
+    ' Eén rij per ronde, zodat een latere uitschrijving via &r=<id> in de
+    ' link (verderop) te herleiden is naar déze verzending. Zie migratie
+    ' 33-mail-klikken-en-koffie-campagnes.sql.
+    Dim lRunID As Long
+    Dim oStmtCamp As Object
+    Dim oRSCamp   As Object
+    oStmtCamp = oConn.createStatement()
+    oRSCamp = oStmtCamp.executeQuery( _
+        "INSERT INTO koffie_campagnes (aantal_ontvangers) VALUES (" & nKlanten & ") RETURNING id")
+    oRSCamp.next()
+    lRunID = oRSCamp.getLong(1)
+    oRSCamp.close() : oStmtCamp.close()
     oConn.close()
 
     ' --- Stap 2: sheet "Koffiemailmerge" aanmaken of leegmaken ---
