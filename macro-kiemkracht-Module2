@@ -920,9 +920,10 @@ Sub BereidKoffieMailmergeVoor()
 
         ' Uitschrijflink (koffie-stream) — wijst naar de bestel-app; leeg als de
         ' klant nog geen token heeft (tokens-vullen.php vult die server-side).
+        ' &r=<lRunID> koppelt een latere uitschrijving aan deze ronde (koffie_campagnes).
         If kUnsub(k) <> "" Then _
             oSheet.getCellByPosition(15, r).setString( _
-                BESTEL_URL & "uitschrijven.php?u=" & kID(k) & "." & kUnsub(k) & "&type=koffie")
+                BESTEL_URL & "uitschrijven.php?u=" & kID(k) & "." & kUnsub(k) & "&type=koffie&r=" & lRunID)
 
         r = r + 1
     Next k
