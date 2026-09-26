@@ -784,6 +784,7 @@
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartPrintEtiketten?language=Basic&amp;location=application" menu:label="Print Etiketten"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMaakMaandbestand?language=Basic&amp;location=application" menu:label="Maak Maandbestand"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartVoegLosseGroenteToe?language=Basic&amp;location=application" menu:label="Voeg Losse Groente Toe"/>
+   <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartWijzigLosseGroenteEenheid?language=Basic&amp;location=application" menu:label="Eenheid losse groente wijzigen"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartKoffieOrderpicking?language=Basic&amp;location=application" menu:label="Koffie orderpicking"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartMailSelectie?language=Basic&amp;location=application" menu:label="Mail Selectie"/>
    <menu:menuitem menu:id="vnd.sun.star.script:Standard.Module2.StartVoegKlantrijToe?language=Basic&amp;location=application" menu:label="Klantrij toevoegen"/>
