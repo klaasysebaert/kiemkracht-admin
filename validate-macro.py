@@ -185,9 +185,41 @@ def maak_kapotte_kopie(doel):
         f.write(xba)
 
 
+def waarschuw_als_lo_draait():
+    """Draait LibreOffice, dan keurt deze probe VEROUDERDE code goed.
+
+    De probe leest de .xba-bestanden. sync-macro.ps1 slaat die bewust over
+    zolang LO draait (LO overschrijft ze toch bij het afsluiten) en schrijft
+    dan enkel de .bas voor de hot-reload. Je verse code draait dus wel in het
+    open venster, maar staat niet in de .xba die hier gelezen wordt: het
+    resultaat is een vals-groene "COMPILEERT" over de vorige versie.
+
+    Twee uitwegen: LO sluiten en opnieuw syncen, of de Kiemkracht-.xba's met
+    de hand wegschrijven uit de bronbestanden (veilig, want die zijn na de
+    hot-reload identiek aan wat er in het geheugen draait).
+    """
+    try:
+        uit = subprocess.run(["tasklist", "/FI", "IMAGENAME eq soffice.bin"],
+                             capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return False
+    if "soffice.bin" not in uit.lower():
+        return False
+    print("!! LET OP - LibreOffice draait.")
+    print("   Deze probe leest de .xba's, en sync-macro.ps1 slaat die over")
+    print("   zolang LO open staat. Wat hieronder goedgekeurd wordt is dus")
+    print("   mogelijk de VORIGE versie van je code, niet de verse.")
+    print("   Sluit LO en sync opnieuw, of schrijf de .xba's zelf weg.")
+    print()
+    return True
+
+
 if __name__ == "__main__":
     print("Echte gebruikersbibliotheek:", ECHT_BASIC)
+    lo_draait = waarschuw_als_lo_draait()
     goed = keur(ECHT_BASIC, "2119", "echte library")
+    if lo_draait:
+        print("(Herinnering: LibreOffice draaide - zie de waarschuwing bovenaan.)")
 
     if "--zelftest" in sys.argv:
         # Controleproef: dezelfde bibliotheek mét een structuurfout MOET falen.

@@ -3073,7 +3073,8 @@ Sub WijzigLosseGroenteEenheid()
 
     ' --- Huidige toestand van dit slot ---
     Dim sNaam As String, dOudPrijs As Double
-    Dim sOudRuw As String, sOudEenh As String, bOudPerStuk As Boolean
+    Dim sOudRuw As String, sOudEenh As String, sOudToon As String
+    Dim bOudPerStuk As Boolean
     sNaam     = Trim(oWk.getCellByPosition(cGroent0 + iSlot, 1).getString())
     dOudPrijs = oWk.getCellByPosition(cGroent0 + iSlot, 2).getValue()
     sOudRuw   = Trim(oBlad2.getCellByPosition(8, iSlot).getString())
@@ -3085,6 +3086,14 @@ Sub WijzigLosseGroenteEenheid()
     End If
     If sOudEenh = "" Then
         sOudEenh = EenheidUitRij3(oWk.getCellByPosition(cGroent0 + iSlot, 2).getString())
+    End If
+    ' Zoals de eenheid bij een AANTAL leest: met x-notatie is 1 broccoli
+    ' "1 x 500g", zonder is het "1 kg". De prijs zelf staat wel per 500g,
+    ' dus in de prijszinnen blijft de kale eenheid staan.
+    If bOudPerStuk Then
+        sOudToon = "x " & sOudEenh
+    Else
+        sOudToon = sOudEenh
     End If
     If dOudPrijs <= 0 Then
         MsgBox "In rij 3 van kolom " & KolomLetter(cGroent0 + iSlot) & " staat geen prijs. " & _
@@ -3110,7 +3119,7 @@ Sub WijzigLosseGroenteEenheid()
     sVoorstel = ""
     If dFactor > 0 Then sVoorstel = NaarInvoerTekst2(dFactor)
     sAntw = Trim(InputBox( _
-        "Hoeveel " & sNieuwEenh & " is 1 " & sOudEenh & "?" & Chr(10) & Chr(10) & _
+        "Hoeveel " & sNieuwEenh & " is 1 " & sOudToon & "?" & Chr(10) & Chr(10) & _
         "Hiermee wordt zowel de nieuwe prijs als de omrekening van de al " & _
         "ingevulde hoeveelheden berekend.", "Eenheid wijzigen", sVoorstel))
     If sAntw = "" Then Exit Sub
@@ -3145,6 +3154,13 @@ Sub WijzigLosseGroenteEenheid()
         Chr(10) & Chr(10) & "Voor een gewicht (kg) is dat Nee: dan leest het als ""0,62 kg " & sNaam & """.", _
         4 + 32, "Eenheid wijzigen") = 6)
 
+    Dim sNieuwToon As String
+    If bPerStuk Then
+        sNieuwToon = "x " & sNieuwEenh
+    Else
+        sNieuwToon = sNieuwEenh
+    End If
+
     ' --- Laatste klantrij zoeken + huidige hoeveelheden tellen ---
     Dim oCur As Object
     oCur = oWk.createCursor()
@@ -3178,7 +3194,7 @@ Sub WijzigLosseGroenteEenheid()
     If nIngevuld > 0 Then
         iAntw = MsgBox( _
             "Er staan al " & nIngevuld & " hoeveelheden ingevuld bij de klanten " & _
-            "(samen " & NaarInvoerTekst2(dSomOud) & " " & sOudEenh & ")." & Chr(10) & Chr(10) & _
+            "(samen " & NaarInvoerTekst2(dSomOud) & " " & sOudToon & ")." & Chr(10) & Chr(10) & _
             "Die mee omrekenen naar " & sNieuwEenh & " (x " & NaarInvoerTekst2(dFactor) & ")?" & Chr(10) & Chr(10) & _
             "Ja = omrekenen (bedragen blijven gelijk; daarna de echte gewichten overtypen)" & Chr(10) & _
             "Nee = de getallen ongemoeid laten (bedragen veranderen wel!)" & Chr(10) & _
@@ -3252,8 +3268,8 @@ Sub WijzigLosseGroenteEenheid()
         sMsg = sMsg & "Er stonden nog geen hoeveelheden ingevuld."
     ElseIf bOmreken Then
         sMsg = sMsg & nOmgerekend & " hoeveelheden omgerekend: " & _
-               NaarInvoerTekst2(dSomOud) & " " & sOudEenh & "  ->  " & _
-               NaarInvoerTekst2(dSomNieuw) & " " & sNieuwEenh & Chr(10) & _
+               NaarInvoerTekst2(dSomOud) & " " & sOudToon & "  ->  " & _
+               NaarInvoerTekst2(dSomNieuw) & " " & sNieuwToon & Chr(10) & _
                "Waarde: " & Format(dSomOud * dOudPrijs, "0.00") & " " & Chr(8364) & "  ->  " & _
                Format(dSomNieuw * dNieuwPrijs, "0.00") & " " & Chr(8364) & Chr(10) & Chr(10) & _
                "Typ nu per klant het afgewogen gewicht over het omgerekende getal."
