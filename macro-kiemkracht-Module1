@@ -2977,6 +2977,370 @@ Sub ZetLosseGroenteTip(oWk As Object)
     Next iSlot
 End Sub
 
+' =============================================
+' Kiemkracht - Eenheid en eenheidsprijs van een losse groente wijzigen
+' Uitvoeren terwijl een weekbestand open is (eerste tabblad = datablad).
+'
+' Bedoeld voor groenten die je per stuk of per vast gewicht verkocht hebt,
+' maar waarvan je achteraf het AFGEWOGEN gewicht wil invullen. Bijvoorbeeld
+' broccoli van "3,10 EUR / 500g" naar "6,20 EUR / kg": daarna typ je bij
+' elke klant gewoon het gewogen gewicht (0,62) in de broccolikolom.
+'
+' De macro past alles aan wat aan die eenheid hangt:
+'   - rij 3: de prijs (getalwaarde) en de opmaak "0,00 EUR / <eenheid>"
+'   - Blad2 kolom I  -> samenvatting (kolom W), maandafrekening, overzichten
+'   - Blad2 rij 100  -> detailregel in de afrekening
+'   - de kolombreedte, zodat de nieuwe prijsregel niet als ### verschijnt
+'   - optioneel de al ingevulde hoeveelheden, omgerekend met dezelfde factor,
+'     zodat de afrekening exact gelijk blijft tot je de echte gewichten invult
+'
+' De naam in rij 2 blijft staan. De weglatingen (AZ..BK) rekenen met het
+' tabblad pakketwaardes en blijven dus ongemoeid.
+' =============================================
+Sub WijzigLosseGroenteEenheid()
+    On Error GoTo Fout
+
+    Const cGroent0     = 24   ' eerste groente-kolom (Y)
+    Const nGroentSlots = 24   ' slots Y..AV
+    Const cNaamKol     = 0    ' kolom A: klantnaam
+    Const cAfhKol      = 1    ' kolom B: afhaalpunt
+
+    ' --- Actief weekbestand ophalen + controleren ---
+    Dim oDoc As Object, oWk As Object, oBlad2 As Object
+    oDoc = ThisComponent
+    If IsNull(oDoc) Then Exit Sub
+    If Not HasUnoInterfaces(oDoc, "com.sun.star.lang.XServiceInfo") Then
+        MsgBox "Geen rekenblad actief.", 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+    If Not oDoc.supportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+        MsgBox "Geen rekenblad actief.", 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+    If Not oDoc.Sheets.hasByName("Blad2") Then
+        MsgBox "Dit lijkt geen weekbestand (geen Blad2-tabblad). Open het " & _
+               "weekbestand en start de macro vanuit dat venster.", 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+    oWk    = oDoc.Sheets.getByIndex(0)
+    oBlad2 = oDoc.Sheets.getByName("Blad2")
+
+    ' --- Lijst van gevulde groente-slots opbouwen ---
+    Dim aSlot(nGroentSlots) As Integer
+    Dim iSlot As Integer, nGevuld As Integer
+    Dim sLijst As String, sNm As String
+    nGevuld = 0
+    sLijst  = ""
+    For iSlot = 0 To nGroentSlots - 1
+        sNm = Trim(oWk.getCellByPosition(cGroent0 + iSlot, 1).getString())
+        If sNm <> "" Then
+            nGevuld = nGevuld + 1
+            aSlot(nGevuld) = iSlot
+            sLijst = sLijst & nGevuld & ". " & sNm & "   [" & _
+                     Trim(oWk.getCellByPosition(cGroent0 + iSlot, 2).getString()) & "]" & Chr(10)
+        End If
+    Next iSlot
+    If nGevuld = 0 Then
+        MsgBox "Geen losse groenten gevonden in rij 2 (Y..AV).", 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+
+    ' --- Keuze: nummer of (deel van) de naam ---
+    Dim sKeuze As String, iKeuze As Integer, iRij As Integer
+    sKeuze = Trim(InputBox(sLijst & Chr(10) & _
+             "Nummer (of naam) van de groente waarvan de eenheid verandert:", _
+             "Eenheid wijzigen"))
+    If sKeuze = "" Then Exit Sub
+    iKeuze = 0
+    On Error Resume Next
+    iKeuze = CInt(sKeuze)
+    On Error GoTo Fout
+    If iKeuze < 1 Or iKeuze > nGevuld Then
+        iKeuze = 0
+        For iRij = 1 To nGevuld
+            If InStr(LCase(Trim(oWk.getCellByPosition(cGroent0 + aSlot(iRij), 1).getString())), _
+                     LCase(sKeuze)) > 0 Then
+                iKeuze = iRij
+                Exit For
+            End If
+        Next iRij
+    End If
+    If iKeuze < 1 Or iKeuze > nGevuld Then
+        MsgBox "Geen groente gevonden voor: " & sKeuze, 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+    iSlot = aSlot(iKeuze)
+
+    ' --- Huidige toestand van dit slot ---
+    Dim sNaam As String, dOudPrijs As Double
+    Dim sOudRuw As String, sOudEenh As String, bOudPerStuk As Boolean
+    sNaam     = Trim(oWk.getCellByPosition(cGroent0 + iSlot, 1).getString())
+    dOudPrijs = oWk.getCellByPosition(cGroent0 + iSlot, 2).getValue()
+    sOudRuw   = Trim(oBlad2.getCellByPosition(8, iSlot).getString())
+    bOudPerStuk = (Left(sOudRuw, 2) = "x ")
+    If bOudPerStuk Then
+        sOudEenh = Trim(Mid(sOudRuw, 3))
+    Else
+        sOudEenh = sOudRuw
+    End If
+    If sOudEenh = "" Then
+        sOudEenh = EenheidUitRij3(oWk.getCellByPosition(cGroent0 + iSlot, 2).getString())
+    End If
+    If dOudPrijs <= 0 Then
+        MsgBox "In rij 3 van kolom " & KolomLetter(cGroent0 + iSlot) & " staat geen prijs. " & _
+               "Vul die eerst in (of gebruik ""Losse groente toevoegen"").", 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+
+    ' --- Nieuwe eenheid ---
+    Dim sNieuwEenh As String
+    sNieuwEenh = Trim(InputBox( _
+        sNaam & Chr(10) & _
+        "huidig: " & NaarInvoerTekst(dOudPrijs) & " " & Chr(8364) & " / " & sOudEenh & Chr(10) & Chr(10) & _
+        "Nieuwe eenheid (bv. kg):", "Eenheid wijzigen", "kg"))
+    If sNieuwEenh = "" Then Exit Sub
+    If LCase(sNieuwEenh) = LCase(sOudEenh) Then
+        MsgBox "Dat is al de huidige eenheid; niets gewijzigd.", 64, "Eenheid wijzigen"
+        Exit Sub
+    End If
+
+    ' --- Omrekenfactor: hoeveel nieuwe eenheden zit er in 1 oude? ---
+    Dim dFactor As Double, sAntw As String, sVoorstel As String
+    dFactor   = VoorstelOmrekenFactor(sOudEenh, sNieuwEenh)
+    sVoorstel = ""
+    If dFactor > 0 Then sVoorstel = NaarInvoerTekst2(dFactor)
+    sAntw = Trim(InputBox( _
+        "Hoeveel " & sNieuwEenh & " is 1 " & sOudEenh & "?" & Chr(10) & Chr(10) & _
+        "Hiermee wordt zowel de nieuwe prijs als de omrekening van de al " & _
+        "ingevulde hoeveelheden berekend.", "Eenheid wijzigen", sVoorstel))
+    If sAntw = "" Then Exit Sub
+    dFactor = 0
+    On Error Resume Next
+    dFactor = CDbl(Replace(sAntw, ".", ","))
+    On Error GoTo Fout
+    If dFactor <= 0 Then
+        MsgBox "Ongeldige factor: " & sAntw, 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+
+    ' --- Nieuwe prijs (voorstel = waarde-neutraal) ---
+    Dim dNieuwPrijs As Double
+    sAntw = Trim(InputBox( _
+        "Nieuwe prijs per " & sNieuwEenh & " voor " & sNaam & ":" & Chr(10) & Chr(10) & _
+        "(was " & NaarInvoerTekst(dOudPrijs) & " per " & sOudEenh & "; het voorstel " & _
+        "houdt de prijs identiek)", "Eenheid wijzigen", NaarInvoerTekst(dOudPrijs / dFactor)))
+    If sAntw = "" Then Exit Sub
+    dNieuwPrijs = 0
+    On Error Resume Next
+    dNieuwPrijs = CDbl(Replace(sAntw, ".", ","))
+    On Error GoTo Fout
+    If dNieuwPrijs <= 0 Then
+        MsgBox "Ongeldige prijs: " & sAntw, 16, "Eenheid wijzigen"
+        Exit Sub
+    End If
+
+    ' --- "x "-notatie? (zoals "2 x 500g Broccoli"; voor kg niet zinvol) ---
+    Dim bPerStuk As Boolean
+    bPerStuk = (MsgBox("""x ""-notatie hanteren, zoals in ""2 x " & sNieuwEenh & " " & sNaam & """?" & _
+        Chr(10) & Chr(10) & "Voor een gewicht (kg) is dat Nee: dan leest het als ""0,62 kg " & sNaam & """.", _
+        4 + 32, "Eenheid wijzigen") = 6)
+
+    ' --- Laatste klantrij zoeken + huidige hoeveelheden tellen ---
+    Dim oCur As Object
+    oCur = oWk.createCursor()
+    oCur.gotoEndOfUsedArea(False)
+    Dim iEind As Integer, iLaatste As Integer, r As Integer
+    iEind    = oCur.RangeAddress.EndRow + 1
+    iLaatste = 0
+    For r = iEind To 7 Step -1
+        If Trim(oWk.getCellByPosition(cNaamKol, r - 1).getString()) <> "" Then
+            iLaatste = r
+            Exit For
+        End If
+    Next r
+
+    Dim nIngevuld As Integer, dSomOud As Double
+    Dim oCel As Object
+    nIngevuld = 0
+    dSomOud   = 0
+    For r = 7 To iLaatste
+        If Trim(oWk.getCellByPosition(cAfhKol, r - 1).getString()) <> "afhaalpunt/dag" Then
+            oCel = oWk.getCellByPosition(cGroent0 + iSlot, r - 1)
+            If oCel.getType() = com.sun.star.table.CellContentType.VALUE Then
+                nIngevuld = nIngevuld + 1
+                dSomOud   = dSomOud + oCel.getValue()
+            End If
+        End If
+    Next r
+
+    Dim bOmreken As Boolean, iAntw As Integer
+    bOmreken = False
+    If nIngevuld > 0 Then
+        iAntw = MsgBox( _
+            "Er staan al " & nIngevuld & " hoeveelheden ingevuld bij de klanten " & _
+            "(samen " & NaarInvoerTekst2(dSomOud) & " " & sOudEenh & ")." & Chr(10) & Chr(10) & _
+            "Die mee omrekenen naar " & sNieuwEenh & " (x " & NaarInvoerTekst2(dFactor) & ")?" & Chr(10) & Chr(10) & _
+            "Ja = omrekenen (bedragen blijven gelijk; daarna de echte gewichten overtypen)" & Chr(10) & _
+            "Nee = de getallen ongemoeid laten (bedragen veranderen wel!)" & Chr(10) & _
+            "Annuleren = stoppen zonder iets te wijzigen", _
+            3 + 32, "Eenheid wijzigen")
+        If iAntw = 2 Then Exit Sub
+        bOmreken = (iAntw = 6)
+    End If
+
+    ' --- Wegschrijven ---
+    Dim bLocked As Boolean : bLocked = False
+    On Error Resume Next
+    oDoc.lockControllers() : bLocked = True
+    On Error GoTo Fout
+
+    ' 1. prijs + opmaak in rij 3 (index 2)
+    Dim oPrijsCel As Object
+    oPrijsCel = oWk.getCellByPosition(cGroent0 + iSlot, 2)
+    oPrijsCel.setValue(dNieuwPrijs)
+    Dim oFmts As Object, nFmt As Long, sFmt As String
+    Dim oLoc As New com.sun.star.lang.Locale
+    oLoc.Language = "nl" : oLoc.Country = "BE"
+    oFmts = oDoc.getNumberFormats()
+    sFmt  = "0,00"" " & Chr(8364) & " / " & sNieuwEenh & """"
+    nFmt  = oFmts.queryKey(sFmt, oLoc, False)
+    If nFmt = -1 Then nFmt = oFmts.addNew(sFmt, oLoc)
+    oPrijsCel.NumberFormat = nFmt
+
+    ' 2. eenheid-metadata in Blad2 (identiek aan MaakWeekbestand)
+    oBlad2.getCellByPosition(8, iSlot).setString(IIf(bPerStuk, "x ", "") & sNieuwEenh)
+    oBlad2.getCellByPosition(iSlot, 99).setString(IIf(bPerStuk, Chr(215) & " ", "") & sNieuwEenh)
+
+    ' 3. kolombreedte (zelfde schatting als MaakWeekbestand: anders ###)
+    Dim nLenR3 As Integer, nWdtR3 As Long
+    nLenR3 = Len(Format(dNieuwPrijs, "0.00")) + 5 + Len(sNieuwEenh)
+    nWdtR3 = 190 * nLenR3 + 200
+    If nWdtR3 < 2300 Then nWdtR3 = 2300
+    If nWdtR3 > 4200 Then nWdtR3 = 4200
+    oWk.Columns.getByIndex(cGroent0 + iSlot).Width = nWdtR3
+
+    ' 4. hoeveelheden omrekenen
+    Dim nOmgerekend As Integer, dSomNieuw As Double, dNw As Double
+    nOmgerekend = 0
+    dSomNieuw   = dSomOud
+    If bOmreken Then
+        dSomNieuw = 0
+        For r = 7 To iLaatste
+            If Trim(oWk.getCellByPosition(cAfhKol, r - 1).getString()) <> "afhaalpunt/dag" Then
+                oCel = oWk.getCellByPosition(cGroent0 + iSlot, r - 1)
+                If oCel.getType() = com.sun.star.table.CellContentType.VALUE Then
+                    dNw = oCel.getValue() * dFactor
+                    ' afronden op 4 decimalen: anders geven factoren als 1/3 eindeloze staarten
+                    dNw = Int(dNw * 10000 + 0.5) / 10000
+                    oCel.setValue(dNw)
+                    dSomNieuw   = dSomNieuw + dNw
+                    nOmgerekend = nOmgerekend + 1
+                End If
+            End If
+        Next r
+    End If
+
+    If bLocked Then oDoc.unlockControllers()
+    oDoc.calculateAll()
+
+    ' --- Rapport ---
+    Dim sMsg As String
+    sMsg = sNaam & " (kolom " & KolomLetter(cGroent0 + iSlot) & ")" & Chr(10) & Chr(10) & _
+           "was:  " & NaarInvoerTekst(dOudPrijs) & " " & Chr(8364) & " / " & sOudEenh & Chr(10) & _
+           "nu:   " & oPrijsCel.getString() & Chr(10) & Chr(10)
+    If nIngevuld = 0 Then
+        sMsg = sMsg & "Er stonden nog geen hoeveelheden ingevuld."
+    ElseIf bOmreken Then
+        sMsg = sMsg & nOmgerekend & " hoeveelheden omgerekend: " & _
+               NaarInvoerTekst2(dSomOud) & " " & sOudEenh & "  ->  " & _
+               NaarInvoerTekst2(dSomNieuw) & " " & sNieuwEenh & Chr(10) & _
+               "Waarde: " & Format(dSomOud * dOudPrijs, "0.00") & " " & Chr(8364) & "  ->  " & _
+               Format(dSomNieuw * dNieuwPrijs, "0.00") & " " & Chr(8364) & Chr(10) & Chr(10) & _
+               "Typ nu per klant het afgewogen gewicht over het omgerekende getal."
+    Else
+        sMsg = sMsg & nIngevuld & " hoeveelheden ongemoeid gelaten." & Chr(10) & _
+               "Waarde: " & Format(dSomOud * dOudPrijs, "0.00") & " " & Chr(8364) & "  ->  " & _
+               Format(dSomOud * dNieuwPrijs, "0.00") & " " & Chr(8364) & Chr(10) & Chr(10) & _
+               "Controleer de bedragen; de getallen staan nog in de oude eenheid."
+    End If
+    MsgBox sMsg, 64, "Eenheid gewijzigd"
+    Exit Sub
+
+Fout:
+    On Error Resume Next
+    ThisComponent.unlockControllers()
+    On Error GoTo 0
+    MsgBox "Fout: " & Err & " - " & Error, 16, "Eenheid wijzigen"
+End Sub
+
+' Gewicht in gram achter een eenheidstekst, of 0 als het er niet in staat.
+'   "500g" -> 500      "stuk van 250g" -> 250      "5 kilogram" -> 5000
+'   "kg"   -> 1000     "stuk"          -> 0        "grote bussel" -> 0
+' Zonder getal voor de gewichtseenheid telt enkel een kale "kg"/"g"/"gram".
+Function EenheidInGram(sEenh As String) As Double
+    Dim s As String, sNum As String
+    Dim iPos As Integer, i As Integer, w As Integer
+    Dim aWoord, aFactor
+    EenheidInGram = 0
+    s = LCase(Trim(sEenh))
+    If s = "" Then Exit Function
+    aWoord  = Array("kilogram", "kilo", "kg", "gram", "g")
+    aFactor = Array(1000.0, 1000.0, 1000.0, 1.0, 1.0)
+    For w = 0 To UBound(aWoord)
+        iPos = InStr(s, aWoord(w))
+        If iPos > 0 Then
+            ' getal links van het woord oprapen (spaties overslaan)
+            i = iPos - 1
+            Do While i >= 1
+                If Mid(s, i, 1) <> " " Then Exit Do
+                i = i - 1
+            Loop
+            sNum = ""
+            Do While i >= 1
+                If InStr("0123456789,.", Mid(s, i, 1)) = 0 Then Exit Do
+                sNum = Mid(s, i, 1) & sNum
+                i = i - 1
+            Loop
+            If sNum = "" Then
+                ' geen getal: enkel een kale eenheid telt ("kg", niet "grote bussel")
+                If s = aWoord(w) Then EenheidInGram = aFactor(w)
+            Else
+                On Error Resume Next
+                EenheidInGram = CDbl(Replace(sNum, ".", ",")) * aFactor(w)
+                On Error GoTo 0
+            End If
+            Exit Function
+        End If
+    Next w
+End Function
+
+' Hoeveel nieuwe eenheden zit er in 1 oude eenheid? 0 = niet af te leiden.
+'   ("500g", "kg") -> 0,5      ("stuk van 250g", "kg") -> 0,25
+Function VoorstelOmrekenFactor(sOud As String, sNieuw As String) As Double
+    Dim dOud As Double, dNieuw As Double
+    VoorstelOmrekenFactor = 0
+    dOud   = EenheidInGram(sOud)
+    dNieuw = EenheidInGram(sNieuw)
+    If dOud > 0 And dNieuw > 0 Then VoorstelOmrekenFactor = dOud / dNieuw
+End Function
+
+' Getal als voorinvulling voor een InputBox: 2 decimalen, komma als scheiding.
+Function NaarInvoerTekst(dWaarde As Double) As String
+    Dim s As String
+    s = Format(dWaarde, "0.00")
+    If InStr(s, ",") = 0 Then s = Replace(s, ".", ",")
+    NaarInvoerTekst = s
+End Function
+
+' Idem, maar zonder overbodige nullen (voor factoren en hoeveelheden).
+Function NaarInvoerTekst2(dWaarde As Double) As String
+    Dim s As String
+    s = Format(dWaarde, "0.####")
+    If InStr(s, ",") = 0 Then s = Replace(s, ".", ",")
+    NaarInvoerTekst2 = s
+End Function
+
+
 Sub PasRijOpmaakToe(oSheet As Object, rIdx As Integer, _
                     clBG As Long, bVet As Boolean, _
                     cGroent0 As Integer, cAangep As Integer, _

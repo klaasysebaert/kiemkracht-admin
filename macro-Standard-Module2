@@ -74,6 +74,11 @@ Sub StartVoegLosseGroenteToe()
     VoegLosseGroenteToe()
 End Sub
 
+Sub StartWijzigLosseGroenteEenheid()
+    ReloadKiemkracht()
+    WijzigLosseGroenteEenheid()
+End Sub
+
 Sub StartVoegKlantrijToe()
     ReloadKiemkracht()
     VoegKlantrijToe()

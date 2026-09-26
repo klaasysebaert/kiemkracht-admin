@@ -66,6 +66,21 @@ PROBES = [
     ("Module3", "EtVellen", (24,), 1),
     ("Module3", "EtVellen", (25,), 2),
     ("Module3", "EtVellen", (0,), 0),
+    # Eenheid-omrekening (WijzigLosseGroenteEenheid): een verkeerd gelezen
+    # gewicht zet prijs EN alle klanthoeveelheden fout, dus de parser echt
+    # aftoetsen. 0 = niet af te leiden, de macro vraagt de factor dan gewoon.
+    ("Module1", "EenheidInGram", ("500g",), 500.0),
+    ("Module1", "EenheidInGram", ("stuk van 250g",), 250.0),
+    ("Module1", "EenheidInGram", ("5 kilogram",), 5000.0),
+    ("Module1", "EenheidInGram", ("kg",), 1000.0),
+    ("Module1", "EenheidInGram", ("kilogram",), 1000.0),
+    ("Module1", "EenheidInGram", ("stuk",), 0.0),
+    ("Module1", "EenheidInGram", ("bussel",), 0.0),
+    ("Module1", "EenheidInGram", ("grote bussel",), 0.0),
+    ("Module1", "EenheidInGram", ("x plantje",), 0.0),
+    ("Module1", "VoorstelOmrekenFactor", ("500g", "kg"), 0.5),
+    ("Module1", "VoorstelOmrekenFactor", ("stuk van 250g", "kg"), 0.25),
+    ("Module1", "VoorstelOmrekenFactor", ("stuk", "kg"), 0.0),
     # Omgevingsbepaling: welke database een macro raakt hangt hiervan af, dus
     # de naamregel zelf ook echt aftoetsen en niet enkel laten compileren.
     ("Module1", "OmgevingUitNaam",
