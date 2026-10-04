@@ -3477,7 +3477,7 @@ Sub SchrijfWijzigingenTerug()
 
     ' =============================================
     ' Kiemkracht - Klantwijzigingen terugschrijven
-    ' Vergelijkt klanten_beheer (kol C=id, F-Z=data, AC-AF=opt-outs) met
+    ' Vergelijkt klanten_beheer (kol C=id, F-Z=data, AD-AG=opt-outs) met
     ' klanten-tabblad. Stuurt alleen UPDATE voor rijen die werkelijk gewijzigd zijn.
     ' =============================================
 
@@ -3746,6 +3746,124 @@ Sub SchrijfWijzigingenTerug()
         Exit Sub
     End If
 
+    ' === Stap 3b: verse stop-definitief -> ook de koffiemail stopzetten? ===
+    ' De koffiemail volgt ENKEL koffie_opt_out (kolom AF), nooit type of status:
+    ' bewust ontkoppeld op 2026-07-28 zodat wie met groenten stopt zijn koffie
+    ' en honing houdt. Keerzijde: wie met alles stopt blijft koffiemails
+    ' krijgen zolang AF op nee staat, en dat wordt vergeten (Natalie Verstaen,
+    ' id 3229: stop-definitief in augustus, zes weken later zelf uit de
+    ' koffiemail geklikt). Daarom vraagt de macro het nu bij elke rij die vers
+    ' naar stop-definitief gaat. Enkel stop-definitief: stop-tijdelijk is een
+    ' pauze op de groenten en zegt niets over koffie.
+    Dim nKoffVraag As Integer : nKoffVraag = 0
+    Dim aKoffRij(2000)      As Integer
+    Dim bKoffViaVraag(2000) As Boolean
+    Dim sKoffLijst As String : sKoffLijst = ""
+    Dim rKoff As Integer : rKoff = 1
+    Do While rKoff <= nTotaal
+        bKoffViaVraag(rKoff) = False
+        If bGewijzigd(rKoff) And aKIdx(rKoff) >= 0 Then
+            Dim sKoffTypeNw  As String
+            Dim sKoffTypeOud As String
+            sKoffTypeNw  = LCase(Trim(oKB.getCellByPosition(KBKolom(5), rKoff).getString()))
+            sKoffTypeOud = LCase(Trim(kVals(aKIdx(rKoff), 5)))
+            ' Wie al op stop-definitief stond blijft ongemoeid, anders zeurt de
+            ' macro bij elke bewerking opnieuw over elke oude stopper.
+            If sKoffTypeNw = "stop-definitief" And sKoffTypeOud <> "stop-definitief" Then
+                ' Geen e-mailadres = geen koffiemail (zelfde filter als
+                ' BereidKoffieMailmergeVoor), dus niets te vragen.
+                If Not IsAanKB(oKB.getCellByPosition(KBKolom(23), rKoff).getString()) And _
+                   Trim(oKB.getCellByPosition(KBKolom(7), rKoff).getString()) <> "" Then
+                    aKoffRij(nKoffVraag) = rKoff
+                    nKoffVraag = nKoffVraag + 1
+                    If nKoffVraag <= 15 Then
+                        sKoffLijst = sKoffLijst & Chr(10) & "  - " & _
+                            Trim(oKB.getCellByPosition(KBKolom(0), rKoff).getString() & " " & _
+                                 oKB.getCellByPosition(KBKolom(1), rKoff).getString()) & _
+                            " (id " & CStr(CLng(oKB.getCellByPosition(2, rKoff).getValue())) & ")"
+                    End If
+                End If
+            End If
+        End If
+        rKoff = rKoff + 1
+    Loop
+
+    If nKoffVraag > 15 Then
+        sKoffLijst = sKoffLijst & Chr(10) & "  ... en " & (nKoffVraag - 15) & " andere"
+    End If
+
+    Dim nKoffAntw As Integer
+    Dim iKoff     As Integer
+    Dim rZet      As Integer
+    Dim sKoffNaam As String
+    If nKoffVraag > 0 Then
+        If nKoffVraag <= 5 Then
+            ' Weinig gevallen: per klant beslissen, net zoals het opt-out-signaal
+            ' na LaadAlleTabellen het per geval laat beslissen.
+            For iKoff = 0 To nKoffVraag - 1
+                rZet = aKoffRij(iKoff)
+                sKoffNaam = Trim(oKB.getCellByPosition(KBKolom(0), rZet).getString() & " " & _
+                                 oKB.getCellByPosition(KBKolom(1), rZet).getString()) & _
+                            " (id " & CStr(CLng(oKB.getCellByPosition(2, rZet).getValue())) & ")"
+                nKoffAntw = MsgBox( _
+                    sKoffNaam & " gaat naar stop-definitief." & Chr(10) & Chr(10) & _
+                    "De KOFFIEmail stopt daar niet mee: die volgt enkel " & _
+                    "koffie_opt_out (kolom AF), en die staat nog op nee. Zo houdt " & _
+                    "wie met groenten stopt zijn koffie en honing." & Chr(10) & Chr(10) & _
+                    "Ook de koffiemail stopzetten?" & Chr(10) & Chr(10) & _
+                    "Ja = AF op t, deze klant krijgt geen enkele mail meer" & Chr(10) & _
+                    "Nee = koffie laten staan, de koffiemail blijft komen" & Chr(10) & _
+                    "Annuleren = niets wegschrijven", _
+                    35, "Koffiemail (" & (iKoff + 1) & "/" & nKoffVraag & ")")
+                If nKoffAntw = 2 Then
+                    MsgBox "Geannuleerd. Er is niets weggeschreven.", 64, "SchrijfWijzigingenTerug"
+                    oStmt.close()
+                    oConn.close()
+                    Exit Sub
+                End If
+                If nKoffAntw = 6 Then bKoffViaVraag(rZet) = True
+            Next iKoff
+        Else
+            ' Veel gevallen in een keer (bv. een eindejaarsopkuis): een vraag voor
+            ' de hele lijst, anders klik je door tientallen popups.
+            nKoffAntw = MsgBox( _
+                nKoffVraag & " klant(en) gaan naar stop-definitief maar blijven de " & _
+                "KOFFIEmail krijgen (koffie_opt_out, kolom AF, staat op nee):" & Chr(10) & _
+                sKoffLijst & Chr(10) & Chr(10) & _
+                "Ja = voor al deze klanten ook de koffiemail stopzetten" & Chr(10) & _
+                "Nee = koffie overal laten staan" & Chr(10) & _
+                "Annuleren = niets wegschrijven" & Chr(10) & Chr(10) & _
+                "Per klant verschillend? Antwoord Nee, zet kolom AF zelf op t bij " & _
+                "wie moet stoppen en start de macro opnieuw.", _
+                35, "Koffiemail bij stop-definitief")
+            If nKoffAntw = 2 Then
+                MsgBox "Geannuleerd. Er is niets weggeschreven.", 64, "SchrijfWijzigingenTerug"
+                oStmt.close()
+                oConn.close()
+                Exit Sub
+            End If
+            If nKoffAntw = 6 Then
+                For iKoff = 0 To nKoffVraag - 1
+                    bKoffViaVraag(aKoffRij(iKoff)) = True
+                Next iKoff
+            End If
+        End If
+
+        ' Het antwoord in de cel zetten, niet in een los vlagje: de UPDATE
+        ' hieronder en de sync naar het klanten-tabblad (stap 5) lezen allebei
+        ' de cel, en zo ziet de gebruiker in klanten_beheer staan wat hij
+        ' geantwoord heeft.
+        For iKoff = 0 To nKoffVraag - 1
+            rZet = aKoffRij(iKoff)
+            If bKoffViaVraag(rZet) Then
+                oKB.getCellByPosition(KBKolom(23), rZet).setString("t")
+                If Trim(oKB.getCellByPosition(KBKolom(24), rZet).getString()) = "" Then
+                    oKB.getCellByPosition(KBKolom(24), rZet).setString("mee gestopt bij stop-definitief")
+                End If
+            End If
+        Next iKoff
+    End If
+
     r = 1
     Do While r <= nTotaal
         If bGewijzigd(r) Then
@@ -3824,7 +3942,7 @@ Sub SchrijfWijzigingenTerug()
                                "opvolg_datum = NULL, opvolg_gemaild_op = NULL, "
             End If
 
-            ' Opt-outs (mail/koffie) — vi 20-23, kolommen AC-AF. Vlag zelf
+            ' Opt-outs (mail/koffie) — vi 21-24, kolommen AD-AG. Vlag zelf
             ' ongewijzigd: enkel de reden bijwerken. Vlag flipt aan: zelfde
             ' zij-effecten als een handmatige uitschrijving (uitschrijven.php,
             ' GET/one-click-tak). Vlag flipt uit: exact de "ongedaan maken"-
@@ -3864,10 +3982,16 @@ Sub SchrijfWijzigingenTerug()
             If bKoffOptNw = bKoffOptOud Then
                 sKoffOptClause = ", koffie_opt_out_reden = " & SqlStr(sKoffRedenNw)
             ElseIf bKoffOptNw And Not bKoffOptOud Then
+                ' gemeld blijft normaal FALSE, zodat het volgende LaadAlleTabellen
+                ' de verse opt-out nog als signaal toont. Komt de flip van de
+                ' stop-definitief-vraag (stap 3b), dan weet je het al: dat signaal
+                ' zou je je eigen antwoord terugvertellen.
+                Dim sKoffGemeld As String
+                If bKoffViaVraag(r) Then sKoffGemeld = "TRUE" Else sKoffGemeld = "FALSE"
                 sKoffOptClause = ", koffie_opt_out = TRUE, koffie_opt_out_op = COALESCE(koffie_opt_out_op, now()), " & _
                                   "koffie_opt_out_reden = " & SqlStr(sKoffRedenNw) & ", " & _
                                   "koffie_opt_out_methode = COALESCE(koffie_opt_out_methode, 'beheer'), " & _
-                                  "koffie_opt_out_gemeld = FALSE"
+                                  "koffie_opt_out_gemeld = " & sKoffGemeld
             Else
                 sKoffOptClause = ", koffie_opt_out = FALSE, koffie_opt_out_op = NULL, koffie_opt_out_reden = NULL, " & _
                                   "koffie_opt_out_methode = NULL, koffie_opt_out_gemeld = FALSE"
