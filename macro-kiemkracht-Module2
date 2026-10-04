@@ -147,7 +147,8 @@ Sub BereidMailmergeVoor()
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
         "COALESCE(a.dag_afhaling, '') AS leverdag, " & _
         "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
-        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,'') " & _
+        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,''), " & _
+        "COALESCE(k.mail_opt_out, false) " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "LEFT JOIN LATERAL ( " & _
@@ -192,6 +193,9 @@ Sub BereidMailmergeVoor()
     Dim kEmail4(1000)  As String
     Dim kVoor2(1000)   As String
     Dim kFam2(1000)    As String
+    ' Uitgeschreven voor de aanbodmail. Stuurt ENKEL het tabblad: zie de
+    ' GDPR-noot bij het schrijven van de sheet-rij hieronder.
+    Dim kOptOut(1000)  As Boolean
     Dim nKlanten      As Integer
     nKlanten = 0
 
@@ -209,6 +213,7 @@ Sub BereidMailmergeVoor()
         kEmail4(nKlanten)  = oRS.getString(11)
         kVoor2(nKlanten)   = oRS.getString(12)
         kFam2(nKlanten)    = oRS.getString(13)
+        kOptOut(nKlanten)  = oRS.getBoolean(14)
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
@@ -326,6 +331,7 @@ Sub BereidMailmergeVoor()
     ' --- Stap 6: klanten verwerken — schrijven naar Mailmerge-sheet ÉN DB ---
     Dim oStmtIns As Object : oStmtIns = oConn.createStatement()
     Dim nDbRecipients As Long : nDbRecipients = 0
+    Dim nSheetOptOut  As Long : nSheetOptOut  = 0
     Dim r As Integer : r = 1  ' rij 1 = eerste datarij (rij 0 = hoofden)
 
     ' ALLE per-klant variabelen vooraan declareren. LO Basic struikelt op
@@ -467,25 +473,38 @@ Sub BereidMailmergeVoor()
         sBestelURL = BESTEL_URL & "?d=" & Base64UrlEncode(sQuerystring)
 
         ' === Mailmerge-sheet rij schrijven (oude gedrag) ===
-        oSheet.getCellByPosition(0, r).setString(kVoor(k))
-        oSheet.getCellByPosition(1, r).setString(kFam(k))
-        oSheet.getCellByPosition(2, r).setString(kEmail(k))
-        oSheet.getCellByPosition(3, r).setString(sType)
-        oSheet.getCellByPosition(4, r).setString(sMailtype)
-        oSheet.getCellByPosition(5, r).setString(sPakketURL)
-        oSheet.getCellByPosition(6, r).setString(sLevdag)
-        oSheet.getCellByPosition(7, r).setString(sAfhaal)
-        oSheet.getCellByPosition(8, r).setValue(iWeek)
-        oSheet.getCellByPosition(9, r).setString(sURL)
-        oSheet.getCellByPosition(10, r).setString(sBestelURL)
+        ' GDPR-poort voor het Thunderbird-pad. De DB-pijplijn heeft zijn eigen
+        ' vangnet (klantOptOut() in mailmerge-runner.php, vlak voor verzenden),
+        ' maar het tabblad heeft er geen: wie het uitprint of door Thunderbird
+        ' jaagt, mailt elke rij die erin staat. Daarom valt een uitgeschreven
+        ' klant hier weg. Hij blijft WEL recipient in de DB hieronder: die
+        ' 'fout'-rij ("Overgeslagen: uitgeschreven (opt-out)") is het enige
+        ' spoor dat hij overwogen en bewust overgeslagen is, en de runner leest
+        ' de vlag pas bij het verzenden -- dus wie zich uitschrijft tussen
+        ' voorbereiden en verzenden wordt daar ook nog gepakt.
+        If kOptOut(k) Then
+            nSheetOptOut = nSheetOptOut + 1
+        Else
+            oSheet.getCellByPosition(0, r).setString(kVoor(k))
+            oSheet.getCellByPosition(1, r).setString(kFam(k))
+            oSheet.getCellByPosition(2, r).setString(kEmail(k))
+            oSheet.getCellByPosition(3, r).setString(sType)
+            oSheet.getCellByPosition(4, r).setString(sMailtype)
+            oSheet.getCellByPosition(5, r).setString(sPakketURL)
+            oSheet.getCellByPosition(6, r).setString(sLevdag)
+            oSheet.getCellByPosition(7, r).setString(sAfhaal)
+            oSheet.getCellByPosition(8, r).setValue(iWeek)
+            oSheet.getCellByPosition(9, r).setString(sURL)
+            oSheet.getCellByPosition(10, r).setString(sBestelURL)
 
-        If kVoor2(k)  <> "" Then oSheet.getCellByPosition(11, r).setString(kVoor2(k))
-        If kFam2(k)   <> "" Then oSheet.getCellByPosition(12, r).setString(kFam2(k))
-        If kEmail2(k) <> "" Then oSheet.getCellByPosition(13, r).setString(kEmail2(k))
-        If kEmail3(k) <> "" Then oSheet.getCellByPosition(16, r).setString(kEmail3(k))
-        If kEmail4(k) <> "" Then oSheet.getCellByPosition(19, r).setString(kEmail4(k))
+            If kVoor2(k)  <> "" Then oSheet.getCellByPosition(11, r).setString(kVoor2(k))
+            If kFam2(k)   <> "" Then oSheet.getCellByPosition(12, r).setString(kFam2(k))
+            If kEmail2(k) <> "" Then oSheet.getCellByPosition(13, r).setString(kEmail2(k))
+            If kEmail3(k) <> "" Then oSheet.getCellByPosition(16, r).setString(kEmail3(k))
+            If kEmail4(k) <> "" Then oSheet.getCellByPosition(19, r).setString(kEmail4(k))
 
-        r = r + 1
+            r = r + 1
+        End If
 
         ' === DB-recipients schrijven (nieuw gedrag): 1 rij per uniek email ===
         ' Arrays expliciet leegmaken — Dim staat vooraan, dus de waarden
@@ -587,7 +606,9 @@ Sub BereidMailmergeVoor()
     MsgBox "Mailmerge klaar!" & Chr(10) & Chr(10) & _
            "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & Chr(10) & _
            "Tabblad 'Mailmerge': " & nSheetRijen & " klanten (Thunderbird-backup-pad)" & Chr(10) & _
+           "  waarvan " & nSheetOptOut & " uitgeschreven klant(en) NIET in het tabblad" & Chr(10) & _
            "DB-run #" & lRunId & ": " & nDbRecipients & " ontvangers (incl. extra e-mailadressen)" & Chr(10) & _
+           "  (uitgeschrevenen staan hier wel bij; de runner slaat ze over)" & Chr(10) & _
            "Geplande verzending: " & sGepland & Chr(10) & Chr(10) & _
            "Schrijf de mail-tekst en stuur testmails via:" & Chr(10) & _
            ADMIN_URL & "?run_id=" & lRunId, _
@@ -965,8 +986,12 @@ Sub BereidCombiMailmergeVoor()
     ' Zelfde klantselectie als BereidMailmergeVoor (wie krijgt deze week
     ' een aanbodsmail: pare/onpare-ritme, vooruitbestellingen, annulaties),
     ' maar:
-    '   - Vult ENKEL het tabblad "Mailmerge" — GEEN DB-run en GEEN
-    '     mailmerge_recipients. Bedoeld voor de Thunderbird-mailmerge.
+    '   - Vult ENKEL tabbladen — GEEN DB-run en GEEN mailmerge_recipients.
+    '     Bedoeld voor de Thunderbird-mailmerge. Twee tabbladen: "Mailmerge"
+    '     (combi-sjabloon, met koffie-link) en "Mailmerge_zonder_koffie"
+    '     (gewoon groentensjabloon, voor wie de koffiemail afzegde). Zonder
+    '     dat tweede tabblad zou een koffie-opt-out stil ook zijn
+    '     groentenmail verliezen.
     '   - Voegt naast de groente-bestel-URL (kolom J/K) een extra kolom toe
     '     (KoffieURL_encoded) met de gepersonaliseerde koffie-bestel-URL
     '     (zoals BereidKoffieMailmergeVoor), zodat de aanbodsmail beide
@@ -1023,9 +1048,10 @@ Sub BereidCombiMailmergeVoor()
         "Combi-mailmerge (groente + koffie) voorbereiden voor:" & Chr(10) & _
         "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & _
         "Komende donderdag: " & Format(dDonderdag, "DD/MM/YYYY") & Chr(10) & Chr(10) & _
-        "Vult ENKEL het tabblad 'Mailmerge' (Thunderbird-pad) met de" & Chr(10) & _
-        "groente-bestel-URL plus een extra kolom koffie-bestel-URL." & Chr(10) & _
-        "Er wordt GEEN DB-run aangemaakt." & Chr(10) & Chr(10) & _
+        "Vult ENKEL tabbladen (Thunderbird-pad), geen DB-run:" & Chr(10) & _
+        "  'Mailmerge' = combi, met de koffie-bestel-URL erbij" & Chr(10) & _
+        "  'Mailmerge_zonder_koffie' = wie de koffiemail afzegde," & Chr(10) & _
+        "  te versturen met het gewone groentensjabloon." & Chr(10) & Chr(10) & _
         "Doorgaan?", _
         36, "BereidCombiMailmergeVoor")
     If sAntwoord <> 6 Then  ' 6 = Ja
@@ -1070,7 +1096,8 @@ Sub BereidCombiMailmergeVoor()
         "COALESCE(a.naam, '') AS afhaalnaam, " & _
         "COALESCE(a.dag_afhaling, '') AS leverdag, " & _
         "k.id, COALESCE(k.email2,''), COALESCE(k.email3,''), COALESCE(k.email4,''), " & _
-        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,'') " & _
+        "COALESCE(k.voornaam2,''), COALESCE(k.familienaam2,''), " & _
+        "COALESCE(k.koffie_opt_out, false) " & _
         "FROM klanten k " & _
         "LEFT JOIN afhaalpunten a ON a.id = k.afhaalpunt_id " & _
         "LEFT JOIN LATERAL ( " & _
@@ -1100,6 +1127,7 @@ Sub BereidCombiMailmergeVoor()
         "   WHERE ann.jaar = " & iJaar & _
         "     AND ann.week_stopzetten_abonnement > 0 AND ann.week_stopzetten_abonnement <= " & iWeek & _
         "     AND (ann.klant_id = k.id OR (ann.klant_id IS NULL AND LOWER(ann.klant_email) = LOWER(k.email1)))) " & _
+        " AND COALESCE(k.mail_opt_out, false) = false " & _
         "ORDER BY k.familienaam, k.voornaam")
 
     Dim kVoor(1000)    As String
@@ -1115,6 +1143,9 @@ Sub BereidCombiMailmergeVoor()
     Dim kEmail4(1000)  As String
     Dim kVoor2(1000)   As String
     Dim kFam2(1000)    As String
+    ' Koffiemail afgezegd: deze klant krijgt de combi-mail niet (daar zit
+    ' de koffie-link in) maar valt ook niet weg -- zie stap 5.
+    Dim kKoffieAf(1000) As Boolean
     Dim nKlanten      As Integer
     nKlanten = 0
 
@@ -1132,6 +1163,7 @@ Sub BereidCombiMailmergeVoor()
         kEmail4(nKlanten)  = oRS.getString(11)
         kVoor2(nKlanten)   = oRS.getString(12)
         kFam2(nKlanten)    = oRS.getString(13)
+        kKoffieAf(nKlanten) = oRS.getBoolean(14)
         nKlanten = nKlanten + 1
     Loop
     oRS.close() : oStmt.close()
@@ -1192,8 +1224,24 @@ Sub BereidCombiMailmergeVoor()
         oSheet = oSheets.getByName("Mailmerge")
     End If
 
+    ' Tweede tabblad voor wie de koffiemail afzegde. Zonder dit tabblad zou
+    ' een koffie-opt-out ook zijn GROENTENmail verliezen zodra je de combi-
+    ' macro gebruikt -- precies de stille koppeling die op 28/07/2026 uit de
+    ' koffie-mailmerge gehaald is, nu langs de andere kant. Met dit tabblad
+    ' hou je twee Thunderbird-rondes: deze rijen met het gewone
+    ' groentensjabloon, zonder koffie-link.
+    Dim oSheet2 As Object
+    If oSheets.hasByName("Mailmerge_zonder_koffie") Then
+        oSheet2 = oSheets.getByName("Mailmerge_zonder_koffie")
+        oSheet2.clearContents(7)
+    Else
+        oSheets.insertNewByName("Mailmerge_zonder_koffie", 1)  ' pal na Mailmerge
+        oSheet2 = oSheets.getByName("Mailmerge_zonder_koffie")
+    End If
+
     ' Erfenis van een handmatige AutoFilter opruimen (zie MaakBladFilterVrij)
     MaakBladFilterVrij(oDoc, oSheet)
+    MaakBladFilterVrij(oDoc, oSheet2)
 
     ' --- Stap 4: kolomhoofden (0-19 identiek aan BereidMailmergeVoor, 20 = koffie) ---
     Dim hoofden(20) As String
@@ -1227,9 +1275,19 @@ Sub BereidCombiMailmergeVoor()
         oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
         oCell.CellBackColor = RGB(204, 204, 204)
     Next c
+    ' Tabblad 2 krijgt dezelfde kolommen, maar geen KoffieURL (dus 0-19).
+    For c = 0 To 19
+        oCell = oSheet2.getCellByPosition(c, 0)
+        oCell.setString(hoofden(c))
+        oCell.CharWeight = com.sun.star.awt.FontWeight.BOLD
+        oCell.CellBackColor = RGB(204, 204, 204)
+    Next c
 
     ' --- Stap 5: klanten verwerken — enkel naar Mailmerge-sheet schrijven ---
     Dim r As Integer : r = 1  ' rij 1 = eerste datarij (rij 0 = hoofden)
+    Dim r2 As Integer : r2 = 1          ' idem op Mailmerge_zonder_koffie
+    Dim oDoel As Object                 ' doelblad van de huidige rij
+    Dim rDoel As Integer
 
     ' ALLE per-klant variabelen vooraan declareren (LO Basic struikelt op
     ' Dim binnen een loop).
@@ -1370,28 +1428,37 @@ Sub BereidCombiMailmergeVoor()
                     "&afhaalpunt=" & UrlEncodeValue(kAfhaal(k))
         sKoffieURL = KOFFIE_URL & "?d=" & Base64UrlEncode(sKoffieQs)
 
-        ' === Mailmerge-sheet rij schrijven ===
-        oSheet.getCellByPosition(0, r).setString(kVoor(k))
-        oSheet.getCellByPosition(1, r).setString(kFam(k))
-        oSheet.getCellByPosition(2, r).setString(kEmail(k))
-        oSheet.getCellByPosition(3, r).setString(sType)
-        oSheet.getCellByPosition(4, r).setString(sMailtype)
-        oSheet.getCellByPosition(5, r).setString(sPakketURL)
-        oSheet.getCellByPosition(6, r).setString(sLevdag)
-        oSheet.getCellByPosition(7, r).setString(sAfhaal)
-        oSheet.getCellByPosition(8, r).setValue(iWeek)
-        oSheet.getCellByPosition(9, r).setString(sURL)
-        oSheet.getCellByPosition(10, r).setString(sBestelURL)
+        ' === Rij schrijven: combi-tabblad, of het koffievrije tabblad ===
+        If kKoffieAf(k) Then
+            oDoel = oSheet2 : rDoel = r2
+        Else
+            oDoel = oSheet  : rDoel = r
+        End If
 
-        If kVoor2(k)  <> "" Then oSheet.getCellByPosition(11, r).setString(kVoor2(k))
-        If kFam2(k)   <> "" Then oSheet.getCellByPosition(12, r).setString(kFam2(k))
-        If kEmail2(k) <> "" Then oSheet.getCellByPosition(13, r).setString(kEmail2(k))
-        If kEmail3(k) <> "" Then oSheet.getCellByPosition(16, r).setString(kEmail3(k))
-        If kEmail4(k) <> "" Then oSheet.getCellByPosition(19, r).setString(kEmail4(k))
+        oDoel.getCellByPosition(0, rDoel).setString(kVoor(k))
+        oDoel.getCellByPosition(1, rDoel).setString(kFam(k))
+        oDoel.getCellByPosition(2, rDoel).setString(kEmail(k))
+        oDoel.getCellByPosition(3, rDoel).setString(sType)
+        oDoel.getCellByPosition(4, rDoel).setString(sMailtype)
+        oDoel.getCellByPosition(5, rDoel).setString(sPakketURL)
+        oDoel.getCellByPosition(6, rDoel).setString(sLevdag)
+        oDoel.getCellByPosition(7, rDoel).setString(sAfhaal)
+        oDoel.getCellByPosition(8, rDoel).setValue(iWeek)
+        oDoel.getCellByPosition(9, rDoel).setString(sURL)
+        oDoel.getCellByPosition(10, rDoel).setString(sBestelURL)
 
-        oSheet.getCellByPosition(20, r).setString(sKoffieURL)
+        If kVoor2(k)  <> "" Then oDoel.getCellByPosition(11, rDoel).setString(kVoor2(k))
+        If kFam2(k)   <> "" Then oDoel.getCellByPosition(12, rDoel).setString(kFam2(k))
+        If kEmail2(k) <> "" Then oDoel.getCellByPosition(13, rDoel).setString(kEmail2(k))
+        If kEmail3(k) <> "" Then oDoel.getCellByPosition(16, rDoel).setString(kEmail3(k))
+        If kEmail4(k) <> "" Then oDoel.getCellByPosition(19, rDoel).setString(kEmail4(k))
 
-        r = r + 1
+        If kKoffieAf(k) Then
+            r2 = r2 + 1
+        Else
+            oDoel.getCellByPosition(20, rDoel).setString(sKoffieURL)
+            r = r + 1
+        End If
 
         VolgendeKlant:
     Next k
@@ -1407,17 +1474,43 @@ Sub BereidCombiMailmergeVoor()
     oKolommen.getByIndex(10).Width = 12000
     oKolommen.getByIndex(20).Width = 12000  ' koffie-URL
 
+    Dim oKolommen2 As Object
+    oKolommen2 = oSheet2.getColumns()
+    For cIdx = 0 To 19
+        oKolommen2.getByIndex(cIdx).OptimalWidth = True
+    Next cIdx
+    oKolommen2.getByIndex(9).Width  = 12000
+    oKolommen2.getByIndex(10).Width = 12000
+
     SluitSSHTunnels()
 
     ' --- Klaar ---
     Dim nSheetRijen As Integer
     nSheetRijen = r - 1
+    Dim nZonderKoffie As Integer
+    nZonderKoffie = r2 - 1
+    ' Die tweede ronde is geen detail: vergeet je ze, dan missen net die
+    ' klanten hun aanbodmail (op 04/10/2026 waren dat er 16 op prod).
+    Dim sTweedeRonde As String
+    If nZonderKoffie > 0 Then
+        sTweedeRonde = Chr(10) & _
+            "TWEEDE RONDE NODIG: " & nZonderKoffie & " klant(en) zegden de " & Chr(10) & _
+            "koffiemail af. Zij staan in tabblad 'Mailmerge_zonder_koffie'" & Chr(10) & _
+            "en krijgen het GEWONE groentensjabloon (zonder koffie-link)." & Chr(10) & _
+            "Sla die ronde niet over: anders missen zij deze week hun" & Chr(10) & _
+            "aanbodmail." & Chr(10)
+    Else
+        sTweedeRonde = ""
+    End If
     MsgBox "Combi-mailmerge klaar!" & Chr(10) & Chr(10) & _
            "Week " & iWeek & " / " & iJaar & " (" & sPareOnpare & " week)" & Chr(10) & Chr(10) & _
            "Tabblad 'Mailmerge': " & nSheetRijen & " klanten" & Chr(10) & _
-           "Kolom K = groente-bestel-URL, kolom U = koffie-bestel-URL." & Chr(10) & Chr(10) & _
+           "Kolom K = groente-bestel-URL, kolom U = koffie-bestel-URL." & Chr(10) & _
+           sTweedeRonde & Chr(10) & _
+           "Uitgeschreven voor de aanbodmail staan in geen van beide" & Chr(10) & _
+           "tabbladen." & Chr(10) & Chr(10) & _
            "GEEN DB-run aangemaakt — verstuur via Thunderbird-mailmerge" & Chr(10) & _
-           "vanaf het tabblad 'Mailmerge'.", _
+           "vanaf de tabbladen hierboven.", _
            64, "BereidCombiMailmergeVoor"
 
     Exit Sub
