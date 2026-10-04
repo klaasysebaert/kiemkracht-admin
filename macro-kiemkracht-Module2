@@ -1230,14 +1230,18 @@ Sub BereidCombiMailmergeVoor()
     ' koffie-mailmerge gehaald is, nu langs de andere kant. Met dit tabblad
     ' hou je twee Thunderbird-rondes: deze rijen met het gewone
     ' groentensjabloon, zonder koffie-link.
+    ' Weggooien en vers aanmaken, altijd pal NA 'Mailmerge'. Een vaste index
+    ' volstaat niet: 'Mailmerge' staat niet noodzakelijk vooraan (op dev stond
+    ' 'Koffiemailmerge' ervoor, waardoor dit blad op de verkeerde plek belandde).
+    ' De index pas NA het verwijderen opvragen, anders is hij een plaats scheef
+    ' als het oude blad links van 'Mailmerge' stond. Inhoud gaat niet verloren:
+    ' die wordt sowieso elke run opnieuw geschreven.
     Dim oSheet2 As Object
     If oSheets.hasByName("Mailmerge_zonder_koffie") Then
-        oSheet2 = oSheets.getByName("Mailmerge_zonder_koffie")
-        oSheet2.clearContents(7)
-    Else
-        oSheets.insertNewByName("Mailmerge_zonder_koffie", 1)  ' pal na Mailmerge
-        oSheet2 = oSheets.getByName("Mailmerge_zonder_koffie")
+        oSheets.removeByName("Mailmerge_zonder_koffie")
     End If
+    oSheets.insertNewByName("Mailmerge_zonder_koffie", oSheet.RangeAddress.Sheet + 1)
+    oSheet2 = oSheets.getByName("Mailmerge_zonder_koffie")
 
     ' Erfenis van een handmatige AutoFilter opruimen (zie MaakBladFilterVrij)
     MaakBladFilterVrij(oDoc, oSheet)
