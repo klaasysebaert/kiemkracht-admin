@@ -1865,7 +1865,8 @@ Sub MaakWeekbestand()
             For iEe = 0 To nEerste - 1
                 If eersteKId(iEe) = lRijKId Then
                     sOpmFinaal = IIf(Trim(sOpmFinaal) <> "", _
-                                     "EERSTE BESTELLING / " & sOpmFinaal, "EERSTE BESTELLING")
+                                     "Nieuwe klant: eerste bestelling! / " & sOpmFinaal, _
+                                     "Nieuwe klant: eerste bestelling!")
                     sEersteRapport = sEersteRapport & "• " & bVoor(b) & " " & bFam(b) & _
                         " (" & bAfh(b) & ")" & Chr(10)
                     Exit For
