@@ -1516,6 +1516,45 @@ Sub MaakWeekbestand()
         End If
     Loop
     oRS.close() : oStmt.close()
+
+    ' --- Stap 9: wie krijgt deze week zijn EERSTE levering? ---
+    ' Verderop komt "EERSTE BESTELLING" vooraan in kolom F en AW, zodat het op
+    ' de picklijst staat (welkomstfolder, extra zorg). Enkel klanten aangemaakt
+    ' NA de import van 19/04/2026: de 479 klanten uit die import hebben geen
+    ' bruikbare geschiedenis in de databank en zijn allemaal vaste klanten.
+    ' "Eerder geleverd" = een bestelling of vooruitbestelling (met formaat) in
+    ' een eerdere week, of een abonnement dat al vóór deze week een leverweek
+    ' had (tweewekelijks: start minstens 2 weken terug, want de week vlak ervoor
+    ' heeft de andere pariteit). Weken vergelijken als datum (IYYY-IW), zodat
+    ' de jaargrens klopt. De lijst bevat ook nieuwe klanten die deze week NIET
+    ' leveren; de rij-schrijflus matcht enkel wie in het weekbestand staat.
+    Dim sWeekDatum As String
+    sWeekDatum = "to_date('" & iJaar & "-" & iWeek & "','IYYY-IW')"
+    Dim eersteKId(300) As Long
+    Dim nEerste        As Integer : nEerste = 0
+    Dim sEersteRapport As String  : sEersteRapport = ""
+    oStmt = oConn.createStatement()
+    oRS = oStmt.executeQuery( _
+        "SELECT k.id FROM klanten k " & _
+        "WHERE k.aangemaakt_op >= '2026-04-20' " & _
+        " AND NOT EXISTS (SELECT 1 FROM bestellingen bx WHERE bx.klant_id = k.id " & _
+        "   AND to_date(bx.jaar || '-' || bx.weeknummer, 'IYYY-IW') < " & sWeekDatum & ") " & _
+        " AND NOT EXISTS (SELECT 1 FROM vooruitbestellingen vx WHERE vx.klant_id = k.id " & _
+        "   AND vx.formaat IS NOT NULL " & _
+        "   AND to_date(vx.jaar || '-' || vx.week_bestelling, 'IYYY-IW') < " & sWeekDatum & ") " & _
+        " AND NOT EXISTS (SELECT 1 FROM abonnementen ax WHERE ax.klant_id = k.id " & _
+        "   AND ax.status IN ('actief','pauze','gestopt') " & _
+        "   AND COALESCE(to_date(ax.start_jaar || '-' || ax.start_week, 'IYYY-IW'), " & _
+        "                date_trunc('week', ax.aangemaakt_op)::date) " & _
+        "       <= " & sWeekDatum & " - CASE WHEN ax.ritme = 'wekelijks' THEN 7 ELSE 14 END) " & _
+        "ORDER BY k.id")
+    Do While oRS.next()
+        If nEerste <= UBound(eersteKId) Then
+            eersteKId(nEerste) = CLng(Val(oRS.getString(1)))
+            nEerste = nEerste + 1
+        End If
+    Loop
+    oRS.close() : oStmt.close()
     oConn.close()
 
     ' =============================================
