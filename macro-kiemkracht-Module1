@@ -1858,6 +1858,19 @@ Sub MaakWeekbestand()
                     Exit For
                 End If
             Next iWn
+
+            ' Eerste levering (stap 9): VOORAAN, zodat het op de picklijst
+            ' meteen opvalt, ook als er al een lange opmerking staat.
+            Dim iEe As Integer
+            For iEe = 0 To nEerste - 1
+                If eersteKId(iEe) = lRijKId Then
+                    sOpmFinaal = IIf(Trim(sOpmFinaal) <> "", _
+                                     "EERSTE BESTELLING / " & sOpmFinaal, "EERSTE BESTELLING")
+                    sEersteRapport = sEersteRapport & "• " & bVoor(b) & " " & bFam(b) & _
+                        " (" & bAfh(b) & ")" & Chr(10)
+                    Exit For
+                End If
+            Next iEe
         End If
         oSheet.getCellByPosition(cOpm, r).setString(sOpmFinaal)
         If Trim(sOpmFinaal) <> "" Then
