@@ -2796,6 +2796,11 @@ Sub MaakWeekbestand()
             "Check ook kolom F (vragen_opmerkingen) / AW (ander, op de stapellijsten) " & _
             "in het weekbestand."
     End If
+    If sEersteRapport <> "" Then
+        sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
+            "Eerste bestelling deze week (staat in kolom AW, dus op de picklijst):" & _
+            Chr(10) & sEersteRapport
+    End If
     If sReactRapport <> "" Then
         sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
             nReact & " slapende klant(en) kwamen deze week terug via de reddingsmail" & Chr(10) & _
