@@ -2799,7 +2799,8 @@ Sub MaakWeekbestand()
     End If
     If sEersteRapport <> "" Then
         sCorrSuffix = sCorrSuffix & Chr(10) & Chr(10) & _
-            "Eerste bestelling deze week (staat in kolom AW, dus op de picklijst):" & _
+            "Nieuwe klanten, eerste bestelling deze week (staat in kolom AW, dus op " & _
+            "de picklijst). Praktische info gekregen?" & _
             Chr(10) & sEersteRapport
     End If
     If sReactRapport <> "" Then
