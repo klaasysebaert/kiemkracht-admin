@@ -1518,7 +1518,7 @@ Sub MaakWeekbestand()
     oRS.close() : oStmt.close()
 
     ' --- Stap 9: wie krijgt deze week zijn EERSTE levering? ---
-    ' Verderop komt "EERSTE BESTELLING" vooraan in kolom F en AW, zodat het op
+    ' Verderop komt "Nieuwe klant: eerste bestelling!" vooraan in kolom F en AW, zodat het op
     ' de picklijst staat (welkomstfolder, extra zorg). Enkel klanten aangemaakt
     ' NA de import van 19/04/2026: de 479 klanten uit die import hebben geen
     ' bruikbare geschiedenis in de databank en zijn allemaal vaste klanten.
