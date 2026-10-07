@@ -1946,6 +1946,61 @@ Sub SluitIndienOpen(sUrl As String)
 End Sub
 
 ' =============================================
+' Kiemkracht - Lege alinea's achteraan een Writer-tekst weghalen
+' De opbouwlussen sluiten elk blok af met een paar alinea-einden. Vult de
+' inhoud de laatste pagina precies, dan schuiven die lege alinea's door naar
+' een volgende pagina, en die komt er blanco uit ("Weglatingen vrijdag 3/3",
+' week 41/2026). Voeg daarom de lege slotalinea's samen met de alinea ervoor.
+' =============================================
+Sub VerwijderLegeSlotalineas(oText As Object)
+    Dim oC As Object
+    Do
+        oC = oText.createTextCursor()
+        oC.gotoEnd(False)
+        ' laatste alinea heeft tekst: klaar
+        If Not oC.isStartOfParagraph() Then Exit Do
+        ' selecteer het alinea-einde ervoor en wis het; lukt dat niet (de
+        ' tekst is helemaal leeg), dan stoppen
+        If Not oC.goLeft(1, True) Then Exit Do
+        oC.setString("")
+    Loop
+End Sub
+
+' =============================================
+' Kiemkracht - Een Writer-document verkleinen tot het op één pagina past
+' Voor lijsten die nét over een pagina lopen (Oogstlijst losse groenten
+' donderdag, week 41/2026: met de forse kolomeinde-in-het-midden belandde de
+' rechterkolom zo volledig op pagina 2). Eerst de boven- en ondermarge van
+' 15 naar 10 mm, daarna alle alinea's in stappen van 8% kleiner — hooguit
+' drie stappen (~78%), daaronder wordt het onleesbaar en mag het gewoon over
+' twee pagina's lopen. Doet niets als het document al op één pagina past.
+' =============================================
+Sub KrimpTotEenPagina(oWr As Object)
+    Dim oCtrl As Object
+    Dim oPS   As Object
+    Dim oEn   As Object
+    Dim oPara As Object
+    Dim iStap As Integer
+    oCtrl = oWr.getCurrentController()
+    If oCtrl.PageCount <= 1 Then Exit Sub
+
+    oPS = oWr.StyleFamilies.getByName("PageStyles").getByIndex(0)
+    If oPS.TopMargin > 1000 Then oPS.TopMargin = 1000
+    If oPS.BottomMargin > 1000 Then oPS.BottomMargin = 1000
+
+    For iStap = 1 To 3
+        If oCtrl.PageCount <= 1 Then Exit Sub
+        oEn = oWr.getText().createEnumeration()
+        Do While oEn.hasMoreElements()
+            oPara = oEn.nextElement()
+            If oPara.supportsService("com.sun.star.text.Paragraph") Then
+                oPara.CharHeight = Int(oPara.CharHeight * 0.92 * 10 + 0.5) / 10
+            End If
+        Loop
+    Next iStap
+End Sub
+
+' =============================================
 ' Kiemkracht - Alle overzichten afdrukken
 ' Drukt de Writer-overzichten naast het weekbestand af, de koffie-orderpicking
 ' uit de zustermap, en negen tabbladen uit het samenstelling-document van
