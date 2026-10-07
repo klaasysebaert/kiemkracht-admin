@@ -2587,7 +2587,54 @@ Private Sub SamVulPrintOogst(oDoc As Object, iDag As Integer, _
     oPr.Columns.getByIndex(6).Width = 1900
     oPr.Columns.getByIndex(7).Width = 1900
 
-    SamZetPrintPagina(oDoc, oPr)
+    SamZetOogstPagina(oDoc, oPr, iRij)
+End Sub
+
+' Pagina-instelling voor de Oogst-bladen (donderdag/vrijdag/totaal): zoals
+' Printblad, maar loopt het blad nét over één pagina — week 41/2026 viel rode
+' kropsla als laatste regel op pagina 2 — dan wordt het op één A4 geschaald.
+' Enkel bij een kleine overloop (tot 20% te lang, dus minstens ~83%); is het
+' blad veel langer, dan blijft het 100% en loopt het gewoon door, want sterker
+' verkleind leest het niet meer bij het oogsten.
+' Eigen paginastijl, omdat Printblad ook de Vullen-bladen en Bijbestellen
+' bedient, die niet mee moeten krimpen.
+Private Sub SamZetOogstPagina(oDoc As Object, oSheet As Object, iLaatsteRij As Integer)
+    Const OOGST_STIJL = "Printblad oogst"
+    Const MAX_OVERLOOP = 1.2
+    Dim oStyles As Object
+    Dim oStyle  As Object
+    Dim nHoogte As Long
+    Dim iR      As Integer
+    On Error Resume Next
+    oStyles = oDoc.StyleFamilies.getByName("PageStyles")
+    If Not oStyles.hasByName(OOGST_STIJL) Then
+        oStyle = oDoc.createInstance("com.sun.star.style.PageStyle")
+        oStyles.insertByName(OOGST_STIJL, oStyle)
+    End If
+    oStyle = oStyles.getByName(OOGST_STIJL)
+    oStyle.IsLandscape  = False
+    oStyle.Width        = 21000
+    oStyle.Height       = 29700
+    oStyle.LeftMargin   = 1000
+    oStyle.RightMargin  = 1000
+    oStyle.TopMargin    = 1000
+    oStyle.BottomMargin = 1000
+    oStyle.HeaderIsOn   = False
+    oStyle.FooterIsOn   = False
+
+    ' totale rijhoogte van het gevulde stuk tegen de printzone (A4 min marges)
+    nHoogte = 0
+    For iR = 0 To iLaatsteRij
+        nHoogte = nHoogte + oSheet.Rows.getByIndex(iR).Height
+    Next iR
+    If nHoogte > 27700 And nHoogte <= 27700 * MAX_OVERLOOP Then
+        oStyle.ScaleToPages = 1
+    Else
+        oStyle.ScaleToPages = 0
+        oStyle.PageScale    = 100
+    End If
+    oSheet.PageStyle = OOGST_STIJL
+    On Error GoTo 0
 End Sub
 
 

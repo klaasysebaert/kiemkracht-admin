@@ -982,6 +982,8 @@ Sub MaakOverzichten()
             End If
         Loop
         Wait 250
+        ' past de lijst nét niet op één pagina, dan iets compacter zetten
+        KrimpTotEenPagina(oWriter2)
         sOdtPath2 = Left(sWkPath, Len(sWkPath) - 4) & "_losse_groenten_oogstlijst_" & sD & ".odt"
         SluitIndienOpen(ConvertToURL(sOdtPath2))
         oWriter2.storeToURL(ConvertToURL(sOdtPath2), aSave())
@@ -1103,7 +1105,9 @@ Sub MaakOverzichten()
             oCurs3.setPropertyValue("CharHeight", 16)
             oCurs3.setPropertyValue("ParaTopMargin", 0)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.BOLD)
-            oText3.insertString(oCurs3, UCase(aDagen(d)) & " LOS", False)
+            ' "AFWEEGLIJST" erbij: op de werktafel ligt ook de bijna gelijk
+            ' ogende oogstlijst losse groenten (week 41/2026)
+            oText3.insertString(oCurs3, UCase(aDagen(d)) & " LOS AFWEEGLIJST", False)
             oCurs3.setPropertyValue("CharWeight", com.sun.star.awt.FontWeight.NORMAL)
 
             Select Case LCase(aDagen(d))
@@ -1414,6 +1418,8 @@ Sub MaakOverzichten()
             Next f
 
             If Not bEersteFmt4 Then
+                ' geen lege slotalinea's: die gaven een blanco laatste pagina
+                VerwijderLegeSlotalineas(oText4)
                 ' Pass 2: formaatkoppen en wegnamen die te ver onderaan staan, verplaatsen naar volgend blad
                 Wait 400
                 oCtrl4 = oWriter4.getCurrentController()
@@ -1969,8 +1975,8 @@ End Sub
 ' =============================================
 ' Kiemkracht - Een Writer-document verkleinen tot het op één pagina past
 ' Voor lijsten die nét over een pagina lopen (Oogstlijst losse groenten
-' donderdag, week 41/2026: met de forse kolomeinde-in-het-midden belandde de
-' rechterkolom zo volledig op pagina 2). Eerst de boven- en ondermarge van
+' donderdag, week 41/2026: het vaste kolomeinde halverwege de lijst duwde
+' zo de hele rechterkolom naar pagina 2). Eerst de boven- en ondermarge van
 ' 15 naar 10 mm, daarna alle alinea's in stappen van 8% kleiner — hooguit
 ' drie stappen (~78%), daaronder wordt het onleesbaar en mag het gewoon over
 ' twee pagina's lopen. Doet niets als het document al op één pagina past.
@@ -1988,7 +1994,9 @@ Sub KrimpTotEenPagina(oWr As Object)
     If oPS.TopMargin > 1000 Then oPS.TopMargin = 1000
     If oPS.BottomMargin > 1000 Then oPS.BottomMargin = 1000
 
+    ' PageCount volgt de opmaak; geef Writer telkens even tijd om te herschikken
     For iStap = 1 To 3
+        Wait 300
         If oCtrl.PageCount <= 1 Then Exit Sub
         oEn = oWr.getText().createEnumeration()
         Do While oEn.hasMoreElements()
@@ -1998,6 +2006,7 @@ Sub KrimpTotEenPagina(oWr As Object)
             End If
         Loop
     Next iStap
+    Wait 300
 End Sub
 
 ' =============================================
