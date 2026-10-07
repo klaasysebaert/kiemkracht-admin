@@ -12,6 +12,9 @@ Private mPrSamOk      As Boolean   ' is er een bruikbaar samenstelling-document?
 ' meldingen op zodat je één venster krijgt in plaats van twee.
 Private mEtStil    As Boolean
 Private mEtVerslag As String
+' aantallen voor de vellen-telling onderaan die ene melding
+Private mEtNPak    As Integer
+Private mEtNBij    As Integer
 
 ' =============================================
 ' Kiemkracht - Overzichten
@@ -2679,6 +2682,7 @@ Sub MaakEtiketten()
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
     oCalc.close(True)
 
+    mEtNPak = nEt
     EtMeld(nEt & " etiketten pakketten aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar")
 
 End Sub
@@ -2910,6 +2914,7 @@ Sub MaakEtikettenBijbestelling()
     oCalc.storeToURL(ConvertToURL(sCalcPath), aSave())
     oCalc.close(True)
 
+    mEtNBij = nEt
     EtMeld(nEt & " etiketten bijbestelling aangemaakt." & Chr(10) & sCalcPath, 64, "Etiketten klaar")
 
 End Sub
@@ -3575,6 +3580,37 @@ Function EtVellen(nEtiketten As Integer) As Integer
     End If
 End Function
 
+' "Leg 10 vellen etiketten in de printer …" met de opsplitsing per soort.
+' Staat zowel onderaan de slotmelding van Maak Etiketten (zodat je de vellen al
+' kan klaarleggen) als in de vraag vooraf van Print Etiketten.
+' sGeen: wat er staat bij een soort zonder etiketten.
+Function EtVellenTekst(nPak As Integer, nBij As Integer, sGeen As String) As String
+    Dim nVelPak As Integer
+    Dim nVelBij As Integer
+    Dim sT      As String
+    nVelPak = EtVellen(nPak)
+    nVelBij = EtVellen(nBij)
+    sT = "Leg " & (nVelPak + nVelBij) & " vellen etiketten in de printer " & _
+         "(24 etiketten per vel):" & Chr(10) & Chr(10)
+    If nVelPak > 0 Then
+        sT = sT & "   pakketten:       " & nVelPak & " vel voor " & nPak & _
+             " etiketten (" & (nVelPak * 24 - nPak) & " blijven leeg)" & Chr(10)
+    Else
+        sT = sT & "   pakketten:       " & sGeen & Chr(10)
+    End If
+    If nVelBij > 0 Then
+        sT = sT & "   bijbestellingen: " & nVelBij & " vel voor " & nBij & _
+             " etiketten (" & (nVelBij * 24 - nBij) & " blijven leeg)" & Chr(10)
+    Else
+        sT = sT & "   bijbestellingen: " & sGeen & Chr(10)
+    End If
+    If nVelPak > 0 And nVelBij > 0 Then
+        sT = sT & Chr(10) & "De bijbestellingen beginnen op een nieuw vel, dus " & _
+             "het laatste vel van de pakketten wordt niet volgeprint."
+    End If
+    EtVellenTekst = sT
+End Function
+
 ' Printbereiken, kolombreedtes en de samengevoegde rij-1-cellen zetten.
 ' Geeft het aantal etiketten terug (geteld in kolom A).
 Function EtBereidBlad(oCalc As Object) As Integer
@@ -3723,22 +3759,7 @@ Sub PrintEtiketten()
     nVelPak = EtVellen(nPak)
     nVelBij = EtVellen(nBij)
 
-    sMelding = "Leg " & (nVelPak + nVelBij) & " vellen etiketten in de printer " & _
-               "(24 etiketten per vel):" & Chr(10) & Chr(10)
-    If nVelPak > 0 Then
-        sMelding = sMelding & "   pakketten:       " & nVelPak & " vel voor " & nPak & _
-                   " etiketten (" & (nVelPak * 24 - nPak) & " blijven leeg)" & Chr(10)
-    Else
-        sMelding = sMelding & "   pakketten:       geen bestand gevonden" & Chr(10)
-    End If
-    If nVelBij > 0 Then
-        sMelding = sMelding & "   bijbestellingen: " & nVelBij & " vel voor " & nBij & _
-                   " etiketten (" & (nVelBij * 24 - nBij) & " blijven leeg)" & Chr(10)
-    Else
-        sMelding = sMelding & "   bijbestellingen: geen bestand gevonden" & Chr(10)
-    End If
-    sMelding = sMelding & Chr(10) & "De bijbestellingen beginnen op een nieuw vel, dus " & _
-               "het laatste vel van de pakketten wordt niet volgeprint." & Chr(10) & Chr(10) & _
+    sMelding = EtVellenTekst(nPak, nBij, "geen bestand gevonden") & Chr(10) & Chr(10) & _
                "Printen?"
 
     nAntw = MsgBox(sMelding, 4 + 32, "Etiketten printen")
@@ -3780,6 +3801,8 @@ Sub MaakAlleEtiketten()
 
     mEtStil    = True
     mEtVerslag = ""
+    mEtNPak    = 0
+    mEtNBij    = 0
 
     MaakEtiketten()
     MaakEtikettenBijbestelling()
@@ -3788,6 +3811,7 @@ Sub MaakAlleEtiketten()
     If mEtVerslag = "" Then mEtVerslag = "Geen etiketten aangemaakt."
     ' Menubalk-naam, niet de macronaam: dat is wat de gebruiker aanklikt.
     MsgBox mEtVerslag & Chr(10) & Chr(10) & _
+           EtVellenTekst(mEtNPak, mEtNBij, "geen") & Chr(10) & Chr(10) & _
            "Printen doe je met één opdracht: Print Etiketten", _
            64, "Etiketten klaar"
     Exit Sub
